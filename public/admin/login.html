@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta
+      name="description"
+      content="Authorized TIP SecurePass administrators only."
+    />
+    <title>Administrator sign in | TIP SecurePass</title>
+    <link
+      rel="icon"
+      href="../assets/images/brand-mark.svg"
+      type="image/svg+xml"
+    />
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260901" />
+    <script src="../assets/js/admin.js?v=20260901" defer></script>
+  </head>
+  <body data-admin-page="login">
+    <div class="admin-strip"></div>
+    <main class="admin-login-shell">
+      <section class="admin-login-brand" aria-labelledby="admin-title">
+        <a class="admin-brand" href="../index.html"
+          ><img src="../assets/images/brand-mark.svg" alt="" /><span
+            ><strong>TIP SecurePass</strong>Administration</span
+          ></a
+        >
+        <div class="admin-login-copy">
+          <p class="admin-eyebrow">Restricted access</p>
+          <h1 id="admin-title">Security operations, kept accountable.</h1>
+          <p>
+            Manage student accounts, account recovery, and audit activity from
+            one protected workspace.
+          </p>
+        </div>
+      </section>
+      <section class="admin-login-panel">
+        <div class="admin-login-card">
+          <div id="credentials-view">
+            <h2>Administrator sign in</h2>
+            <p class="admin-intro">Use the authorized administrator account.</p>
+            <form class="admin-stack" id="admin-login-form" novalidate>
+              <div class="admin-field">
+                <label for="admin-email">Administrator email</label
+                ><input
+                  class="admin-input"
+                  id="admin-email"
+                  type="email"
+                  autocomplete="username"
+                  required
+                />
+              </div>
+              <div class="admin-field">
+                <label for="admin-password">Password</label
+                ><input
+                  class="admin-input"
+                  id="admin-password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+              </div>
+              <p class="admin-error" id="admin-login-error" role="alert"></p>
+              <button class="admin-button full" type="submit">
+                Continue securely <span aria-hidden="true">→</span>
+              </button>
+            </form>
+          </div>
+          <div class="hidden" id="otp-view">
+            <h2>Check your email</h2>
+            <p class="admin-intro">
+              Enter the six-digit administrator verification code.
+            </p>
+            <form class="admin-stack" id="admin-otp-form" novalidate>
+              <div class="admin-field">
+                <label for="admin-otp">Verification code</label
+                ><input
+                  class="admin-input"
+                  id="admin-otp"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  maxlength="6"
+                  pattern="[0-9]{6}"
+                  required
+                />
+              </div>
+              <p class="admin-error" id="admin-otp-error" role="alert"></p>
+              <button class="admin-button full" type="submit">
+                Verify and open dashboard
+              </button>
+              <button
+                class="admin-button secondary full"
+                type="button"
+                id="back-to-login"
+              >
+                Use another account
+              </button>
+            </form>
+          </div>
+          <p class="admin-security-note">
+            This area is not linked from the student portal. Every data request
+            is authorized and recorded server-side.
+          </p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

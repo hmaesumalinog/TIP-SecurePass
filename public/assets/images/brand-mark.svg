@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" role="img" aria-labelledby="title desc">
+  <title id="title">SecurePass shield</title>
+  <desc id="desc">A yellow shield with a dark keyhole</desc>
+  <path fill="#f5c400" d="M32 1 59 11v21c0 17-10.8 31.9-27 39C15.8 63.9 5 49 5 32V11L32 1Z"/>
+  <path fill="#1f252c" d="M32 14c-8.3 0-15 6.7-15 15v6h-3v20h36V35h-3v-6c0-8.3-6.7-15-15-15Zm0 7a8 8 0 0 1 8 8v6H24v-6a8 8 0 0 1 8-8Zm0 21a4 4 0 0 1 2.2 7.3V53h-4.4v-3.7A4 4 0 0 1 32 42Z"/>
+</svg>

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>Students | TIP SecurePass Admin</title>
+    <link
+      rel="icon"
+      href="../assets/images/brand-mark.svg"
+      type="image/svg+xml"
+    />
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260901" />
+    <script src="../assets/js/admin.js?v=20260901" defer></script>
+  </head>
+  <body data-admin-page="students">
+    <div class="admin-strip"></div>
+    <header class="admin-header">
+      <a class="admin-brand" href="dashboard.html"
+        ><img src="../assets/images/brand-mark.svg" alt="" /><span
+          ><strong>TIP SecurePass</strong>Administration</span
+        ></a
+      >
+      <nav class="admin-nav" aria-label="Administration">
+        <a href="dashboard.html">Dashboard</a
+        ><a href="students.html" aria-current="page">Students</a
+        ><a href="audit.html">Audit</a
+        ><button type="button" id="admin-sign-out">Sign out</button>
+      </nav>
+    </header>
+    <main class="admin-main">
+      <div class="admin-page-heading">
+        <div>
+          <h1>Student accounts</h1>
+          <p>
+            Add and manage student records connected to the project database.
+          </p>
+        </div>
+        <span class="admin-live">Automatic data refresh</span>
+      </div>
+      <div class="admin-toolbar">
+        <label class="admin-search"
+          ><span class="hidden">Search students</span
+          ><input
+            class="admin-input"
+            id="student-search"
+            type="search"
+            placeholder="Search number, name, or email" /></label
+        ><button class="admin-button" type="button" id="add-student">
+          Add student
+        </button>
+      </div>
+      <section class="admin-card admin-section">
+        <div class="admin-card-head">
+          <h2>Student directory</h2>
+          <span id="students-updated">Connecting…</span>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Email</th>
+                <th>Program</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="student-rows">
+              <tr>
+                <td class="admin-loading-row" colspan="5">
+                  Loading student records…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <dialog class="admin-dialog" id="student-dialog">
+      <div class="admin-dialog-head">
+        <h2 id="student-dialog-title">Add student</h2>
+        <button
+          class="admin-close"
+          type="button"
+          data-close-dialog
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
+      <form class="admin-dialog-body" id="student-form">
+        <input type="hidden" id="student-record-id" />
+        <div class="admin-form-grid">
+          <div class="admin-field">
+            <label for="student-number">Student number</label
+            ><input
+              class="admin-input"
+              id="student-number"
+              inputmode="numeric"
+              maxlength="7"
+              pattern="[0-9]{7}"
+              required
+            />
+          </div>
+          <div class="admin-field">
+            <label for="student-email">Email</label
+            ><input
+              class="admin-input"
+              id="student-email"
+              type="email"
+              required
+            />
+          </div>
+          <div class="admin-field">
+            <label for="student-first-name">First name</label
+            ><input
+              class="admin-input"
+              id="student-first-name"
+              maxlength="80"
+              required
+            />
+          </div>
+          <div class="admin-field">
+            <label for="student-last-name">Last name</label
+            ><input
+              class="admin-input"
+              id="student-last-name"
+              maxlength="80"
+              required
+            />
+          </div>
+          <div class="admin-field">
+            <label for="student-age">Age</label
+            ><input
+              class="admin-input"
+              id="student-age"
+              type="number"
+              min="15"
+              max="100"
+              required
+            />
+          </div>
+          <div class="admin-field">
+            <label for="student-phone">Phone number</label
+            ><input
+              class="admin-input"
+              id="student-phone"
+              type="tel"
+              required
+            />
+          </div>
+          <div class="admin-field wide">
+            <label for="student-program">Program</label
+            ><select class="admin-input" id="student-program" required>
+              <option value="" selected disabled>
+                Select a T.I.P. Quezon City program
+              </option>
+              <optgroup label="College of Engineering and Architecture">
+                <option>Bachelor of Science in Architecture</option>
+                <option>Bachelor of Science in Civil Engineering</option>
+                <option>Bachelor of Science in Computer Engineering</option>
+                <option>Bachelor of Science in Electrical Engineering</option>
+                <option>Bachelor of Science in Electronics Engineering</option>
+                <option>
+                  Bachelor of Science in Environmental and Sanitary Engineering
+                </option>
+                <option>Bachelor of Science in Industrial Engineering</option>
+                <option>Bachelor of Science in Mechanical Engineering</option>
+              </optgroup>
+              <optgroup label="College of Computer Studies">
+                <option>Bachelor of Science in Computer Science</option>
+                <option>
+                  Bachelor of Science in Data Science and Analytics
+                </option>
+                <option>Bachelor of Science in Information Systems</option>
+                <option>Bachelor of Science in Information Technology</option>
+              </optgroup>
+              <optgroup label="College of Business Education">
+                <option>Bachelor of Science in Accountancy</option>
+                <option>
+                  Bachelor of Science in Accounting Information Systems
+                </option>
+                <option>
+                  Bachelor of Science in Business Administration major in
+                  Financial Management
+                </option>
+                <option>
+                  Bachelor of Science in Business Administration major in Human
+                  Resource Management
+                </option>
+                <option>
+                  Bachelor of Science in Business Administration major in
+                  Logistics and Supply Management
+                </option>
+                <option>
+                  Bachelor of Science in Business Administration major in
+                  Marketing Management
+                </option>
+              </optgroup>
+              <optgroup label="College of Education">
+                <option>
+                  Bachelor of Secondary Education major in English
+                </option>
+                <option>
+                  Bachelor of Secondary Education major in Mathematics
+                </option>
+                <option>
+                  Bachelor of Secondary Education major in Sciences
+                </option>
+                <option>Bachelor of Special Needs Education</option>
+                <option>Teaching Certificate Program</option>
+              </optgroup>
+              <optgroup label="College of Arts">
+                <option>Bachelor of Arts in Political Science</option>
+                <option>Bachelor of Arts in Psychology</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="admin-field">
+            <label for="student-year">Year level</label
+            ><select class="admin-input" id="student-year" required>
+              <option>1st Year</option>
+              <option>2nd Year</option>
+              <option>3rd Year</option>
+              <option selected>4th Year</option>
+              <option>5th Year</option>
+            </select>
+          </div>
+          <label class="admin-checkbox" id="active-field"
+            ><input id="student-active" type="checkbox" checked /> Active
+            account</label
+          >
+        </div>
+        <p class="admin-error" id="student-form-error" role="alert"></p>
+        <div class="admin-form-actions">
+          <button
+            class="admin-button secondary"
+            type="button"
+            data-close-dialog
+          >
+            Cancel</button
+          ><button class="admin-button" type="submit">
+            Save and email temporary password
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <div class="admin-toast hidden" id="admin-toast" role="status"></div>
+  </body>
+</html>

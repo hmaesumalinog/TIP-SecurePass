@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Secure student profile connected to the TIP SecurePass account service."
+    />
+    <title>Profile | TIPEmpowered Student Portal</title>
+    <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/site.css?v=20260901" />
+    <link rel="stylesheet" href="assets/css/portal.css?v=20260901" />
+    <script src="assets/js/portal.js?v=20260901" defer></script>
+  </head>
+  <body class="portal-body" data-page="profile">
+    <div class="top-strip"></div>
+    <header class="portal-header">
+      <a class="portal-brand" href="portal.html"
+        ><img src="assets/images/brand-mark.svg" alt="" /><span
+          ><strong>TIPEmpowered</strong>Student Portal</span
+        ></a
+      >
+      <nav class="portal-nav" aria-label="Student portal">
+        <a href="portal.html">Dashboard</a>
+        <a href="profile.html" aria-current="page">Profile</a>
+        <button type="button" id="sign-out">Sign out</button>
+      </nav>
+    </header>
+    <main class="portal-main">
+      <div class="portal-loading" data-loading>
+        <span
+          ><span class="loading" aria-hidden="true"></span> Loading your
+          profile…</span
+        >
+      </div>
+      <section
+        class="profile-layout hidden"
+        data-protected-content
+        aria-label="Student profile"
+      >
+        <aside class="portal-card profile-summary">
+          <div class="profile-avatar" id="profile-initials" aria-hidden="true">
+            ST
+          </div>
+          <h1 id="profile-name">Student</h1>
+          <p class="student-number">
+            Student No. <span id="profile-student-number">—</span>
+          </p>
+          <p class="profile-program">
+            <strong id="profile-program">—</strong><br /><span
+              id="profile-year-level"
+              >—</span
+            >
+          </p>
+        </aside>
+        <article class="portal-card profile-details">
+          <h2>Personal information</h2>
+          <div class="detail-grid">
+            <div class="detail-item wide">
+              <span class="detail-label">Full name</span
+              ><span class="detail-value" id="profile-name-copy"
+                >See account name</span
+              >
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Email address</span
+              ><span class="detail-value" id="profile-email">—</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Phone number</span
+              ><span class="detail-value" id="profile-phone">—</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Age</span
+              ><span class="detail-value" id="profile-age">—</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Student number</span
+              ><span class="detail-value" id="profile-student-number-copy"
+                >—</span
+              >
+            </div>
+            <div class="detail-item wide">
+              <span class="detail-label">Program and year level</span
+              ><span class="detail-value"
+                ><span id="profile-program-copy">—</span> ·
+                <span id="profile-year-level-copy">—</span></span
+              >
+            </div>
+          </div>
+          <p class="profile-note">
+            These details are loaded from the authenticated student record.
+            Passwords are never returned to or displayed by the profile page.
+          </p>
+        </article>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <strong>Academic project environment.</strong> Student information is
+      maintained for project demonstration only.
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Secure student portal sign-in and account recovery."
+    />
+    <title>Student Portal | TIP SecurePass</title>
+    <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/site.css?v=20260901" />
+    <script src="assets/js/site.js?v=20260901" defer></script>
+  </head>
+  <body data-page="login">
+    <div class="top-strip"></div>
+    <header class="site-header">
+      <a
+        class="brand"
+        href="index.html"
+        aria-label="SecurePass student portal home"
+      >
+        <img src="assets/images/brand-mark.svg" alt="" />
+        <span class="brand-copy"
+          ><span class="brand-name">TIP SecurePass</span
+          ><span class="brand-subtitle"
+            >Student portal · Quezon City</span
+          ></span
+        >
+      </a>
+    </header>
+
+    <main class="page-shell">
+      <section class="auth-grid" aria-labelledby="page-title">
+        <div class="story-panel">
+          <div class="story-content">
+            <p class="eyebrow">Student access</p>
+            <h1 id="page-title">Your academic life, kept within reach.</h1>
+            <p class="lead">
+              A student portal experience centered on a safer, clearer
+              password-reset process.
+            </p>
+          </div>
+          <ul class="trust-list" aria-label="Portal benefits">
+            <li class="trust-item">
+              <div class="trust-icon">01</div>
+              <span
+                ><strong>Independent checks</strong><br />Email link plus phone
+                code</span
+              >
+            </li>
+            <li class="trust-item">
+              <div class="trust-icon">02</div>
+              <span
+                ><strong>Short-lived access</strong><br />Single-use reset
+                credentials</span
+              >
+            </li>
+            <li class="trust-item">
+              <div class="trust-icon">03</div>
+              <span
+                ><strong>Clear guidance</strong><br />Specific, human error
+                messages</span
+              >
+            </li>
+          </ul>
+        </div>
+
+        <div class="form-panel">
+          <div class="form-panel-inner">
+            <h2>Welcome back</h2>
+            <p class="form-intro">
+              Sign in with your student portal credentials.
+            </p>
+            <form class="stack" id="login-form" novalidate>
+              <div class="field">
+                <label for="student-id">Student number</label>
+                <input
+                  id="student-id"
+                  name="studentId"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="username"
+                  placeholder="e.g. 2026008"
+                  minlength="7"
+                  maxlength="7"
+                  pattern="[0-9]{7}"
+                  aria-describedby="student-id-hint"
+                  required
+                />
+                <span class="hint" id="student-id-hint"
+                  >Enter the 7 digits assigned to your student account.</span
+                >
+              </div>
+              <div class="field">
+                <label for="password">Password</label>
+                <div class="input-wrap">
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="Enter your password"
+                    required
+                  />
+                  <button
+                    class="icon-button"
+                    type="button"
+                    data-toggle-password="password"
+                    aria-label="Show password"
+                  >
+                    ◉
+                  </button>
+                </div>
+              </div>
+              <p class="form-error" id="login-error" role="alert"></p>
+              <button class="button full" type="submit">
+                Sign in to student portal <span aria-hidden="true">→</span>
+              </button>
+              <a class="button secondary full" href="forgot.html"
+                >Forgot password?</a
+              >
+            </form>
+            <p class="footer-note">
+              Use only on a device you trust. Always sign out on shared
+              computers.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <dialog
+      class="first-login-dialog"
+      id="first-login-dialog"
+      aria-labelledby="first-login-title"
+      aria-describedby="first-login-description"
+    >
+      <div class="first-login-card">
+        <p class="eyebrow">First-time security setup</p>
+        <h2 id="first-login-title">Create your permanent password</h2>
+        <p class="form-intro" id="first-login-description">
+          Your temporary password worked. Before the portal opens, replace it
+          with a password only you know.
+        </p>
+        <form class="stack" id="first-login-form" novalidate>
+          <div class="field">
+            <label for="first-login-password">New password</label>
+            <div class="input-wrap">
+              <input
+                id="first-login-password"
+                type="password"
+                autocomplete="new-password"
+                maxlength="128"
+                placeholder="At least 12 characters"
+                required
+              />
+              <button
+                class="icon-button"
+                type="button"
+                data-toggle-password="first-login-password"
+                aria-label="Show password"
+              >
+                ◉
+              </button>
+            </div>
+          </div>
+          <ul class="requirements" aria-label="Password requirements">
+            <li data-first-rule="length">12 or more characters</li>
+            <li data-first-rule="upper">One uppercase letter</li>
+            <li data-first-rule="lower">One lowercase letter</li>
+            <li data-first-rule="number">One number</li>
+            <li data-first-rule="symbol">One symbol</li>
+            <li data-first-rule="student">No student number pattern</li>
+          </ul>
+          <div class="field">
+            <label for="first-login-confirm">Confirm new password</label>
+            <input
+              id="first-login-confirm"
+              type="password"
+              autocomplete="new-password"
+              maxlength="128"
+              placeholder="Enter it again"
+              required
+            />
+          </div>
+          <p class="form-error" id="first-login-error" role="alert"></p>
+          <button class="button full" type="submit">
+            Save password and open portal
+          </button>
+          <button
+            class="text-button first-login-cancel"
+            type="button"
+            id="first-login-cancel"
+          >
+            Cancel and sign out
+          </button>
+        </form>
+      </div>
+    </dialog>
+    <footer class="site-footer">
+      <strong>Academic project environment.</strong> Not affiliated with or
+      connected to the official TIP student portal.
+    </footer>
+  </body>
+</html>

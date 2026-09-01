@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Request a secure student portal password reset."
+    />
+    <title>Forgot Password | TIP SecurePass</title>
+    <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/site.css?v=20260901" />
+    <script src="assets/js/site.js?v=20260901" defer></script>
+  </head>
+  <body data-page="forgot">
+    <div class="top-strip"></div>
+    <header class="site-header">
+      <a class="brand" href="index.html"
+        ><img src="assets/images/brand-mark.svg" alt="" /><span
+          class="brand-copy"
+          ><span class="brand-name">TIP SecurePass</span
+          ><span class="brand-subtitle"
+            >Student portal · Quezon City</span
+          ></span
+        ></a
+      >
+    </header>
+    <main class="page-shell">
+      <section class="auth-grid" aria-labelledby="page-title">
+        <div class="story-panel">
+          <div class="story-content">
+            <p class="eyebrow">Account recovery</p>
+            <h1 id="page-title">
+              Reset access without giving email all the power.
+            </h1>
+            <p class="lead">
+              We first confirm your school email. A second, separate
+              verification step is required before a password can change.
+            </p>
+          </div>
+          <div class="trust-list">
+            <div class="trust-item">
+              <div class="trust-icon">1</div>
+              <span><strong>Request</strong><br />Enter school email</span>
+            </div>
+            <div class="trust-item">
+              <div class="trust-icon">2</div>
+              <span
+                ><strong>Verify</strong><br />Use email link + SMS code</span
+              >
+            </div>
+            <div class="trust-item">
+              <div class="trust-icon">3</div>
+              <span
+                ><strong>Secure</strong><br />Create a stronger password</span
+              >
+            </div>
+          </div>
+        </div>
+        <div class="form-panel">
+          <div class="form-panel-inner">
+            <ol class="stepper" aria-label="Password reset progress">
+              <li class="step active">
+                <span class="step-dot">1</span><span>Request</span>
+              </li>
+              <li class="step">
+                <span class="step-dot">2</span><span>Email link</span>
+              </li>
+              <li class="step">
+                <span class="step-dot">3</span><span>Phone code</span>
+              </li>
+              <li class="step">
+                <span class="step-dot">4</span><span>New password</span>
+              </li>
+            </ol>
+
+            <div id="request-view">
+              <h2>Forgot your password?</h2>
+              <p class="form-intro">
+                Enter the school email connected to your account. We’ll send a
+                single-use link that expires in 15 minutes.
+              </p>
+              <form class="stack" id="forgot-form" novalidate>
+                <div class="field">
+                  <label for="school-email">School email</label>
+                  <input
+                    id="school-email"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    placeholder="student@tip.edu.ph"
+                    required
+                  />
+                  <span class="hint"
+                    >For privacy, the response is the same whether or not an
+                    account exists.</span
+                  >
+                </div>
+                <p class="form-error" id="forgot-error" role="alert"></p>
+                <button class="button full" type="submit">
+                  Send secure reset link <span aria-hidden="true">→</span>
+                </button>
+                <a class="button secondary full" href="index.html"
+                  >Back to sign in</a
+                >
+              </form>
+            </div>
+
+            <div id="sent-view" class="hidden" tabindex="-1">
+              <div class="complete-icon" aria-hidden="true">✓</div>
+              <div class="centered">
+                <h2>Check your inbox</h2>
+                <p class="form-intro">
+                  If an account matches that email, a secure reset link is on
+                  its way. It expires in 15 minutes and works once.
+                </p>
+              </div>
+              <div class="stack">
+                <div class="notice">
+                  <span class="notice-icon">i</span>
+                  <div>
+                    <strong>Nothing arrived?</strong>Check spam, wait a minute,
+                    or try again. For safety, we limit repeated requests.
+                  </div>
+                </div>
+                <button
+                  class="button secondary full"
+                  type="button"
+                  id="send-again"
+                >
+                  Send again
+                </button>
+                <a class="text-button centered" href="support.html"
+                  >I no longer have access to my phone</a
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <strong>Academic project environment.</strong> Not affiliated with or
+      connected to the official TIP student portal.
+    </footer>
+  </body>
+</html>

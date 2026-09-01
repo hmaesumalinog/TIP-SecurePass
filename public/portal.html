@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Student account dashboard for the TIP SecurePass academic project."
+    />
+    <title>Dashboard | TIPEmpowered Student Portal</title>
+    <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/site.css?v=20260901" />
+    <link rel="stylesheet" href="assets/css/portal.css?v=20260901" />
+    <script src="assets/js/portal.js?v=20260901" defer></script>
+  </head>
+  <body class="portal-body" data-page="portal">
+    <div class="top-strip"></div>
+    <header class="portal-header">
+      <a class="portal-brand" href="portal.html"
+        ><img src="assets/images/brand-mark.svg" alt="" /><span
+          ><strong>TIPEmpowered</strong>Student Portal</span
+        ></a
+      >
+      <nav class="portal-nav" aria-label="Student portal">
+        <a href="portal.html" aria-current="page">Dashboard</a>
+        <a href="profile.html">Profile</a>
+        <button type="button" id="sign-out">Sign out</button>
+      </nav>
+    </header>
+    <main class="portal-main">
+      <div class="portal-loading" data-loading>
+        <span
+          ><span class="loading" aria-hidden="true"></span> Loading your
+          portal…</span
+        >
+      </div>
+      <div class="hidden" data-protected-content>
+        <section class="portal-hero">
+          <div class="portal-hero-content">
+            <p class="portal-kicker">Student dashboard</p>
+            <h1>Welcome, <span id="student-first-name">Student</span>.</h1>
+            <p>
+              Your academic overview is ready. The academic information is
+              representative, while your identity and profile are loaded
+              securely from the project database.
+            </p>
+          </div>
+          <span class="term-chip">1st Semester · SY 2026–2027</span>
+        </section>
+
+        <section class="portal-section" aria-labelledby="overview-heading">
+          <div class="section-heading">
+            <h2 id="overview-heading">Academic overview</h2>
+            <p>Updated today</p>
+          </div>
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span class="metric-icon">UN</span><strong>21</strong
+              ><span>Units enrolled</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon">CL</span><strong>7</strong
+              ><span>Active classes</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon">GW</span><strong>1.42</strong
+              ><span>Current GWA</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon">AN</span><strong>3</strong
+              ><span>New announcements</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="portal-section portal-columns">
+          <article class="portal-card">
+            <div class="card-heading">
+              <h2>Today’s classes</h2>
+              <span>Wednesday</span>
+            </div>
+            <ul class="class-list">
+              <li>
+                <span class="class-time">8:00 AM</span
+                ><span class="class-copy"
+                  ><strong>Information Assurance and Security</strong
+                  ><span>Prof. M. Santos</span></span
+                ><span class="class-room">QC 303</span>
+              </li>
+              <li>
+                <span class="class-time">11:00 AM</span
+                ><span class="class-copy"
+                  ><strong>Systems Integration and Architecture</strong
+                  ><span>Engr. R. Cruz</span></span
+                ><span class="class-room">Lab 5</span>
+              </li>
+              <li>
+                <span class="class-time">2:30 PM</span
+                ><span class="class-copy"
+                  ><strong>Capstone Project 2</strong
+                  ><span>Prof. A. Reyes</span></span
+                ><span class="class-room">QC 407</span>
+              </li>
+            </ul>
+          </article>
+          <aside class="portal-card">
+            <div class="card-heading">
+              <h2>Announcements</h2>
+              <span>Latest</span>
+            </div>
+            <ul class="announcement-list">
+              <li>
+                <strong>Enrollment validation</strong
+                ><span>Complete account validation by Friday.</span>
+              </li>
+              <li>
+                <strong>Library advisory</strong
+                ><span>Extended hours begin next week.</span>
+              </li>
+              <li>
+                <strong>Student services</strong
+                ><span>Profile records are available online.</span>
+              </li>
+            </ul>
+          </aside>
+        </section>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <strong>Academic project environment.</strong> Representative portal
+      information for project demonstration only.
+    </footer>
+  </body>
+</html>

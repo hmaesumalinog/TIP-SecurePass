@@ -1,0 +1,118 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[dev]
+  publish = "public"
+  functions = "netlify/functions"
+  port = 8888
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Cache-Control = "no-store, max-age=0"
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin/login"
+  status = 302
+
+[[redirects]]
+  from = "/api/request-reset"
+  to = "/.netlify/functions/request-reset"
+  status = 200
+
+[[redirects]]
+  from = "/api/start-reset"
+  to = "/.netlify/functions/start-reset"
+  status = 200
+
+[[redirects]]
+  from = "/api/verify-otp"
+  to = "/.netlify/functions/verify-otp"
+  status = 200
+
+[[redirects]]
+  from = "/api/complete-reset"
+  to = "/.netlify/functions/complete-reset"
+  status = 200
+
+[[redirects]]
+  from = "/api/login"
+  to = "/.netlify/functions/login"
+  status = 200
+
+[[redirects]]
+  from = "/api/complete-first-login"
+  to = "/.netlify/functions/complete-first-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/profile"
+  to = "/.netlify/functions/profile"
+  status = 200
+
+[[redirects]]
+  from = "/api/logout"
+  to = "/.netlify/functions/logout"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/login-start"
+  to = "/.netlify/functions/admin-login-start"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/login-verify"
+  to = "/.netlify/functions/admin-login-verify"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/session"
+  to = "/.netlify/functions/admin-session"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/dashboard"
+  to = "/.netlify/functions/admin-dashboard"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/students"
+  to = "/.netlify/functions/admin-students"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/audit"
+  to = "/.netlify/functions/admin-audit"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/send-reset"
+  to = "/.netlify/functions/admin-send-reset"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/issue-temporary-password"
+  to = "/.netlify/functions/admin-issue-temporary-password"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/logout"
+  to = "/.netlify/functions/admin-logout"
+  status = 200

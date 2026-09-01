@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>Audit log | TIP SecurePass Admin</title>
+    <link
+      rel="icon"
+      href="../assets/images/brand-mark.svg"
+      type="image/svg+xml"
+    />
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260901" />
+    <script src="../assets/js/admin.js?v=20260901" defer></script>
+  </head>
+  <body data-admin-page="audit">
+    <div class="admin-strip"></div>
+    <header class="admin-header">
+      <a class="admin-brand" href="dashboard.html"
+        ><img src="../assets/images/brand-mark.svg" alt="" /><span
+          ><strong>TIP SecurePass</strong>Administration</span
+        ></a
+      >
+      <nav class="admin-nav" aria-label="Administration">
+        <a href="dashboard.html">Dashboard</a
+        ><a href="students.html">Students</a
+        ><a href="audit.html" aria-current="page">Audit</a
+        ><button type="button" id="admin-sign-out">Sign out</button>
+      </nav>
+    </header>
+    <main class="admin-main">
+      <div class="admin-page-heading">
+        <div>
+          <h1>Security audit log</h1>
+          <p>Read-only student and administrator security events.</p>
+        </div>
+        <span class="admin-live">Automatic data refresh</span>
+      </div>
+      <section class="admin-card admin-section">
+        <div class="admin-card-head">
+          <h2>Latest activity</h2>
+          <span id="audit-updated">Connecting…</span>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Category</th>
+                <th>Student record</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="audit-rows">
+              <tr>
+                <td class="admin-loading-row" colspan="4">
+                  Loading audit events…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <div class="admin-toast hidden" id="admin-toast" role="status"></div>
+  </body>
+</html>

@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Verify identity and create a new student portal password."
+    />
+    <title>Secure Password Reset | TIP SecurePass</title>
+    <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/site.css?v=20260901" />
+    <script src="assets/js/site.js?v=20260901" defer></script>
+  </head>
+  <body data-page="reset">
+    <div class="top-strip"></div>
+    <header class="site-header">
+      <a class="brand" href="index.html"
+        ><img src="assets/images/brand-mark.svg" alt="" /><span
+          class="brand-copy"
+          ><span class="brand-name">TIP SecurePass</span
+          ><span class="brand-subtitle"
+            >Student portal · Quezon City</span
+          ></span
+        ></a
+      >
+    </header>
+    <main class="page-shell">
+      <section class="auth-grid" aria-labelledby="page-title">
+        <div class="story-panel">
+          <div class="story-content">
+            <p class="eyebrow">Two-channel verification</p>
+            <h1 id="page-title">
+              One more check protects everything behind this login.
+            </h1>
+            <p class="lead">
+              Email access alone cannot authorize the change. The phone code
+              confirms control of an independent channel.
+            </p>
+          </div>
+          <div class="trust-list">
+            <div class="trust-item">
+              <div class="trust-icon">5m</div>
+              <span
+                ><strong>Short expiry</strong><br />OTP expires quickly</span
+              >
+            </div>
+            <div class="trust-item">
+              <div class="trust-icon">5×</div>
+              <span
+                ><strong>Attempt limit</strong><br />Challenge locks after
+                failures</span
+              >
+            </div>
+            <div class="trust-item">
+              <div class="trust-icon">1×</div>
+              <span
+                ><strong>Single use</strong><br />Tokens cannot be
+                replayed</span
+              >
+            </div>
+          </div>
+        </div>
+        <div class="form-panel">
+          <div class="form-panel-inner">
+            <ol class="stepper" aria-label="Password reset progress">
+              <li class="step done">
+                <span class="step-dot">✓</span><span>Request</span>
+              </li>
+              <li class="step done">
+                <span class="step-dot">✓</span><span>Email link</span>
+              </li>
+              <li class="step active" id="otp-step">
+                <span class="step-dot">3</span><span>Phone code</span>
+              </li>
+              <li class="step" id="password-step">
+                <span class="step-dot">4</span><span>New password</span>
+              </li>
+            </ol>
+
+            <div id="loading-view" class="centered" aria-live="polite">
+              <span class="loading" aria-hidden="true"></span>
+              <p class="form-intro">Checking your secure link…</p>
+            </div>
+
+            <div id="invalid-view" class="hidden">
+              <h2>This link can’t be used</h2>
+              <p class="form-intro">
+                It may have expired, already been used, or been copied
+                incorrectly.
+              </p>
+              <div class="stack">
+                <div class="notice error">
+                  <span class="notice-icon">!</span>
+                  <div>
+                    <strong>Your account has not changed.</strong>Request a
+                    fresh link to safely start again.
+                  </div>
+                </div>
+                <a class="button full" href="forgot.html"
+                  >Request a new reset link</a
+                >
+                <a class="button secondary full" href="index.html"
+                  >Return to sign in</a
+                >
+              </div>
+            </div>
+
+            <div id="otp-view" class="hidden">
+              <h2>Enter your phone code</h2>
+              <p class="form-intro">
+                We sent a 6-digit code to
+                <strong id="masked-phone">your registered phone</strong>. The
+                code expires in 5 minutes.
+              </p>
+              <form class="stack" id="otp-form" novalidate>
+                <div class="field">
+                  <label for="otp-1">Verification code</label>
+                  <div class="otp-grid" id="otp-grid">
+                    <input
+                      id="otp-1"
+                      type="text"
+                      aria-label="Digit 1"
+                      inputmode="numeric"
+                      autocomplete="one-time-code"
+                      maxlength="1"
+                      required
+                    />
+                    <input
+                      type="text"
+                      aria-label="Digit 2"
+                      inputmode="numeric"
+                      maxlength="1"
+                      required
+                    />
+                    <input
+                      type="text"
+                      aria-label="Digit 3"
+                      inputmode="numeric"
+                      maxlength="1"
+                      required
+                    />
+                    <input
+                      type="text"
+                      aria-label="Digit 4"
+                      inputmode="numeric"
+                      maxlength="1"
+                      required
+                    />
+                    <input
+                      type="text"
+                      aria-label="Digit 5"
+                      inputmode="numeric"
+                      maxlength="1"
+                      required
+                    />
+                    <input
+                      type="text"
+                      aria-label="Digit 6"
+                      inputmode="numeric"
+                      maxlength="1"
+                      required
+                    />
+                  </div>
+                  <div class="otp-meta">
+                    <span>5 attempts maximum</span
+                    ><span class="timer" id="otp-timer">05:00</span>
+                  </div>
+                </div>
+                <div id="demo-sms" class="demo-card hidden">
+                  <div class="demo-card-header">
+                    <h3>Demonstration verification code</h3>
+                  </div>
+                  <div class="demo-code" id="demo-otp-code">000000</div>
+                  <p>
+                    In production this code would be delivered by an SMS
+                    provider, never shown in the browser.
+                  </p>
+                </div>
+                <p class="form-error" id="otp-error" role="alert"></p>
+                <button class="button full" type="submit">
+                  Verify code <span aria-hidden="true">→</span>
+                </button>
+                <a class="text-button centered" href="support.html"
+                  >I can’t access this phone</a
+                >
+              </form>
+            </div>
+
+            <div id="password-view" class="hidden">
+              <h2>Create a new password</h2>
+              <p class="form-intro">
+                Use a unique passphrase you don’t use for email or other
+                services.
+              </p>
+              <form class="stack" id="password-form" novalidate>
+                <div class="field">
+                  <label for="new-password">New password</label>
+                  <div class="input-wrap">
+                    <input
+                      id="new-password"
+                      type="password"
+                      autocomplete="new-password"
+                      maxlength="128"
+                      placeholder="At least 12 characters"
+                      required
+                    />
+                    <button
+                      class="icon-button"
+                      type="button"
+                      data-toggle-password="new-password"
+                      aria-label="Show password"
+                    >
+                      ◉
+                    </button>
+                  </div>
+                  <div class="strength" id="strength" data-score="0">
+                    <div class="strength-bars" aria-hidden="true">
+                      <span></span><span></span><span></span><span></span>
+                    </div>
+                    <div class="strength-copy">
+                      <span>Password strength</span
+                      ><strong id="strength-label">Start typing</strong>
+                    </div>
+                  </div>
+                  <ul class="requirements" id="password-requirements">
+                    <li data-rule="length">12+ characters</li>
+                    <li data-rule="upper">Uppercase letter</li>
+                    <li data-rule="lower">Lowercase letter</li>
+                    <li data-rule="number">Number</li>
+                    <li data-rule="symbol">Symbol</li>
+                    <li data-rule="student">Not your student ID</li>
+                  </ul>
+                </div>
+                <div class="field">
+                  <label for="confirm-password">Confirm new password</label>
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    autocomplete="new-password"
+                    maxlength="128"
+                    placeholder="Enter it again"
+                    required
+                  />
+                </div>
+                <p class="form-error" id="password-error" role="alert"></p>
+                <button class="button full" type="submit">
+                  Update password securely
+                </button>
+              </form>
+            </div>
+
+            <div id="complete-view" class="hidden" tabindex="-1">
+              <div class="complete-icon" aria-hidden="true">✓</div>
+              <div class="centered">
+                <h2>Password updated</h2>
+                <p class="form-intro">
+                  Your reset credentials are now invalid. A confirmation has
+                  been sent to your school email.
+                </p>
+              </div>
+              <div class="stack">
+                <div class="notice success">
+                  <span class="notice-icon">✓</span>
+                  <div>
+                    <strong>Security check complete</strong>Your email link and
+                    phone code cannot be reused.
+                  </div>
+                </div>
+                <a class="button full" href="index.html">Continue to sign in</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <strong>Academic project environment.</strong> Not affiliated with or
+      connected to the official TIP student portal.
+    </footer>
+  </body>
+</html>
