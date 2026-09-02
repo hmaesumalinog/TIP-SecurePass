@@ -63,8 +63,10 @@ begin
   end if;
   update public.reset_tokens set otp_issued_count = otp_issued_count + 1,
     otp_last_issued_at = now() where id = v_token.id;
-  update public.otp_challenges set locked_at = now()
-  where reset_token_id = v_token.id and locked_at is null;
+  update public.otp_challenges as challenge
+  set locked_at = now()
+  where challenge.reset_token_id = v_token.id
+    and challenge.locked_at is null;
   return query select 'reserved'::text, v_token.id, v_token.student_id, v_phone, 0;
 end;
 $$;
