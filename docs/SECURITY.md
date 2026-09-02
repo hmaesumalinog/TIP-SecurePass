@@ -12,7 +12,7 @@ Netlify Functions are the trusted application boundary. They receive browser req
 
 - Student and administrator passwords are compared against PostgreSQL `pgcrypto` bcrypt hashes.
 - Passwords must contain 12 to 128 characters, upper- and lowercase letters, a digit, and a symbol.
-- Passwords that resemble a student-number pattern are rejected.
+- Passwords containing the student's exact seven-digit number are rejected by both the server and database password-change functions.
 - New-student temporary passwords are generated with a cryptographically secure random source.
 - Temporary passwords expire after 24 hours and cannot be used to access the full portal without permanent-password setup.
 - The plaintext temporary password is not stored; it exists only long enough for the server to build the welcome email.
@@ -22,7 +22,8 @@ Netlify Functions are the trusted application boundary. They receive browser req
 - Reset links contain random high-entropy tokens.
 - The database stores hashes of reset tokens, OTPs, and reset grants rather than their raw values.
 - Reset links expire after 15 minutes and are single-use.
-- OTPs expire after five minutes and lock after five failed attempts.
+- OTPs expire after five minutes and consume attempts atomically, locking after five failed attempts even when submissions overlap.
+- Each reset link can issue at most three phone codes, with a 60-second issuance cooldown.
 - A verified OTP creates a separate short-lived grant for the password-change step.
 - The database function changes the password and consumes reset credentials atomically.
 
@@ -31,6 +32,7 @@ Netlify Functions are the trusted application boundary. They receive browser req
 - The reset-request page returns a generic response so it does not directly disclose whether an email exists.
 - Reset requests are limited using hashed email identifiers and hashed IP data.
 - Student-number and email formats are normalized and validated by server functions.
+- Student password sign-in is temporarily throttled by hashed student number and hashed IP address.
 - Errors returned to the browser avoid exposing internal database or provider details.
 
 Rate limits in this project are database-backed and suitable for demonstration-scale traffic. A public institutional deployment should add edge-level abuse controls, centralized monitoring, alerting, and documented operational response.

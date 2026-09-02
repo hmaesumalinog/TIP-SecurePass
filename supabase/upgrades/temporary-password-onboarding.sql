@@ -83,8 +83,7 @@ declare
 begin
   if length(p_password) < 12 or length(p_password) > 128
      or p_password !~ '[A-Z]' or p_password !~ '[a-z]'
-     or p_password !~ '[0-9]' or p_password !~ '[^A-Za-z0-9]'
-     or p_password ~ '20[0-9]{2}[- ]?[0-9]{4,}' then
+     or p_password !~ '[0-9]' or p_password !~ '[^A-Za-z0-9]' then
     raise exception 'Password does not meet the required policy';
   end if;
 
@@ -97,6 +96,9 @@ begin
      or v_student.temporary_password_expires_at is null
      or v_student.temporary_password_expires_at <= now() then
     return;
+  end if;
+  if position(v_student.student_number in p_password) > 0 then
+    raise exception 'Password must not contain the student number';
   end if;
 
   v_changed_at := clock_timestamp();
@@ -129,8 +131,7 @@ declare
 begin
   if length(p_password) < 12 or length(p_password) > 128
      or p_password !~ '[A-Z]' or p_password !~ '[a-z]'
-     or p_password !~ '[0-9]' or p_password !~ '[^A-Za-z0-9]'
-     or p_password ~ '20[0-9]{2}[- ]?[0-9]{4,}' then
+     or p_password !~ '[0-9]' or p_password !~ '[^A-Za-z0-9]' then
     raise exception 'Password does not meet the required policy';
   end if;
 
@@ -145,6 +146,9 @@ begin
 
   select * into v_student from public.demo_students where id = v_grant.student_id and active = true;
   if not found then return; end if;
+  if position(v_student.student_number in p_password) > 0 then
+    raise exception 'Password must not contain the student number';
+  end if;
 
   update public.demo_students
   set password_hash = crypt(p_password, gen_salt('bf', 12)), password_changed_at = now(),

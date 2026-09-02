@@ -1,5 +1,5 @@
 import { assertPost, expiresIn, handleError, HttpError, json, otpDigest, randomToken, readJson, safeEqual, sha256 } from './_shared/http.mjs';
-import { insert, query, supabase, update } from './_shared/supabase.mjs';
+import { insert, query, supabase } from './_shared/supabase.mjs';
 import { isInfobipReference, verifyInfobipPin } from './_shared/infobip.mjs';
 
 export default async function handler(request) {
@@ -13,28 +13,43 @@ export default async function handler(request) {
     if (!challenge || challenge.verified_at || challenge.locked_at || new Date(challenge.expires_at) <= new Date()) throw new HttpError(410, 'This phone code has expired or is no longer valid.');
     if (challenge.attempts >= 5) throw new HttpError(429, 'Too many incorrect attempts. Request a new reset link.');
 
-    const correct = isInfobipReference(challenge.otp_hash)
-      ? await verifyInfobipPin(challenge.otp_hash, String(code))
-      : safeEqual(challenge.otp_hash, otpDigest(String(code)));
-    const nextAttempts = challenge.attempts + 1;
-    await update('otp_challenges', { id: `eq.${challenge.id}` }, {
-      attempts: nextAttempts,
-      ...(!correct && nextAttempts >= 5 ? { locked_at: new Date().toISOString() } : {})
+    const correct = isInfobipReference(challenge.otp_hash) ? await verifyInfobipPin(challenge.otp_hash, String(code)) : safeEqual(challenge.otp_hash, otpDigest(String(code)));
+    const consumedResult = await supabase('rpc/consume_student_otp_attempt', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_challenge_id: challenge.id,
+        p_correct: correct
+      })
     });
-    if (!correct) {
-      const remaining = Math.max(0, 5 - nextAttempts);
+    const consumed = Array.isArray(consumedResult) ? consumedResult[0] : consumedResult;
+    if (!consumed || consumed.status === 'invalid') throw new HttpError(410, 'This phone code has expired or is no longer valid.');
+    if (consumed.status !== 'verified') {
+      const remaining = Number(consumed.remaining || 0);
       throw new HttpError(400, remaining ? `That code is not correct. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` : 'Too many incorrect attempts. Request a new reset link.');
     }
 
-    await update('otp_challenges', { id: `eq.${challenge.id}` }, { verified_at: new Date().toISOString() });
     const grantToken = randomToken();
-    await insert('reset_grants', {
-      challenge_id: challenge.id,
-      student_id: challenge.student_id,
-      grant_hash: sha256(grantToken),
-      expires_at: expiresIn(10 * 60)
-    }, 'id');
-    await insert('audit_events', { student_id: challenge.student_id, event_type: 'otp_verified', details: {} }, 'id');
+    await insert(
+      'reset_grants',
+      {
+        challenge_id: challenge.id,
+        student_id: consumed.student_id,
+        grant_hash: sha256(grantToken),
+        expires_at: expiresIn(10 * 60)
+      },
+      'id'
+    );
+    await insert(
+      'audit_events',
+      {
+        student_id: consumed.student_id,
+        event_type: 'otp_verified',
+        details: {}
+      },
+      'id'
+    );
     return json({ grantToken, expiresIn: 600 });
-  } catch (error) { return handleError(error); }
+  } catch (error) {
+    return handleError(error);
+  }
 }

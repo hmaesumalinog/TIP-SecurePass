@@ -10,8 +10,8 @@
       href="../assets/images/brand-mark.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260901" />
-    <script src="../assets/js/admin.js?v=20260901" defer></script>
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260902" />
+    <script src="../assets/js/admin.js?v=20260902" defer></script>
   </head>
   <body data-admin-page="students">
     <div class="admin-strip"></div>
@@ -59,11 +59,11 @@
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Student</th>
-                <th>Email</th>
-                <th>Program</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th scope="col">Student</th>
+                <th scope="col">Email</th>
+                <th scope="col">Program</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody id="student-rows">
@@ -97,6 +97,7 @@
             ><input
               class="admin-input"
               id="student-number"
+              type="text"
               inputmode="numeric"
               maxlength="7"
               pattern="[0-9]{7}"
@@ -117,6 +118,7 @@
             ><input
               class="admin-input"
               id="student-first-name"
+              type="text"
               maxlength="80"
               required
             />
@@ -126,6 +128,7 @@
             ><input
               class="admin-input"
               id="student-last-name"
+              type="text"
               maxlength="80"
               required
             />

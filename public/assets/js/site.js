@@ -19,15 +19,23 @@
     }
   }
 
+  const NETWORK_ERROR =
+    "We could not reach the server. Check your internet connection and try again.";
+
   async function postJson(url, body) {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new Error(NETWORK_ERROR);
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok)
       throw new Error(
@@ -36,14 +44,16 @@
     return data;
   }
 
-  function passwordRules(value) {
+  function passwordRules(value, studentNumber = "") {
     return {
       length: value.length >= 12,
       upper: /[A-Z]/.test(value),
       lower: /[a-z]/.test(value),
       number: /\d/.test(value),
       symbol: /[^A-Za-z0-9]/.test(value),
-      student: !/20\d{2}[- ]?\d{4,}/.test(value),
+      student: /^\d{7}$/.test(studentNumber)
+        ? !value.includes(studentNumber)
+        : !/\d{7}/.test(value),
     };
   }
 
@@ -71,6 +81,8 @@
     const firstLoginPassword = $("#first-login-password");
     const firstLoginConfirm = $("#first-login-confirm");
     const firstLoginError = $("#first-login-error");
+
+    showReturnNotice();
 
     studentNumber?.addEventListener("input", () => {
       studentNumber.value = studentNumber.value.replace(/\D/g, "").slice(0, 7);
@@ -122,7 +134,10 @@
     });
 
     firstLoginPassword?.addEventListener("input", () => {
-      const rules = passwordRules(firstLoginPassword.value);
+      const rules = passwordRules(
+        firstLoginPassword.value,
+        studentNumber.value,
+      );
       Object.entries(rules).forEach(([name, met]) =>
         $(`[data-first-rule="${name}"]`, firstLoginDialog).classList.toggle(
           "met",
@@ -152,7 +167,10 @@
       event.preventDefault();
       firstLoginError.textContent = "";
       const button = $('button[type="submit"]', firstLoginForm);
-      const rules = passwordRules(firstLoginPassword.value);
+      const rules = passwordRules(
+        firstLoginPassword.value,
+        studentNumber.value,
+      );
       if (!Object.values(rules).every(Boolean)) {
         firstLoginError.textContent =
           "Meet every password requirement before continuing.";
@@ -178,6 +196,35 @@
         setButtonBusy(button, false, "Save password and open portal");
       }
     });
+  }
+
+  function showReturnNotice() {
+    const notice = $("#login-notice");
+    if (!notice) return;
+    const params = new URLSearchParams(location.search);
+    let reason = null;
+    if (params.get("session") === "expired") {
+      reason = {
+        tone: "warning",
+        icon: "!",
+        title: "Your session timed out.",
+        text: "You were signed out automatically after a period of inactivity. Please sign in again.",
+      };
+    } else if (params.get("signedOut") === "1") {
+      reason = {
+        tone: "success",
+        icon: "✓",
+        title: "You have been signed out.",
+        text: "Sign in again whenever you are ready.",
+      };
+    }
+    if (!reason) return;
+    $("#login-notice-icon").textContent = reason.icon;
+    $("#login-notice-title").textContent = reason.title;
+    $("#login-notice-text").textContent = reason.text;
+    notice.classList.add(reason.tone);
+    notice.classList.remove("hidden");
+    history.replaceState({}, "", location.pathname);
   }
 
   if (page === "forgot") initForgot();
@@ -401,18 +448,41 @@
 
     function startTimer(seconds = 300) {
       const timer = $("#otp-timer");
+      // Track a deadline rather than counting down a variable: background tabs
+      // throttle timers, so a decrementing counter drifts away from real time.
+      const deadline = Date.now() + seconds * 1000;
       const tick = () => {
-        const minutes = Math.floor(seconds / 60)
+        const remaining = Math.max(
+          0,
+          Math.round((deadline - Date.now()) / 1000),
+        );
+        if (remaining === 0) {
+          timer.textContent = "Expired";
+          expireChallenge();
+          return;
+        }
+        const minutes = Math.floor(remaining / 60)
           .toString()
           .padStart(2, "0");
-        const remainder = (seconds % 60).toString().padStart(2, "0");
+        const remainder = (remaining % 60).toString().padStart(2, "0");
         timer.textContent = `${minutes}:${remainder}`;
-        if (seconds > 0) {
-          seconds -= 1;
-          window.setTimeout(tick, 1000);
-        } else timer.textContent = "Expired";
+        window.setTimeout(tick, 1000);
       };
       tick();
+    }
+
+    function expireChallenge() {
+      otpInputs.forEach((input) => {
+        input.value = "";
+        input.disabled = true;
+      });
+      // The heading and intro still promise a live code; correct them so the
+      // view does not contradict the expiry notice.
+      $("#otp-view h2").textContent = "Your code expired";
+      $("#otp-view .form-intro").classList.add("hidden");
+      $("#otp-form").classList.add("hidden");
+      $("#otp-expired").classList.remove("hidden");
+      $("#otp-expired").focus();
     }
 
     start();

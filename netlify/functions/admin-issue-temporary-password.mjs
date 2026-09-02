@@ -1,4 +1,4 @@
-import { assertPost, handleError, HttpError, json, readJson } from './_shared/http.mjs';
+import { assertPost, handleError, HttpError, json, readJson, sha256 } from './_shared/http.mjs';
 import { requireAdmin, requireCsrf } from './_shared/admin-session.mjs';
 import { insert, query, supabase } from './_shared/supabase.mjs';
 import { sendEmail, studentWelcomeEmail } from './_shared/resend.mjs';
@@ -18,24 +18,66 @@ export default async function handler(request) {
     if (!student.active) throw new HttpError(409, 'Activate the student before issuing a temporary password.');
 
     const temporaryPassword = generateTemporaryPassword();
-    const result = await supabase('rpc/admin_issue_temporary_password', {
-      method: 'POST',
-      body: JSON.stringify({ p_student_id: student.id, p_temporary_password: temporaryPassword })
-    });
-    const issued = Array.isArray(result) ? result[0] : result;
-    if (!issued?.id) throw new HttpError(409, 'A temporary password could not be issued for this student.');
-
     const origin = (process.env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
-    const mail = studentWelcomeEmail({ firstName: student.first_name, studentNumber: student.student_number, temporaryPassword, signInLink: `${origin}/` });
+    const mail = studentWelcomeEmail({
+      firstName: student.first_name,
+      studentNumber: student.student_number,
+      temporaryPassword,
+      signInLink: `${origin}/`
+    });
     try {
-      await sendEmail({ to: student.email, ...mail, idempotencyKey: `student-temporary-${student.id}-${Date.parse(issued.password_changed_at)}` });
+      await sendEmail({
+        to: student.email,
+        ...mail,
+        idempotencyKey: `student-temporary-${student.id}-${sha256(temporaryPassword).slice(0, 16)}`
+      });
     } catch (emailError) {
-      await insert('admin_audit_events', { admin_id: admin.id, event_type: 'student_temporary_password_email_failed', target_student_id: student.id, details: { reason: 'delivery_error' } }, 'id');
-      throw new HttpError(502, 'A new temporary password was created, but its email could not be delivered. Check the address and try again.');
+      await insert(
+        'admin_audit_events',
+        {
+          admin_id: admin.id,
+          event_type: 'student_temporary_password_email_failed',
+          target_student_id: student.id,
+          details: { reason: 'delivery_error' }
+        },
+        'id'
+      );
+      throw new HttpError(502, 'The temporary-password email could not be delivered. The student’s current password was not changed.');
     }
 
-    await insert('admin_audit_events', { admin_id: admin.id, event_type: 'student_temporary_password_issued', target_student_id: student.id, details: { expires_hours: 24 } }, 'id');
-    await insert('audit_events', { student_id: student.id, event_type: 'temporary_password_issued', details: { requested_by: 'admin', expires_hours: 24 } }, 'id');
-    return json({ message: 'A new temporary password was emailed. Any previous password is now invalid.' });
-  } catch (error) { return handleError(error); }
+    const result = await supabase('rpc/admin_issue_temporary_password', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_student_id: student.id,
+        p_temporary_password: temporaryPassword
+      })
+    });
+    const issued = Array.isArray(result) ? result[0] : result;
+    if (!issued?.id) throw new HttpError(409, 'The email was accepted, but the temporary password could not be activated. Retry the operation and notify the student to use the newest message only.');
+
+    await insert(
+      'admin_audit_events',
+      {
+        admin_id: admin.id,
+        event_type: 'student_temporary_password_issued',
+        target_student_id: student.id,
+        details: { expires_hours: 24 }
+      },
+      'id'
+    );
+    await insert(
+      'audit_events',
+      {
+        student_id: student.id,
+        event_type: 'temporary_password_issued',
+        details: { requested_by: 'admin', expires_hours: 24 }
+      },
+      'id'
+    );
+    return json({
+      message: 'A new temporary password was emailed. Any previous password is now invalid.'
+    });
+  } catch (error) {
+    return handleError(error);
+  }
 }

@@ -1,6 +1,6 @@
 -- TIP SecurePass core database schema.
 -- Run once in Supabase Dashboard -> SQL Editor for a new installation.
--- Replace the sample student email before using the seeded account.
+-- No login account is seeded. Create students through the administrator portal.
 
 create extension if not exists pgcrypto;
 create extension if not exists citext;
@@ -32,12 +32,24 @@ create table if not exists public.reset_requests (
 create index if not exists reset_requests_identifier_time_idx on public.reset_requests(identifier_hash, created_at desc);
 create index if not exists reset_requests_ip_time_idx on public.reset_requests(ip_hash, created_at desc);
 
+create table if not exists public.student_login_attempts (
+  id bigint generated always as identity primary key,
+  student_number_hash text not null,
+  ip_hash text not null,
+  succeeded boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists student_login_attempts_number_time_idx on public.student_login_attempts(student_number_hash, created_at desc);
+create index if not exists student_login_attempts_ip_time_idx on public.student_login_attempts(ip_hash, created_at desc);
+
 create table if not exists public.reset_tokens (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.demo_students(id) on delete cascade,
   token_hash text not null unique,
   expires_at timestamptz not null,
   used_at timestamptz,
+  otp_issued_count integer not null default 0 check (otp_issued_count between 0 and 3),
+  otp_last_issued_at timestamptz,
   created_at timestamptz not null default now()
 );
 create index if not exists reset_tokens_student_idx on public.reset_tokens(student_id, created_at desc);
@@ -76,6 +88,7 @@ create index if not exists audit_events_student_time_idx on public.audit_events(
 
 alter table public.demo_students enable row level security;
 alter table public.reset_requests enable row level security;
+alter table public.student_login_attempts enable row level security;
 alter table public.reset_tokens enable row level security;
 alter table public.otp_challenges enable row level security;
 alter table public.reset_grants enable row level security;
@@ -98,8 +111,7 @@ declare
 begin
   if length(p_password) < 12 or length(p_password) > 128
      or p_password !~ '[A-Z]' or p_password !~ '[a-z]'
-     or p_password !~ '[0-9]' or p_password !~ '[^A-Za-z0-9]'
-     or p_password ~ '20[0-9]{2}[- ]?[0-9]{4,}' then
+     or p_password !~ '[0-9]' or p_password !~ '[^A-Za-z0-9]' then
     raise exception 'Password does not meet the required policy';
   end if;
 
@@ -116,6 +128,9 @@ begin
 
   select * into v_student from public.demo_students where id = v_grant.student_id and active = true;
   if not found then return; end if;
+  if position(v_student.student_number in p_password) > 0 then
+    raise exception 'Password must not contain the student number';
+  end if;
 
   update public.demo_students
   set password_hash = crypt(p_password, gen_salt('bf', 12)), password_changed_at = now(),
@@ -136,12 +151,57 @@ $$;
 revoke all on function public.complete_password_reset(text, text) from public, anon, authenticated;
 grant execute on function public.complete_password_reset(text, text) to service_role;
 
-insert into public.demo_students (student_number, email, first_name, last_name, age, phone, program, year_level, password_hash)
-values ('2026008', 'demo.student@example.com', 'Demo', 'Student', 21, '+639171234821', 'Bachelor of Science in Information Technology', '4th Year', crypt('SecureDemo!2026', gen_salt('bf', 12)))
-on conflict (student_number) do update
-set email = excluded.email, first_name = excluded.first_name, last_name = excluded.last_name,
-    age = excluded.age, phone = excluded.phone, program = excluded.program,
-    year_level = excluded.year_level, active = true;
+create or replace function public.reserve_reset_otp(p_token_hash text)
+returns table(status text, reset_token_id uuid, student_id uuid, phone text, retry_after integer)
+language plpgsql security definer set search_path = public, extensions
+as $$
+declare v_token public.reset_tokens%rowtype; v_phone text; v_retry integer;
+begin
+  select * into v_token from public.reset_tokens where token_hash = p_token_hash for update;
+  if not found or v_token.used_at is not null or v_token.expires_at <= now() then
+    return query select 'invalid'::text, null::uuid, null::uuid, null::text, 0; return;
+  end if;
+  if v_token.otp_issued_count >= 3 then
+    return query select 'limited'::text, v_token.id, v_token.student_id, null::text, 0; return;
+  end if;
+  if v_token.otp_last_issued_at is not null and v_token.otp_last_issued_at > now() - interval '60 seconds' then
+    v_retry := greatest(1, ceil(extract(epoch from (v_token.otp_last_issued_at + interval '60 seconds' - now())))::integer);
+    return query select 'cooldown'::text, v_token.id, v_token.student_id, null::text, v_retry; return;
+  end if;
+  select s.phone into v_phone from public.demo_students s where s.id = v_token.student_id and s.active = true;
+  if not found then return query select 'invalid'::text, null::uuid, null::uuid, null::text, 0; return; end if;
+  update public.reset_tokens set otp_issued_count = otp_issued_count + 1, otp_last_issued_at = now() where id = v_token.id;
+  update public.otp_challenges set locked_at = now() where reset_token_id = v_token.id and locked_at is null;
+  return query select 'reserved'::text, v_token.id, v_token.student_id, v_phone, 0;
+end;
+$$;
+
+create or replace function public.consume_student_otp_attempt(p_challenge_id uuid, p_correct boolean)
+returns table(status text, student_id uuid, attempts integer, remaining integer)
+language plpgsql security definer set search_path = public, extensions
+as $$
+declare v_challenge public.otp_challenges%rowtype; v_attempts integer;
+begin
+  select * into v_challenge from public.otp_challenges where id = p_challenge_id for update;
+  if not found or v_challenge.verified_at is not null or v_challenge.locked_at is not null or v_challenge.expires_at <= now() then
+    return query select 'invalid'::text, null::uuid, 0, 0; return;
+  end if;
+  if v_challenge.attempts >= 5 then return query select 'locked'::text, v_challenge.student_id, v_challenge.attempts, 0; return; end if;
+  v_attempts := v_challenge.attempts + 1;
+  if p_correct then
+    update public.otp_challenges set attempts = v_attempts, verified_at = now() where id = v_challenge.id;
+    return query select 'verified'::text, v_challenge.student_id, v_attempts, 5 - v_attempts;
+  else
+    update public.otp_challenges set attempts = v_attempts, locked_at = case when v_attempts >= 5 then now() else locked_at end where id = v_challenge.id;
+    return query select case when v_attempts >= 5 then 'locked' else 'incorrect' end, v_challenge.student_id, v_attempts, greatest(0, 5 - v_attempts);
+  end if;
+end;
+$$;
+
+revoke all on function public.reserve_reset_otp(text) from public, anon, authenticated;
+revoke all on function public.consume_student_otp_attempt(uuid, boolean) from public, anon, authenticated;
+grant execute on function public.reserve_reset_otp(text) to service_role;
+grant execute on function public.consume_student_otp_attempt(uuid, boolean) to service_role;
 
 create or replace function public.authenticate_demo_student(p_student_number text, p_password text)
 returns table(

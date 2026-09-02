@@ -94,10 +94,12 @@ Row-level security is enabled and no public table policies are created. The brow
 2. The request endpoint returns the same public response whether or not the account exists.
 3. For a valid active account, Resend sends a 15-minute single-use link.
 4. Opening the link starts a five-minute OTP challenge and sends the code to the registered phone through UniSMS.
-5. The student has at most five verification attempts.
+5. The student has at most five verification attempts; each attempt is consumed atomically in the database.
 6. Successful verification creates a short-lived reset grant.
 7. Supabase changes the password and consumes the reset credentials in one database operation.
 8. Resend sends a password-change security notice.
+
+A reset link can issue no more than three phone codes and enforces a 60-second cooldown between deliveries.
 
 ### Administrator sign-in and data refresh
 

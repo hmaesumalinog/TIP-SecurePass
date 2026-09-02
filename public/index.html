@@ -9,8 +9,8 @@
     />
     <title>Student Portal | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260901" />
-    <script src="assets/js/site.js?v=20260901" defer></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=20260902" />
+    <script src="assets/js/site.js?v=20260902" defer></script>
   </head>
   <body data-page="login">
     <div class="top-strip"></div>
@@ -72,6 +72,13 @@
             <p class="form-intro">
               Sign in with your student portal credentials.
             </p>
+            <div class="notice hidden" id="login-notice">
+              <span class="notice-icon" id="login-notice-icon">i</span>
+              <div>
+                <strong id="login-notice-title"></strong
+                ><span id="login-notice-text"></span>
+              </div>
+            </div>
             <form class="stack" id="login-form" novalidate>
               <div class="field">
                 <label for="student-id">Student number</label>

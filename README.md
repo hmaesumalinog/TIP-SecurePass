@@ -65,6 +65,7 @@ The Netlify function files remain at the top level of `netlify/functions/` becau
 For local development:
 
 ```bash
+npm install
 cp .env.example .env
 # Add your own development credentials to .env.
 npx netlify dev
@@ -77,13 +78,13 @@ Open `http://localhost:8888`. Never place real credentials in frontend files, sc
 Run all automated tests from the project root:
 
 ```bash
-node --test tests/*.test.mjs
+npm test
 ```
 
 Run a local Netlify build check:
 
 ```bash
-npx netlify build
+npm run build
 ```
 
 These checks confirm the project files and tested provider contracts. A final release should also be tested with fresh email and SMS messages using authorized test accounts.

@@ -9,8 +9,8 @@
     />
     <title>Secure Password Reset | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260901" />
-    <script src="assets/js/site.js?v=20260901" defer></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=20260902" />
+    <script src="assets/js/site.js?v=20260902" defer></script>
   </head>
   <body data-page="reset">
     <div class="top-strip"></div>
@@ -185,6 +185,23 @@
                   >I can’t access this phone</a
                 >
               </form>
+
+              <div class="stack hidden" id="otp-expired" tabindex="-1">
+                <div class="notice error">
+                  <span class="notice-icon">!</span>
+                  <div>
+                    <strong>This code has expired.</strong>Verification codes
+                    are short-lived on purpose. Your account has not changed —
+                    request a new reset link to start again.
+                  </div>
+                </div>
+                <a class="button full" href="forgot.html"
+                  >Request a new reset link</a
+                >
+                <a class="button secondary full" href="index.html"
+                  >Back to sign in</a
+                >
+              </div>
             </div>
 
             <div id="password-view" class="hidden">

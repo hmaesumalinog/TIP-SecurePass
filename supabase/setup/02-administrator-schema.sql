@@ -130,14 +130,16 @@ declare v_student public.demo_students%rowtype; v_changed_at timestamptz;
 begin
   if length(p_password) < 12 or length(p_password) > 128
      or p_password !~ '[A-Z]' or p_password !~ '[a-z]'
-     or p_password !~ '[0-9]' or p_password !~ '[^A-Za-z0-9]'
-     or p_password ~ '20[0-9]{2}[- ]?[0-9]{4,}' then
+     or p_password !~ '[0-9]' or p_password !~ '[^A-Za-z0-9]' then
     raise exception 'Password does not meet the required policy';
   end if;
   select * into v_student from public.demo_students where demo_students.id = p_student_id for update;
   if not found or not v_student.active or not v_student.must_change_password
      or v_student.temporary_password_expires_at is null
      or v_student.temporary_password_expires_at <= now() then return; end if;
+  if position(v_student.student_number in p_password) > 0 then
+    raise exception 'Password must not contain the student number';
+  end if;
   v_changed_at := clock_timestamp();
   update public.demo_students
   set password_hash = crypt(p_password, gen_salt('bf', 12)), must_change_password = false,
@@ -157,6 +159,43 @@ grant execute on function public.authenticate_admin(text, text) to service_role;
 grant execute on function public.admin_create_demo_student(text, text, text, text, integer, text, text, text, text) to service_role;
 grant execute on function public.admin_issue_temporary_password(uuid, text) to service_role;
 grant execute on function public.complete_first_login_password(uuid, text) to service_role;
+
+create or replace function public.consume_admin_otp_attempt(p_challenge_id uuid, p_correct boolean)
+returns table(status text, admin_id uuid, attempts integer, remaining integer)
+language plpgsql security definer set search_path = public, extensions
+as $$
+declare v_challenge public.admin_login_challenges%rowtype; v_attempts integer;
+begin
+  select * into v_challenge from public.admin_login_challenges where id = p_challenge_id for update;
+  if not found or v_challenge.verified_at is not null or v_challenge.locked_at is not null or v_challenge.expires_at <= now() then
+    return query select 'invalid'::text, null::uuid, 0, 0; return;
+  end if;
+  if v_challenge.attempts >= 5 then return query select 'locked'::text, v_challenge.admin_id, v_challenge.attempts, 0; return; end if;
+  v_attempts := v_challenge.attempts + 1;
+  update public.admin_login_challenges set attempts = v_attempts,
+    verified_at = case when p_correct then now() else verified_at end,
+    locked_at = case when not p_correct and v_attempts >= 5 then now() else locked_at end
+  where id = v_challenge.id;
+  return query select case when p_correct then 'verified' when v_attempts >= 5 then 'locked' else 'incorrect' end,
+    v_challenge.admin_id, v_attempts, greatest(0, 5 - v_attempts);
+end;
+$$;
+
+create or replace function public.security_dashboard_metrics()
+returns table(students bigint, active bigint, resets bigint, failures bigint)
+language sql security definer set search_path = public, extensions
+as $$
+  select
+    (select count(*) from public.demo_students),
+    (select count(*) from public.demo_students s where s.active = true),
+    (select count(*) from public.audit_events where event_type = 'password_reset_completed'),
+    (select count(*) from public.audit_events where event_type = 'login_failed');
+$$;
+
+revoke all on function public.consume_admin_otp_attempt(uuid, boolean) from public, anon, authenticated;
+revoke all on function public.security_dashboard_metrics() from public, anon, authenticated;
+grant execute on function public.consume_admin_otp_attempt(uuid, boolean) to service_role;
+grant execute on function public.security_dashboard_metrics() to service_role;
 
 -- Make changes visible to Supabase Realtime when a permitted subscriber is used.
 do $$

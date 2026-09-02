@@ -19,16 +19,50 @@ export default async function handler(request, context) {
       throw new HttpError(429, 'Too many administrator sign-in attempts. Wait 15 minutes and try again.');
     }
 
-    const result = await supabase('rpc/authenticate_admin', { method: 'POST', body: JSON.stringify({ p_email: email, p_password: password }) });
+    const result = await supabase('rpc/authenticate_admin', {
+      method: 'POST',
+      body: JSON.stringify({ p_email: email, p_password: password })
+    });
     const admin = Array.isArray(result) ? result[0] : result;
     await insert('admin_login_attempts', { email_hash: emailHash, ip_hash: ipHash, succeeded: Boolean(admin?.id) }, 'id');
     if (!admin?.id) throw new HttpError(401, INVALID);
 
+    const recentCodes = await supabase(`admin_login_challenges?${query({ select: 'id', admin_id: `eq.${admin.id}`, created_at: `gte.${since}` })}`);
+    if (recentCodes.length >= 3) throw new HttpError(429, 'Too many administrator verification codes were requested. Wait 15 minutes and try again.');
+
     const code = randomOtp();
-    const challenges = await insert('admin_login_challenges', { admin_id: admin.id, otp_hash: otpDigest(`admin:${code}`), expires_at: expiresIn(5 * 60) }, 'id');
-    const mail = adminVerificationEmail({ displayName: admin.display_name, code });
-    await sendEmail({ to: admin.email, ...mail, idempotencyKey: `admin-login-${challenges[0].id}` });
-    await insert('admin_audit_events', { admin_id: admin.id, event_type: 'admin_password_verified', details: {} }, 'id');
-    return json({ challengeId: challenges[0].id, message: 'A verification code was sent to the administrator email.' });
-  } catch (error) { return handleError(error); }
+    const challenges = await insert(
+      'admin_login_challenges',
+      {
+        admin_id: admin.id,
+        otp_hash: otpDigest(`admin:${code}`),
+        expires_at: expiresIn(5 * 60)
+      },
+      'id'
+    );
+    const mail = adminVerificationEmail({
+      displayName: admin.display_name,
+      code
+    });
+    await sendEmail({
+      to: admin.email,
+      ...mail,
+      idempotencyKey: `admin-login-${challenges[0].id}`
+    });
+    await insert(
+      'admin_audit_events',
+      {
+        admin_id: admin.id,
+        event_type: 'admin_password_verified',
+        details: {}
+      },
+      'id'
+    );
+    return json({
+      challengeId: challenges[0].id,
+      message: 'A verification code was sent to the administrator email.'
+    });
+  } catch (error) {
+    return handleError(error);
+  }
 }

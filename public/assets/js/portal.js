@@ -1,16 +1,22 @@
 (function () {
   "use strict";
 
-  const page = document.body.dataset.page;
   const text = (id, value, fallback = "Not provided") => {
     const element = document.getElementById(id);
     if (element) element.textContent = value ?? fallback;
   };
 
   async function loadProfile() {
-    const response = await fetch("/api/profile", {
-      headers: { Accept: "application/json" },
-    });
+    let response;
+    try {
+      response = await fetch("/api/profile", {
+        headers: { Accept: "application/json" },
+      });
+    } catch {
+      throw new Error(
+        "We could not reach the server. Check your internet connection and try again.",
+      );
+    }
     if (response.status === 401) {
       window.location.replace("index.html?session=expired");
       return null;
@@ -114,7 +120,4 @@
         element.textContent = error.message;
       });
     });
-
-  if (page === "portal")
-    document.title = "Dashboard | TIPEmpowered Student Portal";
 })();

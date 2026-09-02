@@ -9,17 +9,18 @@ export default async function handler(request) {
     const session = readSession(request);
     if (!session || session.mode !== 'setup') throw new HttpError(401, 'Your password-setup session has expired. Sign in with a newly issued temporary password.');
     const { password } = await readJson(request);
-    if (!validatePassword(password)) throw new HttpError(400, 'Use 12–128 characters with uppercase, lowercase, number, and symbol. Do not include a student number.');
-
-    const students = await supabase(`demo_students?${query({
-      select: 'id,email,first_name,active,password_changed_at,must_change_password,temporary_password_expires_at',
-      id: `eq.${session.sid}`,
-      active: 'eq.true',
-      limit: 1
-    })}`);
+    const students = await supabase(
+      `demo_students?${query({
+        select: 'id,student_number,email,first_name,active,password_changed_at,must_change_password,temporary_password_expires_at',
+        id: `eq.${session.sid}`,
+        active: 'eq.true',
+        limit: 1
+      })}`
+    );
     const student = students[0];
     if (!student || student.password_changed_at !== session.pv || !student.must_change_password) throw new HttpError(401, 'This temporary-password session is no longer valid.');
     if (!student.temporary_password_expires_at || new Date(student.temporary_password_expires_at).getTime() <= Date.now()) throw new HttpError(401, 'Your temporary password has expired. Ask the administrator to issue a new one.');
+    if (!validatePassword(password, student.student_number)) throw new HttpError(400, 'Use 12–128 characters with uppercase, lowercase, number, and symbol. Do not include your student number.');
 
     const result = await supabase('rpc/complete_first_login_password', {
       method: 'POST',
@@ -28,11 +29,22 @@ export default async function handler(request) {
     const completed = Array.isArray(result) ? result[0] : result;
     if (!completed?.id) throw new HttpError(401, 'This temporary-password session is no longer valid.');
 
-    const token = createSession({ id: completed.id, password_changed_at: completed.password_changed_at });
-    const mail = firstLoginConfirmationEmail({ firstName: completed.first_name });
+    const token = createSession({
+      id: completed.id,
+      password_changed_at: completed.password_changed_at
+    });
+    const mail = firstLoginConfirmationEmail({
+      firstName: completed.first_name
+    });
     try {
-      await sendEmail({ to: completed.email, ...mail, idempotencyKey: `first-login-complete-${completed.id}-${Date.parse(completed.password_changed_at)}` });
-    } catch { /* Password completion must not be rolled back because an alert email failed. */ }
+      await sendEmail({
+        to: completed.email,
+        ...mail,
+        idempotencyKey: `first-login-complete-${completed.id}-${Date.parse(completed.password_changed_at)}`
+      });
+    } catch {
+      /* Password completion must not be rolled back because an alert email failed. */
+    }
 
     return json({ message: 'Your permanent password is ready. Opening the portal…' }, 200, {
       'Set-Cookie': sessionCookie(token)

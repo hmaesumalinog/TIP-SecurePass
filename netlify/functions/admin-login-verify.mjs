@@ -11,18 +11,25 @@ export default async function handler(request) {
     const challenge = rows[0];
     if (!challenge || challenge.verified_at || challenge.locked_at || new Date(challenge.expires_at) <= new Date()) throw new HttpError(410, 'This administrator verification code has expired.');
     if (challenge.attempts >= 5) throw new HttpError(423, 'Too many incorrect codes. Start the sign-in again.');
-    const attempts = challenge.attempts + 1;
-    if (!safeEqual(challenge.otp_hash, otpDigest(`admin:${code}`))) {
-      await update('admin_login_challenges', { id: `eq.${challenge.id}` }, { attempts, ...(attempts >= 5 ? { locked_at: new Date().toISOString() } : {}) });
-      throw new HttpError(401, attempts >= 5 ? 'Too many incorrect codes. Start the sign-in again.' : `That verification code is incorrect. ${5 - attempts} attempts remain.`);
-    }
-    await update('admin_login_challenges', { id: `eq.${challenge.id}` }, { attempts, verified_at: new Date().toISOString() });
-    const admins = await supabase(`admin_accounts?${query({ select: 'id,email,display_name,role,password_changed_at', id: `eq.${challenge.admin_id}`, active: 'eq.true', limit: 1 })}`);
+    const correct = safeEqual(challenge.otp_hash, otpDigest(`admin:${code}`));
+    const consumedResult = await supabase('rpc/consume_admin_otp_attempt', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_challenge_id: challenge.id,
+        p_correct: correct
+      })
+    });
+    const consumed = Array.isArray(consumedResult) ? consumedResult[0] : consumedResult;
+    if (!consumed || consumed.status === 'invalid') throw new HttpError(410, 'This administrator verification code has expired.');
+    if (consumed.status !== 'verified') throw new HttpError(401, consumed.remaining > 0 ? `That verification code is incorrect. ${consumed.remaining} attempts remain.` : 'Too many incorrect codes. Start the sign-in again.');
+    const admins = await supabase(`admin_accounts?${query({ select: 'id,email,display_name,role,password_changed_at', id: `eq.${consumed.admin_id}`, active: 'eq.true', limit: 1 })}`);
     const admin = admins[0];
     if (!admin) throw new HttpError(403, 'Administrator access is not permitted.');
     await update('admin_accounts', { id: `eq.${admin.id}` }, { last_login_at: new Date().toISOString() });
     await insert('admin_audit_events', { admin_id: admin.id, event_type: 'admin_login_succeeded', details: {} }, 'id');
     const session = createAdminSession(admin);
     return json({ message: 'Administrator signed in.', csrfToken: session.csrf }, 200, { 'Set-Cookie': adminCookie(session.token) });
-  } catch (error) { return handleError(error); }
+  } catch (error) {
+    return handleError(error);
+  }
 }

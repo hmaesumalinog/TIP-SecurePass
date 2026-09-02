@@ -13,7 +13,14 @@
     if (options.body) headers.set("Content-Type", "application/json");
     if (csrfToken && options.method && options.method !== "GET")
       headers.set("X-Admin-CSRF", csrfToken);
-    const response = await fetch(url, { ...options, headers });
+    let response;
+    try {
+      response = await fetch(url, { ...options, headers });
+    } catch {
+      throw new Error(
+        "We could not reach the server. Check your internet connection and try again.",
+      );
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(
@@ -108,6 +115,18 @@
   }
 
   function initLogin() {
+    const params = new URLSearchParams(location.search);
+    if (params.get("session") === "expired") {
+      showToast(
+        "Your administrator session timed out. Please sign in again.",
+        true,
+      );
+      history.replaceState({}, "", location.pathname);
+    } else if (params.get("signedOut") === "1") {
+      showToast("You have been signed out of the administrator area.");
+      history.replaceState({}, "", location.pathname);
+    }
+
     request("/api/admin/session")
       .then(() => window.location.replace("dashboard.html"))
       .catch(() => {});

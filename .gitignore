@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 .netlify/
+supabase/.temp/
 node_modules/
 .DS_Store
 tmp/

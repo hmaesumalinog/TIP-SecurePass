@@ -55,6 +55,7 @@ Copy `.env.example` to `.env` for local development. Add equivalent values in **
 | Variable               |   Required | Purpose                                                                           |
 | ---------------------- | ---------: | --------------------------------------------------------------------------------- |
 | `SITE_URL`             |        Yes | Public origin used when creating email links                                      |
+| `EMAIL_APP_NAME`       |        Yes | Name displayed in transactional email copy                                        |
 | `APP_PEPPER`           |        Yes | At least 32 random characters used for signed sessions and one-time-value digests |
 | `DEMO_MODE`            |        Yes | Keep `false` for real SMS; `true` is only for isolated interface rehearsal        |
 | `SUPABASE_URL`         |        Yes | Supabase project URL                                                              |

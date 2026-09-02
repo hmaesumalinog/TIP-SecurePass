@@ -29,6 +29,9 @@ body.portal-body {
 }
 .portal-brand strong {
   display: block;
+  /* The wrapping span uppercases the subtitle; the brand name itself is
+     mixed-case on every other page, so opt it back out. */
+  text-transform: none;
   font-size: 1.08rem;
 }
 .portal-brand span {
