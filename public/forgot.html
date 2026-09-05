@@ -9,8 +9,8 @@
     />
     <title>Forgot Password | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260902" />
-    <script src="assets/js/site.js?v=20260902" defer></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=20260905" />
+    <script src="assets/js/site.js?v=20260905" defer></script>
   </head>
   <body data-page="forgot">
     <div class="top-strip"></div>
@@ -128,8 +128,17 @@
                   type="button"
                   id="send-again"
                 >
-                  Send again
+                  Change email address
                 </button>
+                <button
+                  class="button full"
+                  type="button"
+                  id="resend-email"
+                  disabled
+                >
+                  Resend email in 60 seconds
+                </button>
+                <p id="email-status" class="hint" role="status"></p>
                 <a class="text-button centered" href="support.html"
                   >I no longer have access to my phone</a
                 >

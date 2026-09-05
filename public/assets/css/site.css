@@ -566,6 +566,22 @@ a:focus-visible {
   color: var(--ink-soft);
   font-size: 0.83rem;
 }
+.otp-entry input {
+  width: 100%;
+  min-width: 0;
+  height: 64px;
+  text-align: center;
+  font-size: clamp(1.3rem, 6vw, 2rem);
+  letter-spacing: 0.45em;
+  padding-inline: 0.45em 0;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 600px) {
+  body[data-page="reset"] .story-panel,
+  body[data-page="forgot"] .story-panel {
+    display: none;
+  }
+}
 .timer {
   color: #765b00;
   font-variant-numeric: tabular-nums;

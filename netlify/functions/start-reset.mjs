@@ -1,91 +1,48 @@
-import { assertPost, expiresIn, handleError, HttpError, json, maskPhone, otpDigest, randomOtp, readJson, sha256 } from './_shared/http.mjs';
-import { insert, supabase } from './_shared/supabase.mjs';
-import { canUseInfobipForPhone, normalizeInfobipPhone, sendInfobipOtp } from './_shared/infobip.mjs';
+import { assertPost, handleError, HttpError, json, maskPhone, otpDigest, randomOtp, readJson, sha256 } from './_shared/http.mjs';
+import { insert, supabase, update } from './_shared/supabase.mjs';
+import { canUseInfobipForPhone, sendInfobipOtp } from './_shared/infobip.mjs';
 import { canUseUniSmsForPhone, sendUniSmsOtp } from './_shared/unisms.mjs';
 
 export default async function handler(request) {
   try {
     assertPost(request);
-    const { token } = await readJson(request);
+    const { token, resend = false, previousChallengeId = null } = await readJson(request);
     if (typeof token !== 'string' || token.length < 32 || token.length > 200) throw new HttpError(400, 'This reset link is invalid.');
-
-    const reservedResult = await supabase('rpc/reserve_reset_otp', {
-      method: 'POST',
-      body: JSON.stringify({ p_token_hash: sha256(token) })
-    });
-    const reset = Array.isArray(reservedResult) ? reservedResult[0] : reservedResult;
-    if (!reset || reset.status === 'invalid') throw new HttpError(410, 'This reset link has expired or already been used.');
-    if (reset.status === 'limited') throw new HttpError(429, 'This reset link has reached its phone-code limit. Request a new reset link.');
-    if (reset.status === 'cooldown') throw new HttpError(429, `Wait ${reset.retry_after || 60} seconds before requesting another phone code.`);
-    if (reset.status !== 'reserved') throw new HttpError(503, 'The phone verification service is unavailable.');
-
-    const phone = reset.phone;
-    let otp = '';
-    let storedVerification;
-    let channel = 'simulated_sms';
-    let deliveryError = '';
-    const smsProvider = String(process.env.SMS_PROVIDER || '').toLowerCase();
-    const attemptedRealSms = smsProvider === 'unisms' ? canUseUniSmsForPhone(phone) : smsProvider === 'infobip' ? canUseInfobipForPhone(phone) : false;
-    if (attemptedRealSms) {
-      try {
-        otp = randomOtp();
-        if (smsProvider === 'unisms') {
-          await sendUniSmsOtp(phone, otp);
-          channel = 'unisms_sms';
-        } else {
-          await sendInfobipOtp(phone, otp);
-          channel = 'infobip_sms';
-        }
-        storedVerification = otpDigest(otp);
-      } catch (error) {
-        otp = '';
-        deliveryError = error instanceof Error ? error.message : 'SMS delivery failed.';
+    if (typeof resend !== 'boolean' || (previousChallengeId !== null && !/^[0-9a-f-]{36}$/i.test(previousChallengeId))) throw new HttpError(400, 'Invalid code request.');
+    const otp = randomOtp();
+    const reset = await supabase('rpc/prepare_reset_otp', { method: 'POST', body: JSON.stringify({
+      p_token_hash: sha256(token), p_otp_hash: otpDigest(otp), p_resend: resend, p_previous_id: previousChallengeId
+    }) });
+    if (reset.status === 'invalid') return json({ status: 'invalid', message: 'This reset link has expired or already been used.' }, 410);
+    const result = {
+      status: reset.status, challengeId: reset.challenge_id,
+      maskedPhone: maskPhone(reset.phone),
+      expiresIn: Math.max(0, Math.floor((Date.parse(reset.expires_at) - Date.now()) / 1000)) || 0,
+      retryAfter: reset.retry_after || 0, remainingSends: reset.remaining_sends || 0
+    };
+    if (reset.status !== 'reserved') return json(result);
+    let channel;
+    try {
+      const provider = String(process.env.SMS_PROVIDER || '').toLowerCase();
+      if (provider === 'unisms' && canUseUniSmsForPhone(reset.phone)) {
+        await sendUniSmsOtp(reset.phone, otp); channel = 'unisms_sms';
+      } else if (provider === 'infobip' && canUseInfobipForPhone(reset.phone)) {
+        await sendInfobipOtp(reset.phone, otp); channel = 'infobip_sms';
+      } else if (process.env.DEMO_MODE === 'true' && !provider) {
+        channel = 'simulated_sms';
+      } else {
+        throw new Error('SMS provider is not available for this recipient.');
       }
-    } else if (smsProvider === 'infobip') {
-      deliveryError = process.env.INFOBIP_TRIAL_MODE === 'true' ? 'The Infobip trial can send only to its verified test number.' : 'Infobip SMS is not fully configured.';
-    } else if (smsProvider === 'unisms') {
-      deliveryError = process.env.UNISMS_TRIAL_MODE === 'true' ? 'The UniSMS trial is limited to its configured verified test number.' : 'UniSMS is not fully configured.';
+    } catch {
+      await update('otp_challenges', { id: `eq.${reset.challenge_id}` }, { delivery_status: 'failed' });
+      return json({ ...result, status: 'failed' });
     }
-    if (!storedVerification) {
-      // A verified/eligible provider number must never silently fall back to a
-      // browser-visible demonstration OTP. That makes a provider outage look
-      // like a successful real delivery and weakens the reset demonstration.
-      if (attemptedRealSms) throw new HttpError(503, deliveryError || 'The SMS could not be delivered. Please try again later.');
-      if (process.env.DEMO_MODE !== 'true') throw new HttpError(503, deliveryError || 'The phone verification service is unavailable.');
-      otp = randomOtp();
-      storedVerification = otpDigest(otp);
-    }
-    const challenges = await insert(
-      'otp_challenges',
-      {
-        reset_token_id: reset.reset_token_id,
-        student_id: reset.student_id,
-        otp_hash: storedVerification,
-        expires_at: expiresIn(5 * 60)
-      },
-      'id'
-    );
-    await insert(
-      'audit_events',
-      {
-        student_id: reset.student_id,
-        event_type: 'otp_issued',
-        details: {
-          channel,
-          ...(deliveryError ? { fallback_reason: deliveryError } : {})
-        }
-      },
-      'id'
-    );
-
-    return json({
-      challengeId: challenges[0].id,
-      maskedPhone: maskPhone(normalizeInfobipPhone(phone)),
-      expiresIn: 300,
-      delivery: channel,
-      ...(channel === 'simulated_sms' && process.env.DEMO_MODE === 'true' ? { demoOtp: otp } : {})
-    });
-  } catch (error) {
-    return handleError(error);
-  }
+    await update('otp_challenges', { id: `eq.${reset.challenge_id}` }, { delivery_status: 'sent', delivery_channel: channel });
+    // Audit failure must not turn an accepted SMS into a second send request.
+    await insert('audit_events', { student_id: reset.student_id, event_type: 'otp_issued', details: { channel } }, 'id')
+      .catch(() => console.error('OTP audit event could not be recorded.'));
+    return json({ ...result, status: 'active', sent: true,
+      expiresIn: Math.max(0, Math.floor((Date.parse(reset.expires_at) - Date.now()) / 1000)),
+      ...(channel === 'simulated_sms' ? { demoOtp: otp } : {}) });
+  } catch (error) { return handleError(error); }
 }

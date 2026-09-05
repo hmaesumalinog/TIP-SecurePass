@@ -8,6 +8,7 @@ Run the following files in the Supabase SQL Editor in this exact order:
 
 1. `setup/01-core-schema.sql`
 2. `setup/02-administrator-schema.sql`
+3. `migrations/20260905071805_resumable_otp_delivery.sql`
 
 The core script creates the student, sign-in-attempt, reset, OTP, grant, and audit structures. It deliberately creates no student credential; add students through the authenticated administrator portal.
 
@@ -20,7 +21,7 @@ Use these only when their feature is missing from an existing database:
 - `upgrades/student-portal-auth.sql`
 - `upgrades/temporary-password-onboarding.sql`
 
-After the earlier applicable upgrades, apply the timestamped file in `migrations/`. The current hardening migration adds atomic OTP attempt handling, sign-in throttling records, reset-code issuance limits, exact student-number password checks, and dashboard aggregates.
+After the earlier applicable upgrades, apply the timestamped files in `migrations/` in filename order. The latest migration adds resumable OTP delivery: refreshes reuse an active challenge, pending sends are visible, and only an explicit resend can replace a code after the cooldown. Failed sends count toward the limit because a provider timeout can still result in delivery.
 
 Review each script and back up important data before running an upgrade. Do not execute an upgrade merely because it appears in this folder; confirm whether its schema changes are already present.
 

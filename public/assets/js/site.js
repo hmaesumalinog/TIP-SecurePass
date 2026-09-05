@@ -37,10 +37,13 @@
       throw new Error(NETWORK_ERROR);
     }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok)
-      throw new Error(
+    if (!response.ok) {
+      const error = new Error(
         data.message || "We could not complete that request. Please try again.",
       );
+      error.status = response.status;
+      throw error;
+    }
     return data;
   }
 
@@ -238,6 +241,7 @@
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (submit.disabled) return;
       error.textContent = "";
       email.removeAttribute("aria-invalid");
       if (!email.validity.valid) {
@@ -254,6 +258,7 @@
         $("#request-view").classList.add("hidden");
         $("#sent-view").classList.remove("hidden");
         $("#sent-view").focus();
+        startEmailCooldown();
       } catch (requestError) {
         error.textContent = requestError.message;
       } finally {
@@ -266,6 +271,34 @@
       $("#request-view").classList.remove("hidden");
       email.focus();
     });
+    let emailTimer;
+    function startEmailCooldown() {
+      clearTimeout(emailTimer);
+      const deadline = Date.now() + 60000;
+      const tick = () => {
+        const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        $("#resend-email").disabled = seconds > 0;
+        $("#resend-email").textContent = seconds
+          ? "Resend email in " + seconds + " seconds"
+          : "Resend email";
+        if (seconds) emailTimer = setTimeout(tick, 1000);
+      };
+      tick();
+    }
+    $("#resend-email").addEventListener("click", async () => {
+      const button = $("#resend-email");
+      if (button.disabled) return;
+      button.disabled = true;
+      try {
+        await postJson("/api/request-reset", { email: email.value.trim() });
+        $("#email-status").textContent =
+          "If this email matches an account, another link is on its way. Open the newest message.";
+      } catch (error) {
+        $("#email-status").textContent = error.message;
+      } finally {
+        startEmailCooldown();
+      }
+    });
   }
 
   function initReset() {
@@ -277,6 +310,7 @@
     const show = (view) => {
       [
         "loading-view",
+        "recovery-error-view",
         "invalid-view",
         "otp-view",
         "password-view",
@@ -286,14 +320,28 @@
       });
     };
 
-    async function start() {
+    let requestBusy = false;
+    let timerId;
+    let pollId;
+    let resendAt = 0;
+    let remainingSends = 3;
+    const codeInput = $("#otp-1");
+    const otpInputs = [codeInput];
+    const resendButton = $("#resend-code");
+    const statusText = $("#delivery-status");
+    const recoveryError = (title, message) => {
+      $("#recovery-error-title").textContent = title;
+      $("#recovery-error-message").textContent = message;
+      show("recovery-error-view");
+    };
+    async function start(resend = false) {
+      if (requestBusy) return;
       if (preview) {
         state.challengeId = "preview-challenge";
         $("#masked-phone").textContent = "+63 ••• ••• 4821";
         $("#demo-otp-code").textContent = "482106";
         $("#demo-sms").classList.remove("hidden");
         show("otp-view");
-        $("#otp-1").focus();
         startTimer();
         return;
       }
@@ -301,53 +349,117 @@
         show("invalid-view");
         return;
       }
+      requestBusy = true;
+      resendButton.disabled = true;
+      clearTimeout(pollId);
       try {
-        const data = await postJson("/api/start-reset", { token: rawToken });
-        state.challengeId = data.challengeId;
+        const data = await postJson("/api/start-reset", {
+          token: rawToken,
+          resend,
+          previousChallengeId: state.challengeId || null,
+        });
+        state.challengeId = data.challengeId || state.challengeId;
+        resendAt = Date.now() + (data.retryAfter || 0) * 1000;
+        remainingSends = data.remainingSends || 0;
         $("#masked-phone").textContent =
           data.maskedPhone || "your registered phone";
-        if (data.demoOtp) {
-          $("#demo-otp-code").textContent = data.demoOtp;
-          $("#demo-sms").classList.remove("hidden");
+        if (data.status === "verified") {
+          recoveryError(
+            "Your phone is already verified",
+            "Continue in the tab where you verified your code. If that tab was closed, request a new reset link.",
+          );
+          return;
+        }
+        if (data.status === "limited" || data.status === "locked") {
+          recoveryError(
+            "Request a new reset link",
+            "This recovery attempt reached its code or verification limit.",
+          );
+          return;
         }
         show("otp-view");
-        $("#otp-1").focus();
-        startTimer(data.expiresIn || 300);
-      } catch (_) {
-        show("invalid-view");
+        $("#otp-form").classList.remove("hidden");
+        $("#otp-expired").classList.add("hidden");
+        $("#otp-view .form-intro").classList.remove("hidden");
+        $("#otp-error").textContent = "";
+        if (data.status === "active") {
+          $("#otp-view h2").textContent = "Enter your phone code";
+          codeInput.disabled = false;
+          $('button[type="submit"]', $("#otp-form")).disabled = false;
+          if (data.sent) codeInput.value = "";
+          statusText.textContent = data.sent
+            ? resend
+              ? "A new code was sent. Use the newest SMS."
+              : "Your code was sent. It may take a moment to arrive."
+            : "Your code is still active. Use the SMS already sent to your phone.";
+          if (data.demoOtp) {
+            $("#demo-otp-code").textContent = data.demoOtp;
+            $("#demo-sms").classList.remove("hidden");
+          }
+          startTimer(data.expiresIn);
+        } else {
+          const canEnterDelayedCode =
+            data.status === "failed" && data.expiresIn > 0;
+          codeInput.disabled = !canEnterDelayedCode;
+          $('button[type="submit"]', $("#otp-form")).disabled =
+            !canEnterDelayedCode;
+          $("#otp-view .form-intro").classList.add("hidden");
+          $("#otp-view h2").textContent =
+            data.status === "pending"
+              ? "Sending your phone code"
+              : "Request another code";
+          statusText.textContent =
+            data.status === "pending"
+              ? "Your code is being sent. Please wait; there is no need to reopen the link."
+              : data.status === "expired"
+                ? "Your code expired. Request a new code below."
+                : "We could not confirm SMS delivery. If a code arrives, you can enter it here. Otherwise, try resending.";
+          if (!remainingSends && data.status !== "pending") {
+            statusText.textContent +=
+              " The send limit is reached; request a new reset link if needed.";
+          }
+          startTimer(canEnterDelayedCode ? data.expiresIn : 0);
+          if (data.status === "pending")
+            pollId = setTimeout(() => start(), 2500);
+        }
+      } catch (error) {
+        if (error.status === 410 || error.status === 400) show("invalid-view");
+        else recoveryError("We couldn’t continue yet", error.message);
+      } finally {
+        requestBusy = false;
+        updateResend();
       }
     }
-
-    const otpInputs = $$("#otp-grid input");
-    otpInputs.forEach((input, index) => {
-      input.addEventListener("input", () => {
-        input.value = input.value.replace(/\D/g, "").slice(-1);
-        if (input.value && otpInputs[index + 1]) otpInputs[index + 1].focus();
-      });
-      input.addEventListener("keydown", (event) => {
-        if (event.key === "Backspace" && !input.value && otpInputs[index - 1])
-          otpInputs[index - 1].focus();
-      });
-      input.addEventListener("paste", (event) => {
-        const digits = event.clipboardData
-          .getData("text")
-          .replace(/\D/g, "")
-          .slice(0, 6);
-        if (digits.length === 6) {
-          event.preventDefault();
-          digits.split("").forEach((digit, digitIndex) => {
-            otpInputs[digitIndex].value = digit;
-          });
-          otpInputs[5].focus();
-        }
-      });
+    function updateResend() {
+      const seconds = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
+      resendButton.disabled = requestBusy || seconds > 0 || remainingSends <= 0;
+      resendButton.textContent =
+        remainingSends <= 0
+          ? "Code limit reached"
+          : seconds
+            ? "Resend available in " + seconds + " seconds"
+            : "Resend code";
+    }
+    resendButton.addEventListener("click", () => start(true));
+    $("#retry-reset").addEventListener("click", () => start());
+    codeInput.addEventListener("input", () => {
+      codeInput.value = codeInput.value.replace(/\\D/g, "").slice(0, 6);
+      $("#otp-error").textContent = "";
+    });
+    codeInput.addEventListener("paste", (event) => {
+      event.preventDefault();
+      codeInput.value = event.clipboardData
+        .getData("text")
+        .replace(/\\D/g, "")
+        .slice(0, 6);
     });
 
     $("#otp-form").addEventListener("submit", async (event) => {
       event.preventDefault();
-      const code = otpInputs.map((input) => input.value).join("");
+      const code = codeInput.value;
       const error = $("#otp-error");
       const button = $('button[type="submit"]', event.currentTarget);
+      if (button.disabled) return;
       error.textContent = "";
       if (code.length !== 6) {
         error.textContent = "Enter all 6 digits from the phone message.";
@@ -369,6 +481,9 @@
           });
           state.grantToken = data.grantToken;
         }
+        clearTimeout(timerId);
+        clearTimeout(pollId);
+        startPasswordTimer();
         $("#otp-step").classList.remove("active");
         $("#otp-step").classList.add("done");
         $("#otp-step .step-dot").textContent = "✓";
@@ -392,6 +507,7 @@
       event.preventDefault();
       const error = $("#password-error");
       const button = $('button[type="submit"]', event.currentTarget);
+      if (button.disabled) return;
       error.textContent = "";
       const rules = passwordRules(newPassword.value);
       if (!Object.values(rules).every(Boolean)) {
@@ -415,6 +531,10 @@
             grantToken: state.grantToken,
             password: newPassword.value,
           });
+        clearTimeout(timerId);
+        $("#password-step").classList.remove("active");
+        $("#password-step").classList.add("done");
+        $("#password-step .step-dot").textContent = "✓";
         show("complete-view");
         $("#complete-view").focus();
         history.replaceState({}, "", "reset.html?complete=1");
@@ -447,43 +567,58 @@
     }
 
     function startTimer(seconds = 300) {
-      const timer = $("#otp-timer");
-      // Track a deadline rather than counting down a variable: background tabs
-      // throttle timers, so a decrementing counter drifts away from real time.
+      clearTimeout(timerId);
       const deadline = Date.now() + seconds * 1000;
       const tick = () => {
         const remaining = Math.max(
           0,
-          Math.round((deadline - Date.now()) / 1000),
+          Math.ceil((deadline - Date.now()) / 1000),
         );
-        if (remaining === 0) {
-          timer.textContent = "Expired";
-          expireChallenge();
-          return;
+        $("#otp-timer").textContent = remaining
+          ? Math.floor(remaining / 60)
+              .toString()
+              .padStart(2, "0") +
+            ":" +
+            (remaining % 60).toString().padStart(2, "0")
+          : "Expired";
+        if (!remaining && !codeInput.disabled) {
+          codeInput.disabled = true;
+          $('button[type="submit"]', $("#otp-form")).disabled = true;
+          statusText.textContent =
+            "Your code expired. Request another code below.";
         }
-        const minutes = Math.floor(remaining / 60)
-          .toString()
-          .padStart(2, "0");
-        const remainder = (remaining % 60).toString().padStart(2, "0");
-        timer.textContent = `${minutes}:${remainder}`;
-        window.setTimeout(tick, 1000);
+        updateResend();
+        timerId = setTimeout(tick, 1000);
       };
       tick();
     }
-
-    function expireChallenge() {
-      otpInputs.forEach((input) => {
-        input.value = "";
-        input.disabled = true;
-      });
-      // The heading and intro still promise a live code; correct them so the
-      // view does not contradict the expiry notice.
-      $("#otp-view h2").textContent = "Your code expired";
-      $("#otp-view .form-intro").classList.add("hidden");
-      $("#otp-form").classList.add("hidden");
-      $("#otp-expired").classList.remove("hidden");
-      $("#otp-expired").focus();
+    function startPasswordTimer() {
+      const deadline = Date.now() + 600000;
+      const tick = () => {
+        const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        $("#password-time").textContent =
+          "Finish within " + Math.ceil(seconds / 60) + " minutes.";
+        if (!seconds) {
+          recoveryError(
+            "Your verification session expired",
+            "Request a new reset link to continue securely.",
+          );
+          return;
+        }
+        timerId = setTimeout(tick, 1000);
+      };
+      tick();
     }
+    const matchHint = $("#password-match");
+    const updateMatch = () => {
+      matchHint.textContent = !confirmPassword.value
+        ? ""
+        : newPassword.value === confirmPassword.value
+          ? "Passwords match."
+          : "Passwords do not match yet.";
+    };
+    confirmPassword.addEventListener("input", updateMatch);
+    newPassword.addEventListener("input", updateMatch);
 
     start();
   }

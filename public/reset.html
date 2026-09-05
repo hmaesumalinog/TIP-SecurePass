@@ -9,8 +9,8 @@
     />
     <title>Secure Password Reset | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260902" />
-    <script src="assets/js/site.js?v=20260902" defer></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=20260905" />
+    <script src="assets/js/site.js?v=20260905" defer></script>
   </head>
   <body data-page="reset">
     <div class="top-strip"></div>
@@ -83,6 +83,25 @@
               <p class="form-intro">Checking your secure link…</p>
             </div>
 
+            <div id="recovery-error-view" class="hidden">
+              <h2 id="recovery-error-title"></h2>
+              <p
+                class="form-intro"
+                id="recovery-error-message"
+                role="alert"
+              ></p>
+              <div class="stack">
+                <button class="button full" type="button" id="retry-reset">
+                  Try again
+                </button>
+                <a class="button secondary full" href="forgot.html"
+                  >Request a new reset link</a
+                >
+                <a class="text-button centered" href="index.html"
+                  >Return to sign in</a
+                >
+              </div>
+            </div>
             <div id="invalid-view" class="hidden">
               <h2>This link can’t be used</h2>
               <p class="form-intro">
@@ -113,52 +132,22 @@
                 <strong id="masked-phone">your registered phone</strong>. The
                 code expires in 5 minutes.
               </p>
+              <p id="delivery-status" class="hint" role="status"></p>
               <form class="stack" id="otp-form" novalidate>
                 <div class="field">
                   <label for="otp-1">Verification code</label>
-                  <div class="otp-grid" id="otp-grid">
+                  <div class="otp-entry">
                     <input
                       id="otp-1"
+                      name="code"
                       type="text"
-                      aria-label="Digit 1"
+                      aria-label="Six-digit verification code"
                       inputmode="numeric"
                       autocomplete="one-time-code"
-                      maxlength="1"
-                      required
-                    />
-                    <input
-                      type="text"
-                      aria-label="Digit 2"
-                      inputmode="numeric"
-                      maxlength="1"
-                      required
-                    />
-                    <input
-                      type="text"
-                      aria-label="Digit 3"
-                      inputmode="numeric"
-                      maxlength="1"
-                      required
-                    />
-                    <input
-                      type="text"
-                      aria-label="Digit 4"
-                      inputmode="numeric"
-                      maxlength="1"
-                      required
-                    />
-                    <input
-                      type="text"
-                      aria-label="Digit 5"
-                      inputmode="numeric"
-                      maxlength="1"
-                      required
-                    />
-                    <input
-                      type="text"
-                      aria-label="Digit 6"
-                      inputmode="numeric"
-                      maxlength="1"
+                      maxlength="6"
+                      pattern="[0-9]{6}"
+                      placeholder="000000"
+                      aria-describedby="delivery-status otp-error"
                       required
                     />
                   </div>
@@ -186,6 +175,19 @@
                 >
               </form>
 
+              <div class="stack">
+                <button
+                  class="button secondary full"
+                  type="button"
+                  id="resend-code"
+                  disabled
+                >
+                  Resend code
+                </button>
+                <a class="text-button centered" href="forgot.html"
+                  >Request a new reset link</a
+                >
+              </div>
               <div class="stack hidden" id="otp-expired" tabindex="-1">
                 <div class="notice error">
                   <span class="notice-icon">!</span>
@@ -210,6 +212,8 @@
                 Use a unique passphrase you don’t use for email or other
                 services.
               </p>
+              <p id="password-time" class="hint" role="status"></p>
+              <p id="password-match" class="hint" role="status"></p>
               <form class="stack" id="password-form" novalidate>
                 <div class="field">
                   <label for="new-password">New password</label>
