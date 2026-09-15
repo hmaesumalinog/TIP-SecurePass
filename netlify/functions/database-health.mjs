@@ -7,7 +7,7 @@ export default async function databaseHealth() {
   try {
     // HEAD executes a bounded database read without returning student records.
     // Do not request a count: that would add unnecessary database work.
-    await supabase('students?select=id&limit=1', {
+    await supabase('demo_students?select=id&limit=1', {
       method: 'HEAD',
       signal: AbortSignal.timeout(10000)
     });

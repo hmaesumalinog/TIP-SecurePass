@@ -5,10 +5,10 @@ check every six hours on the published Netlify production deployment. It runs at
 00:17, 06:17, 12:17 and 18:17 UTC (08:17, 14:17, 20:17 and 02:17 Philippine time).
 
 The check uses the existing server-side Supabase environment variables. It sends
-a HEAD request selecting only `id`, limited to one student row, without requesting
+a HEAD request to `demo_students` selecting only `id`, limited to one row, without requesting
 a count. No student records are returned, stored or logged. It sends no email or
 SMS, makes no database writes and uses no browser polling or Realtime connection.
-An empty students table is also a successful health check.
+An empty `demo_students` table is also a successful health check.
 
 There are approximately 120 invocations per 30 days. Response bodies contribute
 zero bytes; HTTP headers, transport overhead and normal platform usage still

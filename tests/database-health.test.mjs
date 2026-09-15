@@ -18,7 +18,7 @@ test('health check performs one bounded HEAD request without retrieving records'
     else process.env.SUPABASE_SECRET_KEY = oldKey;
   });
   const fetchMock = t.mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, 'https://health-test.supabase.co/rest/v1/students?select=id&limit=1');
+    assert.equal(url, 'https://health-test.supabase.co/rest/v1/demo_students?select=id&limit=1');
     assert.equal(options.method, 'HEAD');
     assert.equal(options.headers.get('Prefer'), null);
     assert.equal(options.headers.get('apikey'), 'sb_secret_test');
