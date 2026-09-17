@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Security & recovery | TIP SecurePass</title>
+    <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/recovery.css?v=20260917" />
+    <script src="assets/js/recovery.js?v=20260917" defer></script>
+  </head>
+  <body data-recovery-page="security">
+    <header class="sr-header">
+      <a class="sr-brand" href="index.html"
+        ><img
+          src="assets/images/brand-mark.svg"
+          alt=""
+          width="32"
+          height="40"
+        />TIP SecurePass</a
+      >
+      <nav aria-label="Portal navigation">
+        <a href="portal.html">Dashboard</a><a href="profile.html">Profile</a
+        ><a href="security.html" aria-current="page">Security & recovery</a>
+      </nav>
+    </header>
+    <main class="sr-main">
+      <h1>Security & recovery</h1>
+      <div
+        id="sr-message"
+        role="status"
+        aria-live="polite"
+        tabindex="-1"
+        hidden
+      ></div>
+      <p class="sr-lead">
+        Prepare another way into your account before you need it.
+      </p>
+      <div id="security-status" class="sr-notice" role="status">
+        Checking your recovery settings…
+      </div>
+      <section class="sr-card">
+        <h2>Verify a security change</h2>
+        <p>
+          Enter your current password for every change. When replacing an
+          existing authenticator or backup codes, also enter a current
+          authenticator code.
+        </p>
+        <label for="current-password">Current password</label
+        ><input
+          id="current-password"
+          type="password"
+          autocomplete="current-password"
+          maxlength="128"
+        /><label for="factor-code">Verification code</label
+        ><input
+          id="factor-code"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="6"
+          pattern="[0-9]{6}"
+          aria-describedby="factor-help"
+        /><small id="factor-help"
+          >Use your authenticator code, or the SMS code when verifying your
+          phone.</small
+        >
+      </section>
+      <div class="sr-grid">
+        <section class="sr-card">
+          <h2>Authenticator app</h2>
+          <p>
+            Use a compatible authenticator app. This is a recovery method; it
+            does not change your normal sign-in.
+          </p>
+          <button data-action="begin">Set up or replace authenticator</button>
+          <div id="enrollment" hidden>
+            <img
+              id="qr"
+              alt="Authenticator enrollment QR code"
+              width="240"
+              height="240"
+            />
+            <p>Or enter this setup key manually:</p>
+            <code id="setup-key"></code>
+            <p>
+              Enter the app’s six-digit code above, then confirm within 10
+              minutes. Save the backup codes shown next.
+            </p>
+            <button data-action="confirm">Confirm authenticator</button>
+          </div>
+          <button class="sr-secondary" data-action="disable">
+            Remove authenticator and backup codes
+          </button>
+        </section>
+        <section class="sr-card">
+          <h2>Registered phone</h2>
+          <p>
+            Verify the phone already on your student record. This page cannot
+            change the phone number.
+          </p>
+          <button data-action="phone_start">Send verification SMS</button>
+          <p>Enter the received code in “Verification code” above.</p>
+          <button class="sr-secondary" data-action="phone_confirm">
+            Verify phone
+          </button>
+          <h2>Backup recovery codes</h2>
+          <p>
+            Generate ten single-use codes. New codes replace all previous codes.
+            Without an authenticator, request a fresh SMS and enter that code
+            before generating.
+          </p>
+          <button data-action="codes">Replace backup codes</button>
+        </section>
+      </div>
+      <section id="backup-output" class="sr-card" hidden>
+        <h2>Save these recovery codes now</h2>
+        <p>
+          Each code works once with your enrolled authenticator or verified
+          phone. Keep this copy separate from your phone and email. The website
+          cannot display these codes again.
+        </p>
+        <pre id="backup-codes"></pre>
+        <div class="sr-actions">
+          <button id="download-codes">Download codes</button
+          ><button class="sr-secondary" id="copy-codes">Copy codes</button
+          ><button class="sr-secondary" id="print-codes">Print codes</button
+          ><button class="sr-secondary" id="saved-codes">
+            I saved my codes
+          </button>
+        </div>
+      </section>
+    </main>
+    <footer>
+      Academic demonstration · Not the official TIP student portal
+    </footer>
+  </body>
+</html>

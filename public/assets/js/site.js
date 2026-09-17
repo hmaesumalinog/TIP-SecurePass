@@ -192,11 +192,11 @@
         await postJson("/api/complete-first-login", {
           password: firstLoginPassword.value,
         });
-        window.location.assign("portal.html");
+        window.location.assign("security.html?onboarding=1");
       } catch (setupError) {
         firstLoginError.textContent = setupError.message;
       } finally {
-        setButtonBusy(button, false, "Save password and open portal");
+        setButtonBusy(button, false, "Save password and secure account");
       }
     });
   }

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Request account recovery help | TIP SecurePass</title>
+    <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/recovery.css?v=20260917" />
+    <script src="assets/js/recovery.js?v=20260917" defer></script>
+  </head>
+  <body data-recovery-page="help">
+    <header class="sr-header">
+      <a class="sr-brand" href="index.html"
+        ><img
+          src="assets/images/brand-mark.svg"
+          alt=""
+          width="32"
+          height="40"
+        />TIP SecurePass</a
+      >
+      <nav aria-label="Portal navigation">
+        <a href="index.html">Sign in</a><a href="forgot.html">Email recovery</a>
+      </nav>
+    </header>
+    <main class="sr-main">
+      <h1>Request account recovery help</h1>
+      <div
+        id="sr-message"
+        role="status"
+        aria-live="polite"
+        tabindex="-1"
+        hidden
+      ></div>
+      <p class="sr-lead">
+        No access to your enrolled recovery methods? Ask the demonstration
+        administrator to review your situation remotely.
+      </p>
+      <div class="sr-notice">
+        This form does not reset your password. Do not submit passwords, OTPs,
+        recovery codes, identity documents, or sensitive personal information. A
+        reply is not guaranteed immediately.
+      </div>
+      <form id="help-form" class="sr-card">
+        <label for="help-number">Student number</label
+        ><input
+          id="help-number"
+          name="studentNumber"
+          inputmode="numeric"
+          pattern="[0-9]{7}"
+          maxlength="7"
+          required
+        /><label for="help-contact"
+          >How can the administrator contact you?</label
+        ><input
+          id="help-contact"
+          name="contact"
+          minlength="5"
+          maxlength="254"
+          required
+          autocomplete="email"
+        /><small
+          >This is an unverified contact for communication only. It will not
+          replace your account email.</small
+        ><label for="help-message">What access have you lost?</label
+        ><textarea
+          id="help-message"
+          name="message"
+          minlength="10"
+          maxlength="1000"
+          rows="5"
+          required
+        ></textarea
+        ><button>Submit for review</button>
+      </form>
+    </main>
+    <footer>
+      Academic demonstration · Not the official TIP student portal
+    </footer>
+  </body>
+</html>

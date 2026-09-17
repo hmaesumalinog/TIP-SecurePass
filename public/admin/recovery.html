@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Recovery assistance requests | TIP SecurePass</title>
+    <link
+      rel="icon"
+      href="../assets/images/brand-mark.svg"
+      type="image/svg+xml"
+    />
+    <link rel="stylesheet" href="../assets/css/recovery.css?v=20260917" />
+    <script src="../assets/js/recovery.js?v=20260917" defer></script>
+  </head>
+  <body data-recovery-page="admin-recovery">
+    <header class="sr-header">
+      <a class="sr-brand" href="../index.html"
+        ><img
+          src="../assets/images/brand-mark.svg"
+          alt=""
+          width="32"
+          height="40"
+        />TIP SecurePass</a
+      >
+      <nav aria-label="Portal navigation">
+        <a href="dashboard.html">Dashboard</a
+        ><a href="students.html">Students</a><a href="audit.html">Audit</a>
+      </nav>
+    </header>
+    <main class="sr-main">
+      <h1>Recovery assistance requests</h1>
+      <div
+        id="sr-message"
+        role="status"
+        aria-live="polite"
+        tabindex="-1"
+        hidden
+      ></div>
+      <p class="sr-lead">
+        Review remote assistance requests. Submitted contact details and claims
+        are unverified. Never approve account access solely from this form.
+      </p>
+      <div class="sr-notice">
+        Use an established identity-verification process outside this page.
+        Recording a review does not change credentials or enrolled factors.
+        “Resolved” means you have separately completed the approved support
+        process.
+      </div>
+      <button id="refresh-requests">Refresh requests</button>
+      <div id="help-requests"></div>
+    </main>
+    <footer>
+      Academic demonstration · Not the official TIP student portal
+    </footer>
+  </body>
+</html>

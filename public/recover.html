@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Recover without email | TIP SecurePass</title>
+    <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/recovery.css?v=20260917" />
+    <script src="assets/js/recovery.js?v=20260917" defer></script>
+  </head>
+  <body data-recovery-page="recover">
+    <header class="sr-header">
+      <a class="sr-brand" href="index.html"
+        ><img
+          src="assets/images/brand-mark.svg"
+          alt=""
+          width="32"
+          height="40"
+        />TIP SecurePass</a
+      >
+      <nav aria-label="Portal navigation">
+        <a href="index.html">Sign in</a><a href="forgot.html">Email recovery</a>
+      </nav>
+    </header>
+    <main class="sr-main">
+      <h1>Recover without email</h1>
+      <div
+        id="sr-message"
+        role="status"
+        aria-live="polite"
+        tabindex="-1"
+        hidden
+      ></div>
+      <p class="sr-lead">
+        Use a recovery method you enrolled before losing access. You need one
+        saved backup code and your authenticator or previously verified phone.
+      </p>
+      <form id="alternate-start" class="sr-card">
+        <label for="student-number">Student number</label
+        ><input
+          id="student-number"
+          name="studentNumber"
+          inputmode="numeric"
+          pattern="[0-9]{7}"
+          minlength="7"
+          maxlength="7"
+          required
+          autocomplete="username"
+        /><label for="backup-code">Backup recovery code</label
+        ><input
+          id="backup-code"
+          name="backupCode"
+          maxlength="80"
+          required
+          autocomplete="off"
+          spellcheck="false"
+        /><label for="recovery-method">Additional verification</label
+        ><select id="recovery-method" name="method">
+          <option value="authenticator">Authenticator app</option>
+          <option value="sms">Previously verified phone (SMS)</option></select
+        ><button>Continue</button>
+      </form>
+      <form id="alternate-verify" class="sr-card" hidden>
+        <h2>Verify ownership</h2>
+        <p id="verification-help"></p>
+        <label for="recovery-otp">Six-digit verification code</label
+        ><input
+          id="recovery-otp"
+          name="code"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          required
+        /><button>Verify code</button
+        ><a href="recover.html">Start a new request</a>
+      </form>
+      <form id="alternate-complete" class="sr-card" hidden>
+        <h2>Set a new password</h2>
+        <p>
+          Use 12–128 characters with uppercase, lowercase, a number and symbol.
+          Do not include your student number.
+        </p>
+        <label for="new-password">New password</label
+        ><input
+          id="new-password"
+          name="password"
+          type="password"
+          minlength="12"
+          maxlength="128"
+          autocomplete="new-password"
+          required
+        /><label for="confirm-password">Confirm new password</label
+        ><input
+          id="confirm-password"
+          name="confirmation"
+          type="password"
+          minlength="12"
+          maxlength="128"
+          autocomplete="new-password"
+          required
+        /><button>Save new password</button>
+      </form>
+      <section id="recovery-success" class="sr-card" hidden>
+        <h2>Password updated</h2>
+        <p>
+          Sign in with your new password. Your enrolled recovery methods remain
+          unchanged.
+        </p>
+        <a class="sr-link" href="index.html">Return to sign in</a>
+      </section>
+      <section class="sr-card">
+        <h2>Lost access to every method?</h2>
+        <p>
+          Submit a remote recovery request. An administrator must verify your
+          identity separately. A student number or contact address alone does
+          not prove ownership.
+        </p>
+        <a href="recovery-help.html">Request administrator assistance</a>
+      </section>
+    </main>
+    <footer>
+      Academic demonstration · Not the official TIP student portal
+    </footer>
+  </body>
+</html>

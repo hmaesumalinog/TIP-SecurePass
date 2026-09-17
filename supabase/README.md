@@ -9,6 +9,7 @@ Run the following files in the Supabase SQL Editor in this exact order:
 1. `setup/01-core-schema.sql`
 2. `setup/02-administrator-schema.sql`
 3. `migrations/20260905071805_resumable_otp_delivery.sql`
+4. `migrations/20260917090000_alternate_recovery.sql`
 
 The core script creates the student, sign-in-attempt, reset, OTP, grant, and audit structures. It deliberately creates no student credential; add students through the authenticated administrator portal.
 

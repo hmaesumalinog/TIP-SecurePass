@@ -10,10 +10,14 @@
     "format:check": "prettier --check . --ignore-unknown"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "netlify-cli": "27.4.2",
     "prettier": "3.9.6"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
   }
 }
