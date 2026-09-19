@@ -6,6 +6,7 @@
     csrf = "",
     savedCodes = "",
     dirtyCodes = false;
+  let enrollmentPromptShown = false;
   const message = (text, error = false) => {
     const node = $("#sr-message");
     node.hidden = false;
@@ -52,6 +53,9 @@
     dirtyCodes = true;
     $("#backup-codes").textContent = savedCodes;
     $("#backup-output").hidden = false;
+    const heading = $("#backup-output h2");
+    heading.setAttribute("tabindex", "-1");
+    heading.focus({ preventScroll: true });
     $("#backup-output").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   async function loadSecurity() {
@@ -60,6 +64,20 @@
       throw new Error("Sign in again to view your security settings.");
     $("#security-status").textContent =
       `Authenticator: ${status.enabled ? "enrolled" : "not enrolled"} · Phone: ${status.phoneVerified ? "verified" : "not verified"} · Unused backup codes: ${status.remaining}`;
+    $("#enrollment-required").hidden = status.enabled;
+    $("#portal-ready").hidden = !status.enabled || dirtyCodes;
+    $("[data-action='disable']").hidden = !status.enabled;
+    if (!status.enabled && !enrollmentPromptShown) {
+      enrollmentPromptShown = true;
+      const focusSetup = () => {
+        $("#current-password").scrollIntoView({ block: "center" });
+        $("#current-password").focus({ preventScroll: true });
+      };
+      // The portal prompt already explained the steps. Do not show it twice.
+      if (new URLSearchParams(location.search).get("start") === "1")
+        focusSetup();
+      else window.StudentEnrollment.show({ onSetup: focusSetup });
+    }
   }
   if (page === "security") {
     loadSecurity().catch((error) => {
@@ -98,13 +116,14 @@
             $("#setup-key").textContent = "";
             $("#qr").removeAttribute("src");
           }
-          if (result.codes) showCodes(result.codes);
+          if (action === "disable") enrollmentPromptShown = false;
           message(
             result.message +
               (result.noticeSent === false
                 ? " Your security change succeeded, but its notification email could not be delivered."
                 : ""),
           );
+          if (result.codes) showCodes(result.codes);
           await loadSecurity();
         }),
       ),
@@ -138,6 +157,7 @@
       $("#backup-codes").textContent = "";
       $("#backup-output").hidden = true;
       message("Keep your saved codes safe. They cannot be displayed again.");
+      loadSecurity().catch((error) => message(error.message, true));
     });
     window.addEventListener("beforeunload", (event) => {
       if (dirtyCodes) {

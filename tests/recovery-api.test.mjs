@@ -7,6 +7,7 @@ import { citext } from '@electric-sql/pglite/contrib/citext';
 import settings from '../netlify/functions/security-settings.mjs';
 import recovery from '../netlify/functions/alternate-recovery.mjs';
 import adminRecovery from '../netlify/functions/admin-recovery.mjs';
+import profile from '../netlify/functions/profile.mjs';
 import { createSession, sessionCookie } from '../netlify/functions/_shared/session.mjs';
 import { createAdminSession, adminCookie } from '../netlify/functions/_shared/admin-session.mjs';
 import { totp } from '../netlify/functions/_shared/recovery.mjs';
@@ -55,12 +56,30 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
       return {status:response.status,...await response.json()};
     };
     assert.equal((await call(settings,null,'')).status,401);
+    assert.equal((await call(profile,null,'')).status,401);
+    const setupCookie=sessionCookie(createSession(s,{setupOnly:true})).split(';')[0];
+    assert.equal((await call(profile,null,setupCookie)).status,401);
+    const blocked=await call(profile,null);
+    assert.equal(blocked.status,403);
+    assert.equal(blocked.code,'AUTHENTICATOR_SETUP_REQUIRED');
+    assert.equal(blocked.student,undefined,'Unenrolled student profile must not be disclosed');
     assert.equal((await call(settings,{action:'begin',password:'Original!Password123'},cookie,{Origin:'https://attacker.invalid'})).status,403);
     const begin=await call(settings,{action:'begin',password:'Original!Password123'});
     assert.match(begin.qr,/^data:image\/png;base64,/);assert.match(begin.secret,/^[A-Z2-7]{32}$/);
+    assert.equal((await call(profile,null)).status,403,'Pending enrollment is not confirmed enrollment');
     const step=Math.floor(Date.now()/30000);
     const enrolled=await call(settings,{action:'confirm',password:'Original!Password123',code:totp(begin.secret,step)});
     assert.equal(enrolled.codes.length,10);assert.equal(emailCount,1);
+    const allowed=await call(profile,null);
+    assert.equal(allowed.status,200);
+    assert.equal(allowed.student.studentNumber,'7654333');
+    assert.equal(allowed.secret,undefined);
+    // A removed authenticator or SMS-only enrollment must require setup again.
+    const confirmedSecret=(await db.query('select secret from student_recovery where student_id=$1',[s.id])).rows[0].secret;
+    await db.query('update student_recovery set secret=null,phone_verified=$2 where student_id=$1',[s.id,'+639000000000']);
+    assert.equal((await call(profile,null)).status,403,'Verified phone alone does not unlock the portal');
+    await db.query('update student_recovery set secret=$2 where student_id=$1',[s.id,confirmedSecret]);
+    assert.equal((await call(profile,null)).status,200);
     const start=await call(recovery,{action:'start',studentNumber:'7654333',backupCode:enrolled.codes[0],method:'authenticator'},'');
     assert.equal(start.token.length,43);
     // The enrollment step is already consumed; next adjacent valid time step is accepted once.
@@ -69,6 +88,7 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     assert.equal((await call(recovery,{action:'complete',token:start.token,password:'NewStrong!Password123'},'')).status,200);
     assert.equal((await call(recovery,{action:'complete',token:start.token,password:'NewStrong!Password123'},'')).status,400);
     assert.equal((await call(settings,null)).status,401);
+    assert.equal((await call(profile,null)).status,401,'Password change revokes old profile sessions');
     assert.equal(smsCount,0);assert.equal(emailCount,2);
     const unknown=await call(recovery,{action:'start',studentNumber:'1111111',backupCode:'wrong',method:'authenticator'},'');
     assert.equal(unknown.message,start.message);assert.equal(unknown.token.length,start.token.length);

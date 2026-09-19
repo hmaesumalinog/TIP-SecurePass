@@ -7,7 +7,9 @@
     <title>Security & recovery | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="assets/css/recovery.css?v=20260917" />
-    <script src="assets/js/recovery.js?v=20260917" defer></script>
+    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260919" />
+    <script src="assets/js/enrollment.js?v=20260919" defer></script>
+    <script src="assets/js/recovery.js?v=20260919" defer></script>
   </head>
   <body data-recovery-page="security">
     <header class="sr-header">
@@ -38,6 +40,26 @@
       </p>
       <div id="security-status" class="sr-notice" role="status">
         Checking your recovery settings…
+      </div>
+      <section id="enrollment-required" class="sr-notice" hidden>
+        <h2>Complete your authenticator setup</h2>
+        <p>
+          Authenticator enrollment is required before you can open the dashboard
+          or profile. Enter your current password below, choose “Set up or
+          replace authenticator”, then confirm the code from your app and save
+          your backup codes.
+        </p>
+        <p>
+          Already on your phone? Enter the setup key manually in your
+          authenticator app instead of scanning the QR code. Verifying your
+          phone alone does not complete authenticator enrollment.
+        </p>
+      </section>
+      <div id="portal-ready" class="sr-notice" hidden>
+        <p>
+          Your authenticator is enrolled. Keep your backup codes somewhere safe.
+        </p>
+        <a class="sr-link" href="portal.html">Continue to student portal</a>
       </div>
       <section class="sr-card">
         <h2>Verify a security change</h2>

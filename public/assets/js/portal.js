@@ -22,6 +22,17 @@
       return null;
     }
     const data = await response.json().catch(() => ({}));
+    if (
+      response.status === 403 &&
+      data.code === "AUTHENTICATOR_SETUP_REQUIRED"
+    ) {
+      document.querySelectorAll("[data-loading]").forEach((element) => {
+        element.textContent =
+          "Authenticator setup is required before you can open the portal.";
+      });
+      window.StudentEnrollment.show();
+      return null;
+    }
     if (!response.ok)
       throw new Error(
         data.message || "The student profile could not be loaded.",

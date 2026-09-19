@@ -1,6 +1,7 @@
 import { HttpError, handleError, json } from './_shared/http.mjs';
 import { query, supabase } from './_shared/supabase.mjs';
 import { readSession } from './_shared/session.mjs';
+import { rpc } from './_shared/recovery.mjs';
 
 export default async function handler(request) {
   try {
@@ -18,6 +19,16 @@ export default async function handler(request) {
     const student = result?.[0];
     const passwordVersion = student?.password_changed_at || '';
     if (!student || passwordVersion !== session.pv) throw new HttpError(401, 'Your session has expired. Please sign in again.');
+
+    // Check confirmed database enrollment, not a browser flag or a pending QR key.
+    const recovery = await rpc('recovery_settings', {
+      p_sid: student.id, p_version: session.pv, p_action: 'status', p_data: {}
+    });
+    if (recovery.status !== 'ok') throw new HttpError(503, 'We could not check your recovery settings. Please try again.');
+    if (recovery.enabled !== true) return json({
+      code: 'AUTHENTICATOR_SETUP_REQUIRED',
+      message: 'Set up your authenticator before opening the student portal.'
+    }, 403);
 
     return json({
       student: {

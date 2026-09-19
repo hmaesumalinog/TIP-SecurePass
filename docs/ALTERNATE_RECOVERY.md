@@ -3,8 +3,21 @@
 ## Student journey
 
 After first password setup, the student is directed to `security.html`. Existing
-students can open Security & recovery from the dashboard or profile. Enrollment
-is optional and must happen before access is lost. Normal sign-in remains
+students without a confirmed authenticator see a required setup dialog on the
+dashboard and profile. New students see it after permanent-password setup on the
+security page. The dialog offers setup, sign out, or administrator assistance;
+there is no skip or “remind me later” option. The profile API returns HTTP 403
+with `AUTHENTICATOR_SETUP_REQUIRED` until the database confirms enrollment. A
+pending QR key or verified phone does not satisfy this check; database errors do
+not grant portal access. Existing enrolled students are not prompted. Removing
+an authenticator requires reenrollment before the next portal/profile load.
+
+The setup action opens Security & recovery and focuses the current-password
+field. After verification, save the backup codes and choose “I saved my codes”
+to reveal “Continue to student portal”. No additional database migration is needed
+for the required prompt; it uses the existing recovery status procedure.
+
+Enrollment must happen before access is lost. Normal sign-in remains
 password-based: an enrolled authenticator is a recovery factor, not login MFA.
 
 Students can enroll a compatible TOTP authenticator by scanning the QR code or
@@ -69,6 +82,16 @@ embedded PostgreSQL with pgcrypto, not production student records. API integrati
 tests run actual handlers and SQL; only provider delivery is mocked. Crypto tests
 include RFC 6238 vectors. A real phone and authenticator-app smoke test is still
 needed to verify provider delivery and device interoperability for the demo.
+
+For isolated browser QA, run `node tests/helpers/enrollment-preview.mjs` and open
+`http://127.0.0.1:4175/__fixtures`. This local-only server supplies synthetic
+unenrolled/enrolled students and failure states to the real frontend. It never
+contacts Supabase, email, or SMS providers. Its placeholder QR/setup key and
+backup codes cannot be used for real recovery. Use `123456` only inside this
+fixture to preview confirmation. The fixture lives outside Netlify's public
+folder and is not a production endpoint. API tests separately exercise the real
+handlers with embedded PostgreSQL, including unconfirmed enrollment, SMS-only
+students, expired sessions, and denied access on failed status checks.
 
 Inspect `audit_events` for `recovery_*`, `alternate_recovery_verified`, and
 `alternate_password_reset_completed`; staff reviews appear in admin audit events.
