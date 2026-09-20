@@ -22,6 +22,10 @@
       return null;
     }
     const data = await response.json().catch(() => ({}));
+    if (response.status === 403 && data.code === "POLICIES_REQUIRED") {
+      location.replace("security.html?onboarding=1");
+      return null;
+    }
     if (
       response.status === 403 &&
       data.code === "AUTHENTICATOR_SETUP_REQUIRED"
@@ -114,6 +118,7 @@
       text("profile-student-number-copy", student.studentNumber);
       text("profile-email", student.email);
       text("profile-age", student.age);
+      text("profile-birthday", student.birthday);
       text("profile-phone", student.phone);
       text("profile-program", student.program);
       text("profile-program-copy", student.program);

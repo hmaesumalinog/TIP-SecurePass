@@ -187,10 +187,19 @@
         firstLoginConfirm.focus();
         return;
       }
+      if (!$("#first-terms").checked || !$("#first-privacy").checked) {
+        firstLoginError.textContent =
+          "Please read and accept the terms, and acknowledge the privacy notice.";
+        $("#first-terms").focus();
+        return;
+      }
       setButtonBusy(button, true, "Saving permanent password…");
       try {
         await postJson("/api/complete-first-login", {
           password: firstLoginPassword.value,
+          termsAccepted: $("#first-terms").checked,
+          privacyAccepted: $("#first-privacy").checked,
+          policyVersion: "2026-09-20",
         });
         window.location.assign("security.html?onboarding=1");
       } catch (setupError) {

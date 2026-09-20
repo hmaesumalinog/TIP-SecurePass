@@ -57,6 +57,11 @@ reload starts a new recovery flow; unused backup codes remain available.
 
 ## Security controls
 
+The September 20 onboarding update adds student-owned phone entry and a fresh
+authenticator proof before SMS enrollment. Administrators no longer supply phone
+numbers. Read [Administrator and onboarding guide](ADMIN_AND_ONBOARDING.md) for
+policy acknowledgments, reporting, and reviewed assistance.
+
 - Recovery codes contain 128 random bits each and are stored only as keyed hashes.
 - TOTP secrets are AES-256-GCM encrypted, bound to the student ID, with a separate
   HKDF-derived key from the existing server-only APP_PEPPER. Preserve APP_PEPPER

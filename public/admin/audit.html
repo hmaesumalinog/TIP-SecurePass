@@ -4,16 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow,noarchive" />
-    <title>Audit log | TIP SecurePass Admin</title>
+    <title>Security audit log | TIP SecurePass Admin</title>
     <link
       rel="icon"
       href="../assets/images/brand-mark.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260905" />
-    <script src="../assets/js/admin.js?v=20260905" defer></script>
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260920b" />
+    <script src="../assets/js/admin.js?v=20260920b" defer></script>
   </head>
   <body data-admin-page="audit">
+    <a class="admin-skip" href="#admin-main">Skip to content</a>
     <div class="admin-strip"></div>
     <header class="admin-header">
       <a class="admin-brand" href="dashboard.html"
@@ -22,47 +23,105 @@
         ></a
       >
       <nav class="admin-nav" aria-label="Administration">
-        <a href="dashboard.html">Dashboard</a
-        ><a href="students.html">Students</a
-        ><a href="audit.html" aria-current="page">Audit</a
+        <a href="dashboard.html">Security</a><a href="students.html">Students</a
+        ><a href="audit.html" aria-current="page">Audit log</a
         ><a href="recovery.html">Recovery requests</a
         ><button type="button" id="admin-sign-out">Sign out</button>
       </nav>
     </header>
-    <main class="admin-main">
+    <main class="admin-main" id="admin-main">
       <div class="admin-page-heading">
         <div>
+          <p class="admin-kicker">Student access & account safety</p>
           <h1>Security audit log</h1>
-          <p>Read-only student and administrator security events.</p>
+          <p>
+            Understand what happened, which account was involved, and what may
+            need a closer look.
+          </p>
         </div>
-        <span class="admin-live">Automatic data refresh</span>
+        <button class="admin-button secondary" id="refresh-page" type="button">
+          Refresh
+        </button>
       </div>
+      <p
+        id="page-state"
+        class="admin-page-state"
+        role="status"
+        aria-live="polite"
+      >
+        Connecting securely…
+      </p>
+      <div class="admin-toolbar">
+        <label class="admin-search"
+          ><span class="sr-only">Search audit log</span
+          ><input
+            class="admin-input"
+            id="audit-search"
+            type="search"
+            placeholder="Student name, number, or event"
+            maxlength="100"
+            data-filter /></label
+        ><label class="admin-filter"
+          >Activity source<select
+            class="admin-input"
+            id="audit-category"
+            data-filter
+          >
+            <option value="">All activity</option>
+            <option value="student">Student / system</option>
+            <option value="admin">Administration</option>
+          </select></label
+        >
+      </div>
+      <p class="admin-notice">
+        Read-only history. A request is not a completed reset; an email accepted
+        by a provider is not proof it reached an inbox. No passwords, OTPs or
+        recovery secrets are included.
+      </p>
       <section class="admin-card admin-section">
-        <div class="admin-card-head">
-          <h2>Latest activity</h2>
-          <span id="audit-updated">Connecting…</span>
-        </div>
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
               <tr>
-                <th scope="col">Event</th>
-                <th scope="col">Category</th>
-                <th scope="col">Student record</th>
+                <th scope="col">Activity & explanation</th>
+                <th scope="col">Student</th>
+                <th scope="col">Actor / outcome</th>
                 <th scope="col">Time</th>
               </tr>
             </thead>
             <tbody id="audit-rows">
               <tr>
-                <td class="admin-loading-row" colspan="4">
-                  Loading audit events…
-                </td>
+                <td colspan="4" class="admin-loading-row">Loading…</td>
               </tr>
             </tbody>
           </table>
         </div>
+        <div class="admin-pager">
+          <button
+            class="admin-button secondary small"
+            id="previous-page"
+            type="button"
+          >
+            Previous</button
+          ><span id="page-summary" role="status">Loading…</span
+          ><button
+            class="admin-button secondary small"
+            id="next-page"
+            type="button"
+          >
+            Next
+          </button>
+        </div>
       </section>
+      <p class="admin-subtext">
+        Newest events first. Times are shown in your device’s local timezone.
+        “No student linked” can include failed sign-ins and system events.
+      </p>
     </main>
     <div class="admin-toast hidden" id="admin-toast" role="status"></div>
+    <footer class="admin-footer">
+      Academic demonstration · Not the official T.I.P. portal. Security proofs
+      stay private.
+    </footer>
   </body>
 </html>

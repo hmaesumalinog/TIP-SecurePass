@@ -17,7 +17,7 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
   const db=new PGlite({extensions:{pgcrypto,citext}});let smsCode='',smsCount=0,emailCount=0;
   try {
     await db.exec('create role anon; create role authenticated; create role service_role; create schema extensions; create publication supabase_realtime;');
-    for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql']) await db.exec(await readFile(new URL(`../supabase/${file}`,import.meta.url),'utf8'));
+    for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql']) await db.exec(await readFile(new URL(`../supabase/${file}`,import.meta.url),'utf8'));
     t.mock.method(globalThis,'fetch',async(url,options={})=>{
       const parsed=new URL(url),body=options.body?JSON.parse(options.body):{};
       if(parsed.hostname==='api.resend.com'){emailCount++;return Response.json({id:'test-email'});}
@@ -32,10 +32,10 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
           const {rows}=await db.query(sql,entries.map(([,value])=>typeof value==='object' && value!==null?JSON.stringify(value):value));
           return Response.json(rows[0].result);
         }
-        assert.ok(['demo_students','student_recovery','alternate_recovery','recovery_help_requests','admin_accounts','admin_audit_events'].includes(path));
+        assert.ok(['demo_students','student_recovery','alternate_recovery','recovery_help_requests','recovery_request_reviews','admin_accounts','admin_audit_events'].includes(path));
         const params=parsed.searchParams;const select=params.get('select')||'*';assert.match(select,/^[a-z_,*]+$/);
         const values=[];const clauses=[];
-        for(const [key,value] of params){if(['select','limit','order'].includes(key))continue;assert.match(key,/^[a-z_]+$/);assert.ok(value.startsWith('eq.'));values.push(value.slice(3));clauses.push(`${key}=$${values.length}`);}
+        for(const [key,value] of params){if(['select','limit','offset','order'].includes(key))continue;assert.match(key,/^[a-z_]+$/);if(value.startsWith('in.(')){const list=value.slice(4,-1).split(',');const positions=list.map(v=>{values.push(v);return '$'+values.length;});clauses.push(`${key} in (${positions})`);}else{assert.ok(value.startsWith('eq.'));values.push(value.slice(3));clauses.push(`${key}=$${values.length}`);}}
         let sql;
         if(options.method==='POST'){
           const entries=Object.entries(body);entries.forEach(([key])=>assert.match(key,/^[a-z_]+$/));
@@ -50,6 +50,7 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     });
     const s=(await db.query("insert into demo_students(student_number,email,first_name,phone,password_hash,password_changed_at) values('7654333','synthetic@example.invalid','Synthetic','+639000000000',crypt('Original!Password123',gen_salt('bf',4)),now()) returning id,password_changed_at")).rows[0];
     s.password_changed_at=s.password_changed_at.toISOString();
+    await db.query("update demo_students set terms_version='2026-09-20',privacy_version='2026-09-20',policies_accepted_at=now() where id=$1",[s.id]);
     const cookie=sessionCookie(createSession(s)).split(';')[0];
     const call=async(handler,data,auth=cookie,extra={})=>{
       const response=await handler(new Request('https://portal.example.invalid/function',{method:data?'POST':'GET',headers:{'Content-Type':'application/json',Cookie:auth,Origin:'https://portal.example.invalid',...extra},...(data?{body:JSON.stringify(data)}:{})}));
@@ -95,11 +96,12 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     assert.equal(smsCount,0);assert.equal(emailCount,2);
     const unknown=await call(recovery,{action:'start',studentNumber:'1111111',backupCode:'wrong',method:'authenticator'},'');
     assert.equal(unknown.message,start.message);assert.equal(unknown.token.length,start.token.length);
-    // Phone enrollment and the SMS fallback use only the account's existing number.
+    // Students now enter and prove ownership of their own recovery number.
     const changed=(await db.query('select id,password_changed_at from demo_students where id=$1',[s.id])).rows[0];
     changed.password_changed_at=changed.password_changed_at.toISOString();
     const newCookie=sessionCookie(createSession(changed)).split(';')[0];
-    assert.equal((await call(settings,{action:'phone_start',password:'NewStrong!Password123'},newCookie)).status,'ok');
+    await db.query('update student_recovery set last_step=-1 where student_id=$1',[s.id]);
+    assert.equal((await call(settings,{action:'phone_start',password:'NewStrong!Password123',phone:'+639000000000',code:totp(begin.secret,Math.floor(Date.now()/30000))},newCookie)).status,'ok');
     assert.equal(smsCount,1);
     assert.equal((await call(settings,{action:'phone_confirm',password:'NewStrong!Password123',code:smsCode},newCookie)).status,'ok');
     await db.query("update alternate_recovery set created_at=now()-interval '61 seconds' where student_id=$1",[s.id]);
@@ -124,7 +126,7 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     const admin=(await db.query("insert into admin_accounts(email,display_name,password_hash) values('admin@example.invalid','Test administrator','unused') returning id,password_changed_at,role")).rows[0];admin.password_changed_at=admin.password_changed_at.toISOString();
     const adminSession=createAdminSession(admin),adminSessionCookie=adminCookie(adminSession.token).split(';')[0];
     const list=await call(adminRecovery,null,adminSessionCookie);assert.equal(list.requests.length,1);
-    const review={id:list.requests[0].id,status:'reviewing',note:'Synthetic review; no access granted.'};
+    const review={id:list.requests[0].id,status:'reviewing',note:'Synthetic review; no access granted.',expectedUpdatedAt:list.requests[0].updated_at};
     assert.equal((await call(adminRecovery,review,adminSessionCookie)).status,403);
     assert.equal((await call(adminRecovery,review,adminSessionCookie,{'X-Admin-CSRF':adminSession.csrf})).status,200);
   }finally {await db.close();}

@@ -13,6 +13,9 @@
     codeSource = "setup",
     setupUntil = 0,
     smsUntil = 0;
+  let phoneNumber = "",
+    phoneProof = "",
+    phoneDestination = "";
 
   function notice(text, error = false) {
     const node = $("#page-message");
@@ -109,6 +112,9 @@
   }
   function clearPrivate() {
     password = "";
+    phoneNumber = "";
+    phoneProof = "";
+    phoneDestination = "";
     pendingSetup = false;
     setupUntil = 0;
     $$("form").forEach((form) => form.reset());
@@ -140,10 +146,10 @@
       : "You have no unused backup codes. Create and save a new set so recovery without email remains available.";
     $("#phone-description").textContent = status.phoneVerified
       ? `${status.maskedPhone || "Your registered phone"} is verified. SMS recovery also needs a saved backup code.`
-      : `Verify ${status.maskedPhone || "your registered phone"} as an extra recovery option. SMS recovery also needs a saved backup code.`;
+      : "Add and verify your own mobile number as an optional recovery method. SMS recovery also needs a saved backup code.";
     $("#phone-open").textContent = status.phoneVerified
-      ? "Verify phone again"
-      : "Verify my phone";
+      ? "Change my recovery phone"
+      : "Add my recovery phone";
   }
   async function refreshStatus() {
     const result = await api();
@@ -206,6 +212,12 @@
       await refreshStatus();
       $("#loading").hidden = true;
       $("#security-content").hidden = false;
+      $("#policies-panel").hidden = !!status.policiesAccepted;
+      $("#settings-after-policies").hidden = !status.policiesAccepted;
+      if (!status.policiesAccepted) {
+        $("#policies-title").focus();
+        return;
+      }
       if (status.enabled) panel("overview", false);
       else {
         startSetup(false, false);
@@ -221,6 +233,15 @@
     }
   }
   $("#retry-load").addEventListener("click", load);
+  onSubmit("#policies-form", "#policies-error", async () => {
+    await api({
+      action: "accept_policies",
+      termsAccepted: $("#terms-check").checked,
+      privacyAccepted: $("#privacy-check").checked,
+      policyVersion: status.policyVersion,
+    });
+    await load();
+  });
   $$("[data-reveal]").forEach((button) =>
     button.addEventListener("click", () => {
       const input = $(`#${button.dataset.reveal}`),
@@ -358,12 +379,12 @@
       const phone = mode === "phone",
         remove = mode === "disable";
       $("#manage-title").textContent = phone
-        ? "Verify your recovery phone"
+        ? "Add or change your recovery phone"
         : remove
           ? "Remove your authenticator?"
           : "Create replacement backup codes";
       $("#manage-description").textContent = phone
-        ? `We’ll send a code to ${status.maskedPhone || "the phone on your student record"}. This is optional and does not replace your authenticator setup.`
+        ? "Enter a mobile number you control. Approve it with your password and a fresh authenticator code, then verify the SMS. Your old number, if any, stays active until verification succeeds."
         : remove
           ? "This removes your connected app and invalidates every backup code. You must set up an authenticator again before opening the portal."
           : "Use your current password and a fresh authenticator code to create ten new single-use backup codes.";
@@ -371,8 +392,10 @@
       $("#manage-warning").textContent = remove
         ? "If you are changing phones, cancel and use Change authenticator instead. If you lost your authenticator, request administrator assistance."
         : "All previous backup codes and pending alternate-recovery requests will stop working immediately. Save the new set before leaving.";
-      $("#manage-code-field").hidden = phone;
-      $("#manage-code").required = !phone;
+      $("#manage-code-field").hidden = false;
+      $("#manage-code").required = true;
+      $("#new-phone-field").hidden = !phone;
+      $("#new-phone").required = phone;
       $("#confirm-change-label").hidden = phone;
       $("#confirm-change").required = !phone;
       $("#confirm-change-text").textContent = remove
@@ -393,7 +416,14 @@
     // Start cooldown before the request; an uncertain delivery must not cause repeats.
     smsUntil = Date.now() + 60 * 1000;
     try {
-      await api({ action: "phone_start", password });
+      const result = await api({
+        action: "phone_start",
+        password,
+        phone: phoneNumber,
+        code: phoneProof,
+      });
+      phoneDestination = result.maskedPhone || "the number you entered";
+      phoneProof = "";
       errorAt("#phone-error", "");
     } catch (error) {
       if (![0, 502].includes(error.status)) throw error;
@@ -403,7 +433,7 @@
     $("#manage-form").hidden = true;
     $("#phone-form").hidden = false;
     $("#sms-destination").textContent =
-      `A verification SMS was requested for ${status.maskedPhone || "your registered phone"}. Check that phone for the latest code.`;
+      `A verification SMS was requested for ${phoneDestination || "the number you entered"}. Check that phone for the latest code. Your number is not changed until verification succeeds.`;
     $("#sms-code").value = "";
     $("#sms-code").focus();
   }
@@ -415,6 +445,8 @@
           "Please wait at least 60 seconds between SMS requests. If a code already arrived, return to phone verification without requesting another.",
         );
       password = proof;
+      phoneNumber = $("#new-phone").value.trim();
+      phoneProof = $("#manage-code").value.trim();
       try {
         await sendSms();
       } catch (error) {

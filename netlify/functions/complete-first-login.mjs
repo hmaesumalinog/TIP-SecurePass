@@ -2,13 +2,15 @@ import { assertPost, handleError, HttpError, json, readJson, validatePassword } 
 import { clearSessionCookie, createSession, readSession, sessionCookie } from './_shared/session.mjs';
 import { query, supabase } from './_shared/supabase.mjs';
 import { firstLoginConfirmationEmail, sendEmail } from './_shared/resend.mjs';
+import { POLICY_VERSION } from './_shared/onboarding.mjs';
 
 export default async function handler(request) {
   try {
     assertPost(request);
     const session = readSession(request);
     if (!session || session.mode !== 'setup') throw new HttpError(401, 'Your password-setup session has expired. Sign in with a newly issued temporary password.');
-    const { password } = await readJson(request);
+    const { password, termsAccepted, privacyAccepted, policyVersion } = await readJson(request);
+    if (termsAccepted !== true || privacyAccepted !== true || policyVersion !== POLICY_VERSION) throw new HttpError(400, 'Read and accept the current terms and acknowledge the privacy notice before continuing.');
     const students = await supabase(
       `demo_students?${query({
         select: 'id,student_number,email,first_name,active,password_changed_at,must_change_password,temporary_password_expires_at',
@@ -22,9 +24,10 @@ export default async function handler(request) {
     if (!student.temporary_password_expires_at || new Date(student.temporary_password_expires_at).getTime() <= Date.now()) throw new HttpError(401, 'Your temporary password has expired. Ask the administrator to issue a new one.');
     if (!validatePassword(password, student.student_number)) throw new HttpError(400, 'Use 12–128 characters with uppercase, lowercase, number, and symbol. Do not include your student number.');
 
-    const result = await supabase('rpc/complete_first_login_password', {
+    const result = await supabase('rpc/complete_student_onboarding', {
       method: 'POST',
-      body: JSON.stringify({ p_student_id: student.id, p_password: password })
+      body: JSON.stringify({ p_sid: student.id, p_version: session.pv, p_password: password,
+        p_terms: termsAccepted, p_privacy: privacyAccepted, p_policy: policyVersion })
     });
     const completed = Array.isArray(result) ? result[0] : result;
     if (!completed?.id) throw new HttpError(401, 'This temporary-password session is no longer valid.');

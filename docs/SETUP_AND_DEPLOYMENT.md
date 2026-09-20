@@ -83,6 +83,11 @@ Infobip remains available as an optional alternative provider through the `INFOB
 
 ## 3. Run locally
 
+For the revised admin workspace and student-owned onboarding, also apply
+`supabase/migrations/20260920090000_student_owned_onboarding.sql` after the
+alternate-recovery migration. See [Administrator and onboarding guide](ADMIN_AND_ONBOARDING.md)
+for the new invitation, policy, phone-verification and review workflows.
+
 From the project root:
 
 ```bash

@@ -1,9 +1,7 @@
 (() => {
   "use strict";
   const $ = (selector) => document.querySelector(selector);
-  const page = document.body.dataset.recoveryPage;
-  let token = "",
-    csrf = "";
+  let token = "";
   const message = (text, error = false) => {
     const node = $("#sr-message");
     node.hidden = false;
@@ -16,14 +14,11 @@
       method: data ? "POST" : "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(csrf ? { "X-Admin-CSRF": csrf } : {}),
       },
       ...(data ? { body: JSON.stringify(data) } : {}),
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      if (response.status === 401 && page === "admin-recovery")
-        location.replace("login.html");
       throw new Error(
         result.message ||
           "The service could not complete your request. Please try again.",
@@ -105,79 +100,4 @@
     form.hidden = true;
     message(result.message);
   });
-  async function loadRequests() {
-    const result = await api("/.netlify/functions/admin-recovery");
-    const host = $("#help-requests");
-    host.replaceChildren();
-    if (!result.requests.length) {
-      host.textContent = "No recovery assistance requests.";
-      return;
-    }
-    for (const item of result.requests) {
-      const card = document.createElement("section");
-      card.className = "sr-card sr-request";
-      const heading = document.createElement("h2");
-      heading.textContent = `Student ${item.student_number} · ${item.status}`;
-      card.append(heading);
-      for (const text of [
-        `Submitted: ${new Date(item.created_at).toLocaleString()}`,
-        `Unverified contact: ${item.contact}`,
-        item.message,
-      ]) {
-        const p = document.createElement("p");
-        p.textContent = text;
-        card.append(p);
-      }
-      const label = document.createElement("label");
-      label.textContent = "Review status";
-      const select = document.createElement("select");
-      select.setAttribute(
-        "aria-label",
-        `Review status for ${item.student_number}`,
-      );
-      for (const value of ["reviewing", "resolved", "declined"]) {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        select.append(option);
-      }
-      select.value = item.status === "pending" ? "reviewing" : item.status;
-      label.append(select);
-      card.append(label);
-      const noteLabel = document.createElement("label");
-      noteLabel.textContent = "Review note (no sensitive identity evidence)";
-      const note = document.createElement("textarea");
-      note.rows = 3;
-      note.maxLength = 1000;
-      note.value = item.review_note || "";
-      noteLabel.append(note);
-      card.append(noteLabel);
-      const button = document.createElement("button");
-      button.textContent = "Save review";
-      button.addEventListener("click", () =>
-        busy(button, async () => {
-          const result = await api("/.netlify/functions/admin-recovery", {
-            id: item.id,
-            status: select.value,
-            note: note.value,
-          });
-          message(result.message);
-          await loadRequests();
-        }),
-      );
-      card.append(button);
-      host.append(card);
-    }
-  }
-  if (page === "admin-recovery") {
-    api("/api/admin/session")
-      .then((result) => {
-        csrf = result.csrfToken;
-        return loadRequests();
-      })
-      .catch((error) => message(error.message, true));
-    $("#refresh-requests").addEventListener("click", () =>
-      busy($("#refresh-requests"), loadRequests),
-    );
-  }
 })();

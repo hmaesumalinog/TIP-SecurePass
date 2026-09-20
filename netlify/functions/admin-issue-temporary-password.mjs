@@ -12,10 +12,11 @@ export default async function handler(request) {
     const { studentId } = await readJson(request);
     if (typeof studentId !== 'string' || !/^[0-9a-f-]{36}$/i.test(studentId)) throw new HttpError(400, 'Student record is invalid.');
 
-    const students = await supabase(`demo_students?${query({ select: 'id,student_number,email,first_name,active', id: `eq.${studentId}`, limit: 1 })}`);
+    const students = await supabase(`demo_students?${query({ select: 'id,student_number,email,first_name,active,must_change_password', id: `eq.${studentId}`, limit: 1 })}`);
     const student = students[0];
     if (!student) throw new HttpError(404, 'Student record was not found.');
     if (!student.active) throw new HttpError(409, 'Activate the student before issuing a temporary password.');
+    if (!student.must_change_password) throw new HttpError(409, 'This student already completed first login. Use their enrolled recovery methods or the approved assistance process.');
 
     const temporaryPassword = generateTemporaryPassword();
     const origin = (process.env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
@@ -45,7 +46,7 @@ export default async function handler(request) {
       throw new HttpError(502, 'The temporary-password email could not be delivered. The student’s current password was not changed.');
     }
 
-    const result = await supabase('rpc/admin_issue_temporary_password', {
+    const result = await supabase('rpc/reissue_student_invitation', {
       method: 'POST',
       body: JSON.stringify({
         p_student_id: student.id,

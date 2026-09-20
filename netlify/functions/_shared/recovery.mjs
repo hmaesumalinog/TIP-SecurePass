@@ -63,7 +63,7 @@ export async function rate(request, identifier, limit = 10) {
 export async function currentStudent(request) {
   const session = readSession(request);
   if (!session || session.mode === 'setup') throw new HttpError(401,'Please sign in and complete password setup first.');
-  const rows = await supabase(`demo_students?${query({select:'id,email,phone,password_changed_at',id:`eq.${session.sid}`,active:'eq.true',limit:1})}`);
+  const rows = await supabase(`demo_students?${query({select:'id,email,phone,password_changed_at,terms_version,privacy_version',id:`eq.${session.sid}`,active:'eq.true',limit:1})}`);
   const student = rows[0];
   if (!student || (student.password_changed_at || '') !== session.pv) throw new HttpError(401,'Your session expired. Please sign in again.');
   return {student,session};

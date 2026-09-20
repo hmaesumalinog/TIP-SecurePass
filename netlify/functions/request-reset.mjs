@@ -1,8 +1,8 @@
 import { assertPost, expiresIn, handleError, HttpError, json, normalizeEmail, randomToken, readJson, sha256 } from './_shared/http.mjs';
 import { insert, query, supabase } from './_shared/supabase.mjs';
-import { resetEmail, sendEmail } from './_shared/resend.mjs';
+import { resetEmail, recoveryOptionsEmail, sendEmail } from './_shared/resend.mjs';
 
-const GENERIC_MESSAGE = 'If an account matches that email, a secure reset link has been sent.';
+const GENERIC_MESSAGE = 'If an account matches that email, we will send its available recovery steps.';
 
 export default async function handler(request, context) {
   try {
@@ -24,6 +24,16 @@ export default async function handler(request, context) {
     if (!students.length) return json({ message: GENERIC_MESSAGE });
 
     const student = students[0];
+    const readiness=await supabase(`admin_student_security?${query({select:'phone_verified,must_change_password',id:`eq.${student.id}`,limit:1})}`);
+    if (!readiness[0]?.phone_verified || readiness[0]?.must_change_password) {
+      const origin=(process.env.SITE_URL || new URL(request.url).origin).replace(/\/$/,'');
+      const mail=recoveryOptionsEmail({firstName:student.first_name,origin,invited:readiness[0]?.must_change_password});
+      let delivery='sent';
+      try { await sendEmail({to:student.email,...mail,idempotencyKey:`recovery-options-${student.id}-${Math.floor(Date.now()/60000)}`}); }
+      catch { delivery='failed'; }
+      await insert('audit_events',{student_id:student.id,event_type:'recovery_options_requested',details:{delivery}},'id');
+      return json({message:GENERIC_MESSAGE});
+    }
     const token = randomToken();
     const tokenRows = await insert('reset_tokens', {
       student_id: student.id,

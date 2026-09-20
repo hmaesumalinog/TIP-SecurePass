@@ -9,7 +9,7 @@
     />
     <title>Student Portal | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260905" />
+    <link rel="stylesheet" href="assets/css/site.css?v=20260920b" />
     <script src="assets/js/site.js?v=20260917" defer></script>
   </head>
   <body data-page="login">
@@ -191,6 +191,30 @@
             />
           </div>
           <p class="form-error" id="first-login-error" role="alert"></p>
+          <div class="policy-acknowledgment">
+            <p>
+              This is an academic demonstration, not the official T.I.P. portal.
+              Please review these before continuing.
+            </p>
+            <label
+              ><input type="checkbox" id="first-terms" required /> I agree to
+              the
+              <a href="terms.html" target="_blank" rel="noopener"
+                >Terms of use (opens a new tab)</a
+              >.</label
+            >
+            <label
+              ><input type="checkbox" id="first-privacy" required /> I have read
+              the
+              <a href="privacy.html" target="_blank" rel="noopener"
+                >Privacy notice (opens a new tab)</a
+              >.</label
+            >
+            <small
+              >Phone recovery is optional. You enter and verify your own number
+              after securing your account.</small
+            >
+          </div>
           <button class="button full" type="submit">
             Save password and secure account
           </button>

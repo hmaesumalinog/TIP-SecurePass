@@ -4,16 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow,noarchive" />
-    <title>Admin dashboard | TIP SecurePass</title>
+    <title>Security overview | TIP SecurePass Admin</title>
     <link
       rel="icon"
       href="../assets/images/brand-mark.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260905" />
-    <script src="../assets/js/admin.js?v=20260905" defer></script>
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260920b" />
+    <script src="../assets/js/admin.js?v=20260920b" defer></script>
   </head>
   <body data-admin-page="dashboard">
+    <a class="admin-skip" href="#admin-main">Skip to content</a>
     <div class="admin-strip"></div>
     <header class="admin-header">
       <a class="admin-brand" href="dashboard.html"
@@ -22,59 +23,138 @@
         ></a
       >
       <nav class="admin-nav" aria-label="Administration">
-        <a href="dashboard.html" aria-current="page">Dashboard</a
-        ><a href="students.html">Students</a><a href="audit.html">Audit</a
+        <a href="dashboard.html" aria-current="page">Security</a
+        ><a href="students.html">Students</a><a href="audit.html">Audit log</a
         ><a href="recovery.html">Recovery requests</a
         ><button type="button" id="admin-sign-out">Sign out</button>
       </nav>
     </header>
-    <main class="admin-main">
+    <main class="admin-main" id="admin-main">
       <div class="admin-page-heading">
         <div>
-          <h1>Security dashboard</h1>
-          <p>Monitor account recovery and student access activity.</p>
+          <p class="admin-kicker">Student access & account safety</p>
+          <h1>Security overview</h1>
+          <p>
+            See who can recover safely, who needs setup, and which requests need
+            your attention.
+          </p>
         </div>
-        <span class="admin-live">Automatic data refresh</span>
+        <button class="admin-button secondary" id="refresh-page" type="button">
+          Refresh
+        </button>
       </div>
-      <section class="admin-metrics" aria-label="System summary">
-        <article class="admin-card admin-metric">
-          <span>Total students</span><strong id="metric-students">—</strong>
-        </article>
-        <article class="admin-card admin-metric">
-          <span>Active accounts</span><strong id="metric-active">—</strong>
-        </article>
-        <article class="admin-card admin-metric">
-          <span>Reset completions</span><strong id="metric-resets">—</strong>
-        </article>
-        <article class="admin-card admin-metric">
-          <span>Failed logins</span><strong id="metric-failures">—</strong>
-        </article>
+      <p
+        id="page-state"
+        class="admin-page-state"
+        role="status"
+        aria-live="polite"
+      >
+        Connecting securely…
+      </p>
+      <section class="admin-metrics" aria-label="Student security summary">
+        <a class="admin-card admin-metric" href="students.html?filter=ready"
+          ><span>Recovery ready</span><strong data-metric="ready">—</strong
+          ><small>Authenticator + unused backup codes</small
+          ><span class="metric-link">View details →</span></a
+        ><a class="admin-card admin-metric" href="students.html?filter=setup"
+          ><span>Setup incomplete</span><strong data-metric="setup">—</strong
+          ><small>Terms or authenticator still needed</small
+          ><span class="metric-link">View details →</span></a
+        ><a class="admin-card admin-metric" href="students.html?filter=invited"
+          ><span>Awaiting first login</span
+          ><strong data-metric="invited">—</strong
+          ><small>Invitation sent; password setup pending</small
+          ><span class="metric-link">View details →</span></a
+        ><a class="admin-card admin-metric" href="recovery.html"
+          ><span>Open assistance requests</span
+          ><strong data-metric="pendingRequests">—</strong
+          ><small>Pending or under review</small
+          ><span class="metric-link">View details →</span></a
+        >
       </section>
+      <div class="admin-two-column">
+        <section class="admin-card admin-panel">
+          <p class="admin-kicker">Recovery readiness</p>
+          <div class="readiness-heading">
+            <h2>A clear route back in</h2>
+            <strong id="readiness-percent">—</strong>
+          </div>
+          <progress
+            id="readiness-progress"
+            max="100"
+            value="0"
+            aria-label="Active students ready for recovery"
+          ></progress>
+          <p id="readiness-summary">Checking enrollment…</p>
+          <div class="admin-stat-row">
+            <span><b data-metric="authenticators">—</b> authenticators</span
+            ><span
+              ><b data-metric="phones">—</b> verified phones (optional)</span
+            ><span
+              ><b data-metric="active">—</b> active /
+              <b data-metric="students">—</b> total</span
+            >
+          </div>
+          <p class="admin-subtext">
+            Readiness describes enrolled methods, not a guarantee of security.
+            Having no optional phone is not a security failure.
+          </p>
+        </section>
+        <section class="admin-card admin-panel">
+          <p class="admin-kicker">Next actions</p>
+          <h2>Help without bypassing security</h2>
+          <a class="admin-next-action" href="students.html?filter=attention"
+            ><span
+              >Backup codes exhausted<strong
+                >Help students create a replacement set</strong
+              ></span
+            ><b data-metric="attention">—</b></a
+          ><a class="admin-next-action" href="students.html?filter=invited"
+            ><span
+              >Expired invitations<strong
+                >Reissue only to verified student emails</strong
+              ></span
+            ><b data-metric="expired">—</b></a
+          ><a class="admin-next-action" href="audit.html?search=login_failed"
+            ><span
+              >Unsuccessful sign-ins · last 24 hours<strong
+                >Look for patterns, not isolated mistakes</strong
+              ></span
+            ><b data-metric="failures24h">—</b></a
+          >
+        </section>
+      </div>
       <section class="admin-card admin-section">
         <div class="admin-card-head">
-          <h2>Recent security activity</h2>
-          <span id="dashboard-updated">Connecting…</span>
+          <h2>Recent activity</h2>
+          <a href="audit.html">Explore audit log →</a>
         </div>
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
               <tr>
-                <th scope="col">Event</th>
-                <th scope="col">Category</th>
+                <th scope="col">Activity</th>
+                <th scope="col">Student</th>
                 <th scope="col">Time</th>
               </tr>
             </thead>
             <tbody id="dashboard-events">
               <tr>
-                <td class="admin-loading-row" colspan="3">
-                  Loading security activity…
-                </td>
+                <td colspan="3" class="admin-loading-row">Loading…</td>
               </tr>
             </tbody>
           </table>
         </div>
+        <div class="admin-panel compact">
+          <span data-metric="resets7d">—</span> completed password resets in the
+          last 7 days. All times use your device’s local timezone.
+        </div>
       </section>
     </main>
     <div class="admin-toast hidden" id="admin-toast" role="status"></div>
+    <footer class="admin-footer">
+      Academic demonstration · Not the official T.I.P. portal. Security proofs
+      stay private.
+    </footer>
   </body>
 </html>

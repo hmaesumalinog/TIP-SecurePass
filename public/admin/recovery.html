@@ -2,56 +2,225 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex,nofollow" />
-    <title>Recovery assistance requests | TIP SecurePass</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>Recovery assistance | TIP SecurePass Admin</title>
     <link
       rel="icon"
       href="../assets/images/brand-mark.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="../assets/css/recovery.css?v=20260917" />
-    <script src="../assets/js/recovery.js?v=20260917" defer></script>
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260920b" />
+    <script src="../assets/js/admin.js?v=20260920b" defer></script>
   </head>
-  <body data-recovery-page="admin-recovery">
-    <header class="sr-header">
-      <a class="sr-brand" href="../index.html"
-        ><img
-          src="../assets/images/brand-mark.svg"
-          alt=""
-          width="32"
-          height="40"
-        />TIP SecurePass</a
+  <body data-admin-page="recovery">
+    <a class="admin-skip" href="#admin-main">Skip to content</a>
+    <div class="admin-strip"></div>
+    <header class="admin-header">
+      <a class="admin-brand" href="dashboard.html"
+        ><img src="../assets/images/brand-mark.svg" alt="" /><span
+          ><strong>TIP SecurePass</strong>Administration</span
+        ></a
       >
-      <nav aria-label="Portal navigation">
-        <a href="dashboard.html">Dashboard</a
-        ><a href="students.html">Students</a><a href="audit.html">Audit</a>
+      <nav class="admin-nav" aria-label="Administration">
+        <a href="dashboard.html">Security</a><a href="students.html">Students</a
+        ><a href="audit.html">Audit log</a
+        ><a href="recovery.html" aria-current="page">Recovery requests</a
+        ><button type="button" id="admin-sign-out">Sign out</button>
       </nav>
     </header>
-    <main class="sr-main">
-      <h1>Recovery assistance requests</h1>
-      <div
-        id="sr-message"
+    <main class="admin-main" id="admin-main">
+      <div class="admin-page-heading">
+        <div>
+          <p class="admin-kicker">Student access & account safety</p>
+          <h1>Recovery assistance</h1>
+          <p>
+            A guided review queue for students who cannot use their enrolled
+            recovery methods.
+          </p>
+        </div>
+        <button class="admin-button secondary" id="refresh-page" type="button">
+          Refresh
+        </button>
+      </div>
+      <p
+        id="page-state"
+        class="admin-page-state"
         role="status"
         aria-live="polite"
-        tabindex="-1"
-        hidden
-      ></div>
-      <p class="sr-lead">
-        Review remote assistance requests. Submitted contact details and claims
-        are unverified. Never approve account access solely from this form.
+      >
+        Connecting securely…
       </p>
-      <div class="sr-notice">
-        Use an established identity-verification process outside this page.
-        Recording a review does not change credentials or enrolled factors.
-        “Resolved” means you have separately completed the approved support
-        process.
+      <section class="review-steps" aria-label="Review process">
+        <article>
+          <b>01</b>
+          <div>
+            <strong>Read the request</strong>
+            <p>Contact details and claims are unverified.</p>
+          </div>
+        </article>
+        <article>
+          <b>02</b>
+          <div>
+            <strong>Verify independently</strong>
+            <p>
+              Follow the approved support process, not a birthday or student
+              number alone.
+            </p>
+          </div>
+        </article>
+        <article>
+          <b>03</b>
+          <div>
+            <strong>Record the outcome</strong>
+            <p>Closing a request does not grant account access.</p>
+          </div>
+        </article>
+      </section>
+      <div class="admin-toolbar">
+        <label class="admin-search"
+          ><span class="sr-only">Search student number</span
+          ><input
+            class="admin-input"
+            type="search"
+            id="request-number"
+            inputmode="numeric"
+            maxlength="7"
+            placeholder="Seven-digit student number"
+            data-filter /></label
+        ><label class="admin-filter"
+          >Request status<select
+            class="admin-input"
+            id="request-status"
+            data-filter
+          >
+            <option value="open">Open requests</option>
+            <option value="pending">Pending</option>
+            <option value="reviewing">Under review</option>
+            <option value="resolved">Resolved</option>
+            <option value="declined">Declined</option>
+            <option value="all">All requests</option>
+          </select></label
+        >
       </div>
-      <button id="refresh-requests">Refresh requests</button>
-      <div id="help-requests"></div>
+      <section class="admin-card admin-section">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Student number</th>
+                <th scope="col">Status</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="request-rows">
+              <tr>
+                <td colspan="4" class="admin-loading-row">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="admin-pager">
+          <button
+            class="admin-button secondary small"
+            id="previous-page"
+            type="button"
+          >
+            Previous</button
+          ><span id="page-summary" role="status">Loading…</span
+          ><button
+            class="admin-button secondary small"
+            id="next-page"
+            type="button"
+          >
+            Next
+          </button>
+        </div>
+      </section>
     </main>
-    <footer>
-      Academic demonstration · Not the official TIP student portal
+    <dialog
+      class="admin-dialog wide-dialog"
+      id="request-dialog"
+      aria-labelledby="request-title"
+    >
+      <div class="admin-dialog-head">
+        <div>
+          <h2 id="request-title"></h2>
+          <p id="request-reference" class="admin-subtext"></p>
+        </div>
+        <button
+          class="admin-close"
+          type="button"
+          data-close="request-dialog"
+          aria-label="Close request"
+        >
+          ×
+        </button>
+      </div>
+      <div class="admin-dialog-body">
+        <div class="admin-notice">
+          <strong>Unverified submission</strong>
+          <p>
+            Do not disclose account information or send credentials to the
+            claimed contact without independent verification.
+          </p>
+        </div>
+        <dl class="admin-details">
+          <dt>Claimed contact</dt>
+          <dd id="request-contact"></dd>
+          <dt>Student’s message</dt>
+          <dd id="request-message" class="preserve-lines"></dd>
+        </dl>
+        <h3>Review history</h3>
+        <div id="review-history"></div>
+        <p class="admin-notice" id="request-closed" hidden></p>
+        <form id="review-form" class="admin-stack">
+          <h3>Record your review</h3>
+          <label class="admin-field"
+            >Next status<select class="admin-input" id="review-status">
+              <option value="reviewing">
+                Under review — verification in progress
+              </option>
+              <option value="resolved" id="resolve-option">
+                Resolved — support completed separately
+              </option>
+              <option value="declined">
+                Declined — unable to verify / not eligible
+              </option>
+            </select></label
+          >
+          <p class="admin-subtext">
+            Start a review before resolving. Closed requests remain read-only.
+            This page does not reset passwords, remove factors, change contacts,
+            or send a reply.
+          </p>
+          <label class="admin-field"
+            >Internal review note<textarea
+              class="admin-input"
+              id="review-note"
+              rows="4"
+              minlength="10"
+              maxlength="1000"
+              placeholder="Record the action taken and next step. Do not include passwords, codes, or copies of identity documents."
+              required
+            ></textarea></label
+          ><label class="admin-checkbox" id="review-confirm-label" hidden
+            ><input id="review-confirm" type="checkbox" />I completed the
+            approved verification and support process separately; this status
+            alone does not restore access.</label
+          >
+          <p id="review-error" class="admin-error" role="alert"></p>
+          <button class="admin-button" type="submit" id="review-save">
+            Save review
+          </button>
+        </form>
+      </div>
+    </dialog>
+    <div class="admin-toast hidden" id="admin-toast" role="status"></div>
+    <footer class="admin-footer">
+      Academic demonstration · Not the official T.I.P. portal. Security proofs
+      stay private.
     </footer>
   </body>
 </html>

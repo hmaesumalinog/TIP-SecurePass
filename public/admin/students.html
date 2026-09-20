@@ -4,16 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow,noarchive" />
-    <title>Students | TIP SecurePass Admin</title>
+    <title>Student directory | TIP SecurePass Admin</title>
     <link
       rel="icon"
       href="../assets/images/brand-mark.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260905" />
-    <script src="../assets/js/admin.js?v=20260905" defer></script>
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260920b" />
+    <script src="../assets/js/admin.js?v=20260920b" defer></script>
   </head>
   <body data-admin-page="students">
+    <a class="admin-skip" href="#admin-main">Skip to content</a>
     <div class="admin-strip"></div>
     <header class="admin-header">
       <a class="admin-brand" href="dashboard.html"
@@ -22,40 +23,67 @@
         ></a
       >
       <nav class="admin-nav" aria-label="Administration">
-        <a href="dashboard.html">Dashboard</a
+        <a href="dashboard.html">Security</a
         ><a href="students.html" aria-current="page">Students</a
-        ><a href="audit.html">Audit</a
+        ><a href="audit.html">Audit log</a
         ><a href="recovery.html">Recovery requests</a
         ><button type="button" id="admin-sign-out">Sign out</button>
       </nav>
     </header>
-    <main class="admin-main">
+    <main class="admin-main" id="admin-main">
       <div class="admin-page-heading">
         <div>
-          <h1>Student accounts</h1>
+          <p class="admin-kicker">Student access & account safety</p>
+          <h1>Student directory</h1>
           <p>
-            Add and manage student records connected to the project database.
+            Invite students, review setup progress, and keep account records
+            accurate.
           </p>
         </div>
-        <span class="admin-live">Automatic data refresh</span>
+        <button class="admin-button secondary" id="refresh-page" type="button">
+          Refresh
+        </button>
       </div>
+      <p
+        id="page-state"
+        class="admin-page-state"
+        role="status"
+        aria-live="polite"
+      >
+        Connecting securely…
+      </p>
       <div class="admin-toolbar">
         <label class="admin-search"
-          ><span class="hidden">Search students</span
+          ><span class="sr-only">Search students</span
           ><input
             class="admin-input"
             id="student-search"
             type="search"
-            placeholder="Search number, name, or email" /></label
+            placeholder="Name, student number, or email"
+            data-filter
+            maxlength="100" /></label
+        ><label class="admin-filter"
+          >Account readiness<select
+            class="admin-input"
+            id="student-filter"
+            data-filter
+          >
+            <option value="">All students</option>
+            <option value="invited">Waiting for first login</option>
+            <option value="setup">Setup incomplete</option>
+            <option value="ready">Recovery ready</option>
+            <option value="attention">Backup codes needed</option>
+            <option value="inactive">Inactive</option>
+          </select></label
         ><button class="admin-button" type="button" id="add-student">
-          Add student
+          Invite student
         </button>
       </div>
+      <p class="admin-notice">
+        You provide the student’s academic details and email. Students choose
+        their password and recovery methods, and enter their own phone number.
+      </p>
       <section class="admin-card admin-section">
-        <div class="admin-card-head">
-          <h2>Student directory</h2>
-          <span id="students-updated">Connecting…</span>
-        </div>
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
@@ -63,18 +91,32 @@
                 <th scope="col">Student</th>
                 <th scope="col">Email</th>
                 <th scope="col">Program</th>
-                <th scope="col">Status</th>
-                <th scope="col">Actions</th>
+                <th scope="col">Security readiness</th>
+                <th scope="col">Action</th>
               </tr>
             </thead>
             <tbody id="student-rows">
               <tr>
-                <td class="admin-loading-row" colspan="5">
-                  Loading student records…
-                </td>
+                <td colspan="5" class="admin-loading-row">Loading…</td>
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="admin-pager">
+          <button
+            class="admin-button secondary small"
+            id="previous-page"
+            type="button"
+          >
+            Previous</button
+          ><span id="page-summary" role="status">Loading…</span
+          ><button
+            class="admin-button secondary small"
+            id="next-page"
+            type="button"
+          >
+            Next
+          </button>
         </div>
       </section>
     </main>
@@ -91,6 +133,11 @@
         </button>
       </div>
       <form class="admin-dialog-body" id="student-form">
+        <p class="admin-notice">
+          We email a temporary password valid for 24 hours. The student reviews
+          terms & privacy, chooses a password, connects an authenticator and
+          saves backup codes. Students add their own optional recovery phone.
+        </p>
         <input type="hidden" id="student-record-id" />
         <div class="admin-form-grid">
           <div class="admin-field">
@@ -134,25 +181,18 @@
               required
             />
           </div>
-          <div class="admin-field">
-            <label for="student-age">Age</label
+          <div class="admin-field wide">
+            <label for="student-birthday">Birthday</label
             ><input
               class="admin-input"
-              id="student-age"
-              type="number"
-              min="15"
-              max="100"
+              id="student-birthday"
+              type="date"
               required
             />
-          </div>
-          <div class="admin-field">
-            <label for="student-phone">Phone number</label
-            ><input
-              class="admin-input"
-              id="student-phone"
-              type="tel"
-              required
-            />
+            <small
+              >For student records, not an identity-verification answer. Leave
+              blank only for an existing record with no known birthday.</small
+            >
           </div>
           <div class="admin-field wide">
             <label for="student-program">Program</label
@@ -224,10 +264,11 @@
           <div class="admin-field">
             <label for="student-year">Year level</label
             ><select class="admin-input" id="student-year" required>
+              <option value="" disabled selected>Select year level</option>
               <option>1st Year</option>
               <option>2nd Year</option>
               <option>3rd Year</option>
-              <option selected>4th Year</option>
+              <option>4th Year</option>
               <option>5th Year</option>
             </select>
           </div>
@@ -244,12 +285,55 @@
             data-close-dialog
           >
             Cancel</button
-          ><button class="admin-button" type="submit">
+          ><button class="admin-button" type="submit" id="student-save">
             Save and email temporary password
           </button>
         </div>
       </form>
     </dialog>
+    <dialog
+      class="admin-dialog"
+      id="student-view"
+      aria-labelledby="student-view-title"
+    >
+      <div class="admin-dialog-head">
+        <div>
+          <h2 id="student-view-title"></h2>
+          <p id="student-view-subtitle" class="admin-subtext"></p>
+        </div>
+        <button
+          class="admin-close"
+          type="button"
+          data-close="student-view"
+          aria-label="Close student details"
+        >
+          ×
+        </button>
+      </div>
+      <div class="admin-dialog-body">
+        <dl class="admin-details" id="student-details"></dl>
+        <p class="admin-notice">
+          Security status only. Passwords, OTPs, authenticator secrets, backup
+          codes and the student's phone number are never displayed here.
+        </p>
+        <div class="admin-actions">
+          <button
+            class="admin-button secondary"
+            id="student-view-edit"
+            type="button"
+          >
+            Edit student details</button
+          ><button class="admin-button" id="student-credential" type="button">
+            Send email
+          </button>
+        </div>
+        <p id="credential-help" class="admin-subtext"></p>
+      </div>
+    </dialog>
     <div class="admin-toast hidden" id="admin-toast" role="status"></div>
+    <footer class="admin-footer">
+      Academic demonstration · Not the official T.I.P. portal. Security proofs
+      stay private.
+    </footer>
   </body>
 </html>

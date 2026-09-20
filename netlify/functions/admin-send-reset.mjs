@@ -10,10 +10,12 @@ export default async function handler(request) {
     requireCsrf(request, session);
     const { studentId } = await readJson(request);
     if (typeof studentId !== 'string' || !/^[0-9a-f-]{36}$/i.test(studentId)) throw new HttpError(400, 'Student record is invalid.');
-    const students = await supabase(`demo_students?${query({ select: 'id,email,first_name,active', id: `eq.${studentId}`, limit: 1 })}`);
+    const students = await supabase(`admin_student_security?${query({ select: 'id,email,first_name,active,phone_verified,must_change_password', id: `eq.${studentId}`, limit: 1 })}`);
     const student = students[0];
     if (!student) throw new HttpError(404, 'Student record was not found.');
     if (!student.active) throw new HttpError(409, 'Activate the student before sending a reset link.');
+    if (student.must_change_password) throw new HttpError(409, 'Reissue the invitation for a student who has not completed first login.');
+    if (!student.phone_verified) throw new HttpError(409, 'Email + SMS recovery requires a verified phone. Use backup-code recovery or reviewed assistance instead.');
     const token = randomToken();
     const tokenRows = await insert(
       'reset_tokens',

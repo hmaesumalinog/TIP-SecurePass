@@ -61,6 +61,7 @@ The Netlify function files remain at the top level of `netlify/functions/` becau
 2. Review [Architecture](docs/ARCHITECTURE.md) to understand how the parts communicate.
 3. Read [Security notes](docs/SECURITY.md) before changing authentication or reset logic.
 4. Use the [Demonstration guide](docs/DEMONSTRATION_GUIDE.md) when presenting the project.
+5. Follow [Administrator and onboarding workflows](docs/ADMIN_AND_ONBOARDING.md) for invitations, student-owned phone setup, privacy acknowledgments, and recovery reviews.
 
 For local development:
 

@@ -6,10 +6,10 @@
     <meta name="robots" content="noindex,nofollow" />
     <title>Security & recovery | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/security.css?v=20260920" />
+    <link rel="stylesheet" href="assets/css/security.css?v=20260920b" />
     <link rel="stylesheet" href="assets/css/enrollment.css?v=20260919" />
     <script src="assets/js/enrollment.js?v=20260920" defer></script>
-    <script src="assets/js/security.js?v=20260920" defer></script>
+    <script src="assets/js/security.js?v=20260920b" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to security settings</a>
@@ -50,500 +50,582 @@
       </section>
       <div id="security-content" hidden>
         <section
-          id="account-summary"
-          class="account-summary"
-          aria-label="Your recovery status"
+          id="policies-panel"
+          class="panel"
+          hidden
+          aria-labelledby="policies-title"
         >
-          <div>
-            <span class="status-label">Authenticator</span
-            ><strong id="auth-status">Not set up</strong>
-          </div>
-          <div>
-            <span class="status-label">Backup codes</span
-            ><strong id="codes-status">Not created</strong>
-          </div>
-          <div>
-            <span class="status-label">Recovery phone</span
-            ><strong id="phone-status">Not verified</strong>
-          </div>
-        </section>
-        <div class="security-layout">
-          <div class="workspace">
-            <section id="overview" class="panel" hidden>
-              <p class="eyebrow">Recovery methods</p>
-              <h2 tabindex="-1">Your account is ready</h2>
-              <p class="muted">
-                Your authenticator is connected. Keep your backup codes
-                somewhere safe, separate from your phone.
-              </p>
-              <a class="button" href="portal.html"
-                >Continue to student portal <span aria-hidden="true">→</span></a
-              >
-              <div class="method-list">
-                <article class="method">
-                  <div class="method-icon" aria-hidden="true">01</div>
-                  <div>
-                    <h3>
-                      Authenticator app
-                      <span class="badge success">Connected</span>
-                    </h3>
-                    <p>
-                      Use the changing six-digit code in your app together with
-                      a backup code if you can’t open your email.
-                    </p>
-                    <button class="secondary" type="button" data-open="replace">
-                      Change authenticator
-                    </button>
-                  </div>
-                </article>
-                <article class="method">
-                  <div class="method-icon" aria-hidden="true">02</div>
-                  <div>
-                    <h3>
-                      Backup recovery codes
-                      <span id="codes-badge" class="badge"></span>
-                    </h3>
-                    <p id="codes-description">
-                      Each saved code works once. Your existing codes cannot be
-                      displayed again.
-                    </p>
-                    <button class="secondary" type="button" data-open="codes">
-                      Create replacement codes
-                    </button>
-                  </div>
-                </article>
-                <article class="method">
-                  <div class="method-icon" aria-hidden="true">03</div>
-                  <div>
-                    <h3>Recovery phone <span class="badge">Optional</span></h3>
-                    <p id="phone-description">
-                      Verify your registered phone as another recovery option.
-                      SMS recovery also needs a saved backup code.
-                    </p>
-                    <button
-                      class="secondary"
-                      type="button"
-                      data-open="phone"
-                      id="phone-open"
-                    >
-                      Verify my phone
-                    </button>
-                  </div>
-                </article>
-              </div>
-              <details class="advanced">
-                <summary>Advanced: remove an authenticator</summary>
-                <p>
-                  Changing phones? Use
-                  <strong>Change authenticator</strong> above to replace it.
-                  Removing it also invalidates your backup codes and requires
-                  setup again before portal access.
-                </p>
-                <button
-                  class="danger secondary"
-                  type="button"
-                  data-open="disable"
-                >
-                  Review removal
-                </button>
-              </details>
-            </section>
-            <section
-              id="setup"
-              class="panel"
-              hidden
-              aria-labelledby="setup-title"
+          <p class="eyebrow">Welcome · Before you continue</p>
+          <h2 id="policies-title" tabindex="-1">
+            Understand how your account is used
+          </h2>
+          <p>
+            This academic demonstration is separate from the official T.I.P.
+            portal. Use a unique password. Your administrator manages academic
+            records; only you set up your authenticator and optional phone.
+          </p>
+          <form id="policies-form">
+            <label class="checkbox-label"
+              ><input type="checkbox" id="terms-check" required /><span
+                >I agree to the
+                <a href="terms.html" target="_blank" rel="noopener"
+                  >Terms of use (new tab)</a
+                >.</span
+              ></label
             >
-              <div class="section-heading">
-                <div>
-                  <p class="eyebrow" id="setup-kicker">
-                    Required · One-time setup
-                  </p>
-                  <h2 id="setup-title" tabindex="-1">
-                    Let’s secure your account
-                  </h2>
+            <label class="checkbox-label"
+              ><input type="checkbox" id="privacy-check" required /><span
+                >I have read the
+                <a href="privacy.html" target="_blank" rel="noopener"
+                  >Privacy notice (new tab)</a
+                >.</span
+              ></label
+            >
+            <p>
+              Your acknowledgment is saved with the policy version and date.
+              Nothing is pre-checked. If you do not want to continue, sign out.
+            </p>
+            <p
+              id="policies-error"
+              class="form-error"
+              role="alert"
+              tabindex="-1"
+              hidden
+            ></p>
+            <button type="submit">Continue to account security</button>
+          </form>
+        </section>
+        <div id="settings-after-policies">
+          <section
+            id="account-summary"
+            class="account-summary"
+            aria-label="Your recovery status"
+          >
+            <div>
+              <span class="status-label">Authenticator</span
+              ><strong id="auth-status">Not set up</strong>
+            </div>
+            <div>
+              <span class="status-label">Backup codes</span
+              ><strong id="codes-status">Not created</strong>
+            </div>
+            <div>
+              <span class="status-label">Recovery phone</span
+              ><strong id="phone-status">Not verified</strong>
+            </div>
+          </section>
+          <div class="security-layout">
+            <div class="workspace">
+              <section id="overview" class="panel" hidden>
+                <p class="eyebrow">Recovery methods</p>
+                <h2 tabindex="-1">Your account is ready</h2>
+                <p class="muted">
+                  Your authenticator is connected. Keep your backup codes
+                  somewhere safe, separate from your phone.
+                </p>
+                <a class="button" href="portal.html"
+                  >Continue to student portal
+                  <span aria-hidden="true">→</span></a
+                >
+                <div class="method-list">
+                  <article class="method">
+                    <div class="method-icon" aria-hidden="true">01</div>
+                    <div>
+                      <h3>
+                        Authenticator app
+                        <span class="badge success">Connected</span>
+                      </h3>
+                      <p>
+                        Use the changing six-digit code in your app together
+                        with a backup code if you can’t open your email.
+                      </p>
+                      <button
+                        class="secondary"
+                        type="button"
+                        data-open="replace"
+                      >
+                        Change authenticator
+                      </button>
+                    </div>
+                  </article>
+                  <article class="method">
+                    <div class="method-icon" aria-hidden="true">02</div>
+                    <div>
+                      <h3>
+                        Backup recovery codes
+                        <span id="codes-badge" class="badge"></span>
+                      </h3>
+                      <p id="codes-description">
+                        Each saved code works once. Your existing codes cannot
+                        be displayed again.
+                      </p>
+                      <button class="secondary" type="button" data-open="codes">
+                        Create replacement codes
+                      </button>
+                    </div>
+                  </article>
+                  <article class="method">
+                    <div class="method-icon" aria-hidden="true">03</div>
+                    <div>
+                      <h3>
+                        Recovery phone <span class="badge">Optional</span>
+                      </h3>
+                      <p id="phone-description">
+                        Verify your registered phone as another recovery option.
+                        SMS recovery also needs a saved backup code.
+                      </p>
+                      <button
+                        class="secondary"
+                        type="button"
+                        data-open="phone"
+                        id="phone-open"
+                      >
+                        Verify my phone
+                      </button>
+                    </div>
+                  </article>
                 </div>
-                <button class="text-button" type="button" data-back hidden>
-                  Cancel
-                </button>
-              </div>
-              <p id="setup-intro" class="muted">
-                New student or moving to this portal? Complete these three steps
-                before opening your dashboard. Your student number and password
-                still work for normal sign-in.
-              </p>
-              <ol class="steps" aria-label="Authenticator setup progress">
-                <li data-step="1"><span>1</span>Verify identity</li>
-                <li data-step="2"><span>2</span>Connect app</li>
-                <li data-step="3"><span>3</span>Save codes</li>
-              </ol>
-              <div id="identity-step">
-                <div class="tip">
-                  <strong>Before you start</strong>
+                <details class="advanced">
+                  <summary>Advanced: remove an authenticator</summary>
                   <p>
-                    You’ll need a compatible authenticator app on your phone. It
-                    creates a new six-digit code about every 30 seconds—even
-                    without an SMS.
+                    Changing phones? Use
+                    <strong>Change authenticator</strong> above to replace it.
+                    Removing it also invalidates your backup codes and requires
+                    setup again before portal access.
                   </p>
-                  <details>
-                    <summary>What do I choose in the app?</summary>
-                    <p>
-                      Look for <strong>Add account</strong> or the
-                      <strong>+</strong> button. Choose scan QR code, or enter a
-                      setup key manually with a
-                      <strong>time-based</strong> code. You’ll add this account
-                      in the next step.
+                  <button
+                    class="danger secondary"
+                    type="button"
+                    data-open="disable"
+                  >
+                    Review removal
+                  </button>
+                </details>
+              </section>
+              <section
+                id="setup"
+                class="panel"
+                hidden
+                aria-labelledby="setup-title"
+              >
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow" id="setup-kicker">
+                      Required · One-time setup
                     </p>
-                  </details>
-                </div>
-                <form id="identity-form">
-                  <h3>Confirm it’s you</h3>
-                  <p class="muted">
-                    Enter the password you use to sign in to this student
-                    portal.
-                  </p>
-                  <label for="setup-password">Current portal password</label>
-                  <div class="password-field">
-                    <input
-                      id="setup-password"
-                      type="password"
-                      autocomplete="current-password"
-                      maxlength="128"
-                      required
-                    /><button
-                      type="button"
-                      class="text-button"
-                      data-reveal="setup-password"
-                      aria-label="Show current portal password"
-                    >
-                      Show
-                    </button>
+                    <h2 id="setup-title" tabindex="-1">
+                      Let’s secure your account
+                    </h2>
                   </div>
-                  <div id="old-code-field" hidden>
-                    <label for="old-app-code"
-                      >Code from your current authenticator</label
+                  <button class="text-button" type="button" data-back hidden>
+                    Cancel
+                  </button>
+                </div>
+                <p id="setup-intro" class="muted">
+                  New student or moving to this portal? Complete these three
+                  steps before opening your dashboard. Your student number and
+                  password still work for normal sign-in.
+                </p>
+                <ol class="steps" aria-label="Authenticator setup progress">
+                  <li data-step="1"><span>1</span>Verify identity</li>
+                  <li data-step="2"><span>2</span>Connect app</li>
+                  <li data-step="3"><span>3</span>Save codes</li>
+                </ol>
+                <div id="identity-step">
+                  <div class="tip">
+                    <strong>Before you start</strong>
+                    <p>
+                      You’ll need a compatible authenticator app on your phone.
+                      It creates a new six-digit code about every 30
+                      seconds—even without an SMS.
+                    </p>
+                    <details>
+                      <summary>What do I choose in the app?</summary>
+                      <p>
+                        Look for <strong>Add account</strong> or the
+                        <strong>+</strong> button. Choose scan QR code, or enter
+                        a setup key manually with a
+                        <strong>time-based</strong> code. You’ll add this
+                        account in the next step.
+                      </p>
+                    </details>
+                  </div>
+                  <form id="identity-form">
+                    <h3>Confirm it’s you</h3>
+                    <p class="muted">
+                      Enter the password you use to sign in to this student
+                      portal.
+                    </p>
+                    <label for="setup-password">Current portal password</label>
+                    <div class="password-field">
+                      <input
+                        id="setup-password"
+                        type="password"
+                        autocomplete="current-password"
+                        maxlength="128"
+                        required
+                      /><button
+                        type="button"
+                        class="text-button"
+                        data-reveal="setup-password"
+                        aria-label="Show current portal password"
+                      >
+                        Show
+                      </button>
+                    </div>
+                    <div id="old-code-field" hidden>
+                      <label for="old-app-code"
+                        >Code from your current authenticator</label
+                      ><input
+                        id="old-app-code"
+                        class="code-input"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        aria-describedby="old-code-help"
+                      />
+                      <p id="old-code-help" class="field-help">
+                        Use your existing app to approve replacement. Wait for a
+                        new code if you just used the previous one.
+                      </p>
+                    </div>
+                    <p
+                      id="identity-error"
+                      class="form-error"
+                      role="alert"
+                      tabindex="-1"
+                      hidden
+                    ></p>
+                    <button type="submit">
+                      Continue to connect app <span aria-hidden="true">→</span>
+                    </button>
+                  </form>
+                </div>
+                <div id="connect-step" hidden>
+                  <h3>Add this account to your app</h3>
+                  <p class="muted">
+                    In your authenticator, choose Add account and scan this QR
+                    code. The account will appear as
+                    <strong>Reset Workflow</strong>.
+                  </p>
+                  <div class="connect-grid">
+                    <div class="qr-frame">
+                      <img
+                        id="setup-qr"
+                        width="240"
+                        height="240"
+                        alt="Scan this QR code with your authenticator app"
+                      />
+                    </div>
+                    <div class="manual-setup">
+                      <h4>Using this page on your phone?</h4>
+                      <p>
+                        Enter the key below manually in your app. Choose a
+                        time-based, six-digit code. Name the account “Reset
+                        Workflow”.
+                      </p>
+                      <code id="setup-key"></code
+                      ><button type="button" class="secondary" id="copy-key">
+                        Copy setup key
+                      </button>
+                      <p id="key-feedback" class="field-help" role="status"></p>
+                    </div>
+                  </div>
+                  <p class="field-help">
+                    Keep this QR code and setup key private.
+                    <span id="setup-time" role="timer"></span>
+                  </p>
+                  <form id="connect-form">
+                    <label for="new-app-code"
+                      >Six-digit code from the app you just added</label
                     ><input
-                      id="old-app-code"
+                      id="new-app-code"
                       class="code-input"
                       inputmode="numeric"
                       autocomplete="one-time-code"
                       maxlength="6"
                       pattern="[0-9]{6}"
-                      aria-describedby="old-code-help"
+                      required
+                      aria-describedby="new-code-help"
                     />
-                    <p id="old-code-help" class="field-help">
-                      Use your existing app to approve replacement. Wait for a
-                      new code if you just used the previous one.
+                    <p id="new-code-help" class="field-help">
+                      Enter the changing code under Reset Workflow—not an SMS or
+                      a backup recovery code.
+                    </p>
+                    <p
+                      id="connect-error"
+                      class="form-error"
+                      role="alert"
+                      tabindex="-1"
+                      hidden
+                    ></p>
+                    <div class="actions">
+                      <button type="submit" id="confirm-app">
+                        Confirm authenticator</button
+                      ><button
+                        type="button"
+                        class="secondary"
+                        id="restart-setup"
+                      >
+                        Start setup again
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+              <section
+                id="backup-panel"
+                class="panel"
+                hidden
+                aria-labelledby="backup-title"
+              >
+                <p class="eyebrow" id="backup-kicker">Step 3 of 3</p>
+                <h2 id="backup-title" tabindex="-1">Save your backup codes</h2>
+                <p>
+                  These are your spare recovery codes. You’ll need
+                  <strong
+                    >one saved code plus your authenticator or verified
+                    phone</strong
+                  >
+                  if you cannot access your email.
+                </p>
+                <div class="tip">
+                  <strong>This is your only chance to save this set.</strong>
+                  <p>
+                    Download, copy, or print them. Store them somewhere private,
+                    separate from your phone. Each code works once.
+                  </p>
+                </div>
+                <pre
+                  id="backup-codes"
+                  aria-label="Your single-use backup recovery codes"
+                ></pre>
+                <div class="actions">
+                  <button type="button" id="download-codes">
+                    Download .txt</button
+                  ><button class="secondary" type="button" id="copy-codes">
+                    Copy codes</button
+                  ><button class="secondary" type="button" id="print-codes">
+                    Print codes
+                  </button>
+                </div>
+                <p id="backup-feedback" class="field-help" role="status"></p>
+                <form id="saved-form">
+                  <label class="checkbox-label"
+                    ><input type="checkbox" id="saved-check" required />I saved
+                    these codes somewhere I can find them if I lose my
+                    phone.</label
+                  ><button type="submit">I saved my codes · Finish</button>
+                </form>
+              </section>
+              <section id="complete-panel" class="panel complete-panel" hidden>
+                <span class="complete-mark" aria-hidden="true">✓</span>
+                <p class="eyebrow">Setup complete</p>
+                <h2 tabindex="-1">You’re ready to go</h2>
+                <p>
+                  Your authenticator is connected. Keep your saved backup codes
+                  safe—you won’t need them for everyday sign-in.
+                </p>
+                <a class="button" href="portal.html"
+                  >Continue to student portal
+                  <span aria-hidden="true">→</span></a
+                ><button type="button" class="secondary" id="manage-methods">
+                  Manage recovery methods
+                </button>
+                <p class="field-help">
+                  You can optionally verify your phone next. If you want to test
+                  recovery right away, wait for the next authenticator code.
+                </p>
+                <button type="button" class="secondary" data-open="phone">
+                  Add my recovery phone (optional)
+                </button>
+              </section>
+              <section
+                id="manage-panel"
+                class="panel"
+                hidden
+                aria-labelledby="manage-title"
+              >
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Manage a recovery method</p>
+                    <h2 id="manage-title" tabindex="-1"></h2>
+                  </div>
+                  <button type="button" class="text-button" data-back>
+                    Cancel
+                  </button>
+                </div>
+                <p id="manage-description" class="muted"></p>
+                <div id="manage-warning" class="tip" hidden></div>
+                <form id="manage-form">
+                  <div id="new-phone-field" hidden>
+                    <label for="new-phone">Your mobile number</label>
+                    <input
+                      id="new-phone"
+                      type="tel"
+                      autocomplete="tel"
+                      maxlength="24"
+                      placeholder="0917 123 4567"
+                      aria-describedby="new-phone-help"
+                    />
+                    <p id="new-phone-help" class="field-help">
+                      Philippine mobile numbers only. Enter a number you
+                      control. It becomes your recovery number only after you
+                      verify the SMS. Your current number stays active until
+                      then.
                     </p>
                   </div>
+                  <label for="manage-password">Current portal password</label>
+                  <div class="password-field">
+                    <input
+                      id="manage-password"
+                      type="password"
+                      autocomplete="current-password"
+                      required
+                      maxlength="128"
+                    /><button
+                      type="button"
+                      class="text-button"
+                      data-reveal="manage-password"
+                      aria-label="Show current portal password"
+                    >
+                      Show
+                    </button>
+                  </div>
+                  <div id="manage-code-field">
+                    <label for="manage-code">Six-digit authenticator code</label
+                    ><input
+                      id="manage-code"
+                      class="code-input"
+                      inputmode="numeric"
+                      autocomplete="one-time-code"
+                      maxlength="6"
+                      pattern="[0-9]{6}"
+                      aria-describedby="manage-code-help"
+                    />
+                    <p id="manage-code-help" class="field-help">
+                      Open your connected authenticator. If you just used a
+                      code, wait for the next one.
+                    </p>
+                  </div>
+                  <label id="confirm-change-label" class="checkbox-label"
+                    ><input id="confirm-change" type="checkbox" /><span
+                      id="confirm-change-text"
+                    ></span
+                  ></label>
                   <p
-                    id="identity-error"
+                    id="manage-error"
                     class="form-error"
                     role="alert"
                     tabindex="-1"
                     hidden
                   ></p>
-                  <button type="submit">
-                    Continue to connect app <span aria-hidden="true">→</span>
-                  </button>
+                  <button id="manage-submit" type="submit"></button>
                 </form>
-              </div>
-              <div id="connect-step" hidden>
-                <h3>Add this account to your app</h3>
-                <p class="muted">
-                  In your authenticator, choose Add account and scan this QR
-                  code. The account will appear as
-                  <strong>Reset Workflow</strong>.
-                </p>
-                <div class="connect-grid">
-                  <div class="qr-frame">
-                    <img
-                      id="setup-qr"
-                      width="240"
-                      height="240"
-                      alt="Scan this QR code with your authenticator app"
-                    />
+                <form id="phone-form" hidden>
+                  <div class="tip">
+                    <strong>Check your text messages</strong>
+                    <p id="sms-destination"></p>
                   </div>
-                  <div class="manual-setup">
-                    <h4>Using this page on your phone?</h4>
-                    <p>
-                      Enter the key below manually in your app. Choose a
-                      time-based, six-digit code. Name the account “Reset
-                      Workflow”.
-                    </p>
-                    <code id="setup-key"></code
-                    ><button type="button" class="secondary" id="copy-key">
-                      Copy setup key
-                    </button>
-                    <p id="key-feedback" class="field-help" role="status"></p>
-                  </div>
-                </div>
-                <p class="field-help">
-                  Keep this QR code and setup key private.
-                  <span id="setup-time" role="timer"></span>
-                </p>
-                <form id="connect-form">
-                  <label for="new-app-code"
-                    >Six-digit code from the app you just added</label
+                  <label for="sms-code">Six-digit SMS code</label
                   ><input
-                    id="new-app-code"
+                    id="sms-code"
                     class="code-input"
                     inputmode="numeric"
                     autocomplete="one-time-code"
                     maxlength="6"
                     pattern="[0-9]{6}"
                     required
-                    aria-describedby="new-code-help"
+                    aria-describedby="sms-code-help"
                   />
-                  <p id="new-code-help" class="field-help">
-                    Enter the changing code under Reset Workflow—not an SMS or a
-                    backup recovery code.
+                  <p id="sms-code-help" class="field-help">
+                    Use the code in the SMS, not the one in your authenticator.
+                    It expires in 5 minutes.
                   </p>
                   <p
-                    id="connect-error"
+                    id="phone-error"
                     class="form-error"
                     role="alert"
                     tabindex="-1"
                     hidden
                   ></p>
                   <div class="actions">
-                    <button type="submit" id="confirm-app">
-                      Confirm authenticator</button
-                    ><button type="button" class="secondary" id="restart-setup">
-                      Start setup again
+                    <button type="submit">Verify phone</button
+                    ><button type="button" class="secondary" id="resend-sms">
+                      Send another code
                     </button>
                   </div>
-                </form>
-              </div>
-            </section>
-            <section
-              id="backup-panel"
-              class="panel"
-              hidden
-              aria-labelledby="backup-title"
-            >
-              <p class="eyebrow" id="backup-kicker">Step 3 of 3</p>
-              <h2 id="backup-title" tabindex="-1">Save your backup codes</h2>
-              <p>
-                These are your spare recovery codes. You’ll need
-                <strong
-                  >one saved code plus your authenticator or verified
-                  phone</strong
-                >
-                if you cannot access your email.
-              </p>
-              <div class="tip">
-                <strong>This is your only chance to save this set.</strong>
-                <p>
-                  Download, copy, or print them. Store them somewhere private,
-                  separate from your phone. Each code works once.
-                </p>
-              </div>
-              <pre
-                id="backup-codes"
-                aria-label="Your single-use backup recovery codes"
-              ></pre>
-              <div class="actions">
-                <button type="button" id="download-codes">Download .txt</button
-                ><button class="secondary" type="button" id="copy-codes">
-                  Copy codes</button
-                ><button class="secondary" type="button" id="print-codes">
-                  Print codes
-                </button>
-              </div>
-              <p id="backup-feedback" class="field-help" role="status"></p>
-              <form id="saved-form">
-                <label class="checkbox-label"
-                  ><input type="checkbox" id="saved-check" required />I saved
-                  these codes somewhere I can find them if I lose my
-                  phone.</label
-                ><button type="submit">I saved my codes · Finish</button>
-              </form>
-            </section>
-            <section id="complete-panel" class="panel complete-panel" hidden>
-              <span class="complete-mark" aria-hidden="true">✓</span>
-              <p class="eyebrow">Setup complete</p>
-              <h2 tabindex="-1">You’re ready to go</h2>
-              <p>
-                Your authenticator is connected. Keep your saved backup codes
-                safe—you won’t need them for everyday sign-in.
-              </p>
-              <a class="button" href="portal.html"
-                >Continue to student portal <span aria-hidden="true">→</span></a
-              ><button type="button" class="secondary" id="manage-methods">
-                Manage recovery methods
-              </button>
-              <p class="field-help">
-                You can optionally verify your phone next. If you want to test
-                recovery right away, wait for the next authenticator code.
-              </p>
-            </section>
-            <section
-              id="manage-panel"
-              class="panel"
-              hidden
-              aria-labelledby="manage-title"
-            >
-              <div class="section-heading">
-                <div>
-                  <p class="eyebrow">Manage a recovery method</p>
-                  <h2 id="manage-title" tabindex="-1"></h2>
-                </div>
-                <button type="button" class="text-button" data-back>
-                  Cancel
-                </button>
-              </div>
-              <p id="manage-description" class="muted"></p>
-              <div id="manage-warning" class="tip" hidden></div>
-              <form id="manage-form">
-                <label for="manage-password">Current portal password</label>
-                <div class="password-field">
-                  <input
-                    id="manage-password"
-                    type="password"
-                    autocomplete="current-password"
-                    required
-                    maxlength="128"
-                  /><button
-                    type="button"
-                    class="text-button"
-                    data-reveal="manage-password"
-                    aria-label="Show current portal password"
-                  >
-                    Show
-                  </button>
-                </div>
-                <div id="manage-code-field">
-                  <label for="manage-code">Six-digit authenticator code</label
-                  ><input
-                    id="manage-code"
-                    class="code-input"
-                    inputmode="numeric"
-                    autocomplete="one-time-code"
-                    maxlength="6"
-                    pattern="[0-9]{6}"
-                    aria-describedby="manage-code-help"
-                  />
-                  <p id="manage-code-help" class="field-help">
-                    Open your connected authenticator. If you just used a code,
-                    wait for the next one.
+                  <p id="sms-wait" class="field-help" role="timer"></p>
+                  <p class="field-help">
+                    Wrong number? Cancel and enter your own correct number.
+                    Sending again invalidates the previous SMS code. Your
+                    administrator cannot enter a phone number for you.
                   </p>
-                </div>
-                <label id="confirm-change-label" class="checkbox-label"
-                  ><input id="confirm-change" type="checkbox" /><span
-                    id="confirm-change-text"
-                  ></span
-                ></label>
-                <p
-                  id="manage-error"
-                  class="form-error"
-                  role="alert"
-                  tabindex="-1"
-                  hidden
-                ></p>
-                <button id="manage-submit" type="submit"></button>
-              </form>
-              <form id="phone-form" hidden>
-                <div class="tip">
-                  <strong>Check your text messages</strong>
-                  <p id="sms-destination"></p>
-                </div>
-                <label for="sms-code">Six-digit SMS code</label
-                ><input
-                  id="sms-code"
-                  class="code-input"
-                  inputmode="numeric"
-                  autocomplete="one-time-code"
-                  maxlength="6"
-                  pattern="[0-9]{6}"
-                  required
-                  aria-describedby="sms-code-help"
-                />
-                <p id="sms-code-help" class="field-help">
-                  Use the code in the SMS, not the one in your authenticator. It
-                  expires in 5 minutes.
-                </p>
-                <p
-                  id="phone-error"
-                  class="form-error"
-                  role="alert"
-                  tabindex="-1"
-                  hidden
-                ></p>
-                <div class="actions">
-                  <button type="submit">Verify phone</button
-                  ><button type="button" class="secondary" id="resend-sms">
-                    Send another code
-                  </button>
-                </div>
-                <p id="sms-wait" class="field-help" role="timer"></p>
-                <p class="field-help">
-                  Wrong number? Ask the administrator to update your student
-                  record. Sending again invalidates the previous SMS code.
-                </p>
-              </form>
-            </section>
+                </form>
+              </section>
+            </div>
+            <aside class="help-column" aria-label="Recovery explained">
+              <section class="help-card">
+                <p class="eyebrow">A quick explanation</p>
+                <h2>Three different things.<br />One safer account.</h2>
+                <dl>
+                  <dt>Portal password</dt>
+                  <dd>The password you use to sign in.</dd>
+                  <dt>Authenticator code</dt>
+                  <dd>
+                    A six-digit code that changes in your app. It is not sent by
+                    text.
+                  </dd>
+                  <dt>Backup recovery code</dt>
+                  <dd>
+                    A longer, single-use code you save now and use only when
+                    recovering your account.
+                  </dd>
+                </dl>
+              </section>
+              <section class="help-card">
+                <h2>Good to know</h2>
+                <details>
+                  <summary>Why do I need this setup?</summary>
+                  <p>
+                    It gives you another way to reset your password if you
+                    cannot open your email. New and existing students without an
+                    authenticator must enroll before portal access.
+                  </p>
+                </details>
+                <details>
+                  <summary>I moved from an older portal.</summary>
+                  <p>
+                    Follow the status shown here for this account. If it says
+                    Not set up, connect an authenticator even if you used one
+                    with a different service. Keep signing in with your assigned
+                    student number and current portal password.
+                  </p>
+                </details>
+                <details>
+                  <summary>Will sign-in change?</summary>
+                  <p>
+                    No. You still sign in with your student number and password.
+                    The authenticator is for account recovery and approving
+                    security changes.
+                  </p>
+                </details>
+                <details>
+                  <summary>What if I lose my phone?</summary>
+                  <p>
+                    If you cannot use an enrolled method, request administrator
+                    assistance. A request does not automatically reset your
+                    password; staff must verify ownership.
+                  </p>
+                </details>
+                <a href="recovery-help.html"
+                  >Ask for setup or recovery help
+                  <span aria-hidden="true">↗</span></a
+                >
+              </section>
+            </aside>
           </div>
-          <aside class="help-column" aria-label="Recovery explained">
-            <section class="help-card">
-              <p class="eyebrow">A quick explanation</p>
-              <h2>Three different things.<br />One safer account.</h2>
-              <dl>
-                <dt>Portal password</dt>
-                <dd>The password you use to sign in.</dd>
-                <dt>Authenticator code</dt>
-                <dd>
-                  A six-digit code that changes in your app. It is not sent by
-                  text.
-                </dd>
-                <dt>Backup recovery code</dt>
-                <dd>
-                  A longer, single-use code you save now and use only when
-                  recovering your account.
-                </dd>
-              </dl>
-            </section>
-            <section class="help-card">
-              <h2>Good to know</h2>
-              <details>
-                <summary>Why do I need this setup?</summary>
-                <p>
-                  It gives you another way to reset your password if you cannot
-                  open your email. New and existing students without an
-                  authenticator must enroll before portal access.
-                </p>
-              </details>
-              <details>
-                <summary>I moved from an older portal.</summary>
-                <p>
-                  Follow the status shown here for this account. If it says Not
-                  set up, connect an authenticator even if you used one with a
-                  different service. Keep signing in with your assigned student
-                  number and current portal password.
-                </p>
-              </details>
-              <details>
-                <summary>Will sign-in change?</summary>
-                <p>
-                  No. You still sign in with your student number and password.
-                  The authenticator is for account recovery and approving
-                  security changes.
-                </p>
-              </details>
-              <details>
-                <summary>What if I lose my phone?</summary>
-                <p>
-                  If you cannot use an enrolled method, request administrator
-                  assistance. A request does not automatically reset your
-                  password; staff must verify ownership.
-                </p>
-              </details>
-              <a href="recovery-help.html"
-                >Ask for setup or recovery help
-                <span aria-hidden="true">↗</span></a
-              >
-            </section>
-          </aside>
         </div>
       </div>
       <noscript

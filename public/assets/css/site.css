@@ -1,3 +1,32 @@
+.policy-acknowledgment {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e3d6a5;
+  border-radius: 12px;
+  background: #fffbed;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.policy-acknowledgment label {
+  display: block;
+  font-weight: 500;
+}
+.policy-acknowledgment input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.policy-acknowledgment a {
+  color: #665200;
+  text-decoration: underline;
+}
+.policy-acknowledgment p {
+  margin: 0;
+}
 :root {
   --yellow: #f5c400;
   --yellow-dark: #d5a900;
@@ -20,7 +49,7 @@
 }
 
 html {
-  min-width: 320px;
+  min-width: 0;
   background: var(--canvas);
   color-scheme: light;
 }

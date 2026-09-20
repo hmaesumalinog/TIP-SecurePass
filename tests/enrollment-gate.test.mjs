@@ -5,7 +5,7 @@ import { createSession, sessionCookie } from '../netlify/functions/_shared/sessi
 
 test('portal enrollment gate fails closed on status errors and leaks no profile',async(t)=>{
   Object.assign(process.env,{APP_PEPPER:'test-only-enrollment-pepper-1234567890',SUPABASE_URL:'https://database.example.invalid',SUPABASE_SECRET_KEY:'test'});
-  const student={id:'test-student',password_changed_at:'2026-09-19T00:00:00Z',email:'synthetic@example.invalid'};
+  const student={id:'test-student',password_changed_at:'2026-09-19T00:00:00Z',email:'synthetic@example.invalid',terms_version:'2026-09-20',privacy_version:'2026-09-20'};
   let status={status:'ok',enabled:false};
   t.mock.method(globalThis,'fetch',async(url)=>{
     if(String(url).includes('rpc/recovery_settings')) return Response.json(status);
