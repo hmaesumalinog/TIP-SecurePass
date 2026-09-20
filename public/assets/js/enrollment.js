@@ -16,9 +16,9 @@
       <h2 id="enrollment-title" tabindex="-1">Set up your authenticator</h2>
       <p id="enrollment-description">Before you continue to the student portal, add an authenticator app so you can recover your account if you lose access to your email.</p>
       <ol>
-        <li>Enter your current password to start setup.</li>
-        <li>Scan the QR code or enter the setup key in your authenticator app.</li>
-        <li>Confirm its six-digit code, then save your backup recovery codes.</li>
+        <li>Verify your identity with your portal password.</li>
+        <li>Follow the guide to connect your authenticator app.</li>
+        <li>Save the backup codes provided at the end.</li>
       </ol>
       <p class="enrollment-note">This is a one-time setup for new and existing students without an authenticator. Your usual sign-in still uses your student number and password.</p>
       <p data-enrollment-error role="alert" hidden></p>

@@ -3,10 +3,7 @@
   const $ = (selector) => document.querySelector(selector);
   const page = document.body.dataset.recoveryPage;
   let token = "",
-    csrf = "",
-    savedCodes = "",
-    dirtyCodes = false;
-  let enrollmentPromptShown = false;
+    csrf = "";
   const message = (text, error = false) => {
     const node = $("#sr-message");
     node.hidden = false;
@@ -25,8 +22,6 @@
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      if (response.status === 401 && page === "security")
-        location.replace("index.html?session=expired");
       if (response.status === 401 && page === "admin-recovery")
         location.replace("login.html");
       throw new Error(
@@ -47,124 +42,6 @@
     } finally {
       buttons.forEach((button) => (button.disabled = false));
     }
-  }
-  function showCodes(codes) {
-    savedCodes = codes.join("\n");
-    dirtyCodes = true;
-    $("#backup-codes").textContent = savedCodes;
-    $("#backup-output").hidden = false;
-    const heading = $("#backup-output h2");
-    heading.setAttribute("tabindex", "-1");
-    heading.focus({ preventScroll: true });
-    $("#backup-output").scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-  async function loadSecurity() {
-    const status = await api("/.netlify/functions/security-settings");
-    if (status.status !== "ok")
-      throw new Error("Sign in again to view your security settings.");
-    $("#security-status").textContent =
-      `Authenticator: ${status.enabled ? "enrolled" : "not enrolled"} · Phone: ${status.phoneVerified ? "verified" : "not verified"} · Unused backup codes: ${status.remaining}`;
-    $("#enrollment-required").hidden = status.enabled;
-    $("#portal-ready").hidden = !status.enabled || dirtyCodes;
-    $("[data-action='disable']").hidden = !status.enabled;
-    if (!status.enabled && !enrollmentPromptShown) {
-      enrollmentPromptShown = true;
-      const focusSetup = () => {
-        $("#current-password").scrollIntoView({ block: "center" });
-        $("#current-password").focus({ preventScroll: true });
-      };
-      // The portal prompt already explained the steps. Do not show it twice.
-      if (new URLSearchParams(location.search).get("start") === "1")
-        focusSetup();
-      else window.StudentEnrollment.show({ onSetup: focusSetup });
-    }
-  }
-  if (page === "security") {
-    loadSecurity().catch((error) => {
-      $("#security-status").textContent =
-        "Security settings could not be loaded. Refresh this page to retry.";
-      message(error.message, true);
-    });
-    document.querySelectorAll("[data-action]").forEach((button) =>
-      button.addEventListener("click", () =>
-        busy(button, async () => {
-          const action = button.dataset.action;
-          if (
-            ["codes", "disable", "begin"].includes(action) &&
-            !confirm(
-              action === "disable"
-                ? "Remove your authenticator and invalidate all backup codes? Make sure you still have another recovery method."
-                : "Continue with this security change? Replacing backup codes invalidates the previous set.",
-            )
-          )
-            return;
-          const password = $("#current-password").value;
-          if (!password) throw new Error("Enter your current password above.");
-          const result = await api("/.netlify/functions/security-settings", {
-            action,
-            password,
-            code: $("#factor-code").value.trim(),
-          });
-          $("#factor-code").value = "";
-          if (result.secret) {
-            $("#setup-key").textContent = result.secret;
-            $("#qr").src = result.qr;
-            $("#enrollment").hidden = false;
-          }
-          if (action === "confirm" || action === "disable") {
-            $("#enrollment").hidden = true;
-            $("#setup-key").textContent = "";
-            $("#qr").removeAttribute("src");
-          }
-          if (action === "disable") enrollmentPromptShown = false;
-          message(
-            result.message +
-              (result.noticeSent === false
-                ? " Your security change succeeded, but its notification email could not be delivered."
-                : ""),
-          );
-          if (result.codes) showCodes(result.codes);
-          await loadSecurity();
-        }),
-      ),
-    );
-    $("#copy-codes").addEventListener("click", () =>
-      busy($("#copy-codes"), async () => {
-        await navigator.clipboard.writeText(savedCodes);
-        message("Codes copied. Store them somewhere safe.");
-      }),
-    );
-    $("#download-codes").addEventListener("click", () => {
-      const url = URL.createObjectURL(
-        new Blob(
-          [
-            "Reset Workflow backup recovery codes\nKeep private. Each code works once with your enrolled authenticator or verified phone.\n\n" +
-              savedCodes,
-          ],
-          { type: "text/plain" },
-        ),
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "reset-workflow-recovery-codes.txt";
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    });
-    $("#print-codes").addEventListener("click", () => window.print());
-    $("#saved-codes").addEventListener("click", () => {
-      dirtyCodes = false;
-      savedCodes = "";
-      $("#backup-codes").textContent = "";
-      $("#backup-output").hidden = true;
-      message("Keep your saved codes safe. They cannot be displayed again.");
-      loadSecurity().catch((error) => message(error.message, true));
-    });
-    window.addEventListener("beforeunload", (event) => {
-      if (dirtyCodes) {
-        event.preventDefault();
-        event.returnValue = "";
-      }
-    });
   }
   function onForm(selector, task) {
     const form = $(selector);

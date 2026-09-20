@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import QRCode from 'qrcode';
-import { assertPost, handleError, HttpError, json, otpDigest, randomOtp, readJson } from './_shared/http.mjs';
+import { assertPost, handleError, HttpError, json, maskPhone, otpDigest, randomOtp, readJson } from './_shared/http.mjs';
 import { query, supabase } from './_shared/supabase.mjs';
 import { base32, codeHash, currentStudent, encryptSecret, matchingStep, rate, recoveryCodes, rpc, sameOrigin, securityNotice } from './_shared/recovery.mjs';
 import { canUseUniSmsForPhone, sendUniSmsOtp } from './_shared/unisms.mjs';
@@ -8,7 +8,10 @@ import { canUseUniSmsForPhone, sendUniSmsOtp } from './_shared/unisms.mjs';
 export default async function handler(request) {
   try {
     const {student,session} = await currentStudent(request);
-    if (request.method === 'GET') return json(await rpc('recovery_settings',{p_sid:student.id,p_version:session.pv,p_action:'status',p_data:{}}));
+    if (request.method === 'GET') {
+      const status = await rpc('recovery_settings',{p_sid:student.id,p_version:session.pv,p_action:'status',p_data:{}});
+      return json({...status, ...(status.status === 'ok' ? {maskedPhone:maskPhone(student.phone)} : {})});
+    }
     assertPost(request); sameOrigin(request);
     const input = await readJson(request);
     const action = String(input.action || '');

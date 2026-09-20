@@ -12,10 +12,25 @@ pending QR key or verified phone does not satisfy this check; database errors do
 not grant portal access. Existing enrolled students are not prompted. Removing
 an authenticator requires reenrollment before the next portal/profile load.
 
-The setup action opens Security & recovery and focuses the current-password
-field. After verification, save the backup codes and choose “I saved my codes”
-to reveal “Continue to student portal”. No additional database migration is needed
-for the required prompt; it uses the existing recovery status procedure.
+The setup action opens a three-step guide: verify identity, connect an app, and
+save backup codes. Each task has its own form; students no longer reuse one
+password/code field across unrelated actions. After confirming their app,
+students save their codes, check the saved-copy acknowledgment, and choose
+“I saved my codes · Finish” to reach the completion screen and portal link.
+The acknowledgment is a usability safeguard, not proof that a file was saved.
+No additional database migration is needed; the page uses existing recovery
+procedures. Authenticated status includes only a masked phone number.
+
+Already-enrolled students see method status and separate actions for changing
+their app, replacing backup codes, and optional phone verification. Destructive
+actions explain the consequence and require a checkbox plus current password
+and authenticator proof. Removal is under Advanced, not beside initial setup.
+SMS has a separate six-digit field, a 60-second resend timer, and no automatic
+retries. An uncertain provider or network response leaves the SMS entry form
+available in case the message arrives. The setup QR has a ten-minute countdown.
+Refresh abandons unfinished setup; proofs and unsaved codes are kept only in
+memory and cleared after completion or cancellation. Existing enrollment survives
+an abandoned replacement until the new authenticator is confirmed.
 
 Enrollment must happen before access is lost. Normal sign-in remains
 password-based: an enrolled authenticator is a recovery factor, not login MFA.

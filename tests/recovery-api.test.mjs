@@ -63,6 +63,9 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     assert.equal(blocked.status,403);
     assert.equal(blocked.code,'AUTHENTICATOR_SETUP_REQUIRED');
     assert.equal(blocked.student,undefined,'Unenrolled student profile must not be disclosed');
+    const maskedStatus=await call(settings,null);
+    assert.equal(maskedStatus.maskedPhone,'+63 ••• ••• 0000');
+    assert.equal(maskedStatus.phone,undefined,'Status never returns the full phone');
     assert.equal((await call(settings,{action:'begin',password:'Original!Password123'},cookie,{Origin:'https://attacker.invalid'})).status,403);
     const begin=await call(settings,{action:'begin',password:'Original!Password123'});
     assert.match(begin.qr,/^data:image\/png;base64,/);assert.match(begin.secret,/^[A-Z2-7]{32}$/);
@@ -103,6 +106,19 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     const sms=await call(recovery,{action:'start',studentNumber:'7654333',backupCode:enrolled.codes[1],method:'sms'},'');
     assert.equal(smsCount,2);
     assert.equal((await call(recovery,{action:'verify',token:sms.token,code:smsCode},'')).status,200);
+    // The revised management forms still require independent password and app proof.
+    await db.query('update student_recovery set last_step=-1 where student_id=$1',[s.id]);
+    const freshStep=Math.floor(Date.now()/30000);
+    assert.equal((await call(settings,{action:'codes',password:'wrong',code:totp(begin.secret,freshStep)},newCookie)).status,400);
+    const replacementCodes=await call(settings,{action:'codes',password:'NewStrong!Password123',code:totp(begin.secret,freshStep)},newCookie);
+    assert.equal(replacementCodes.codes.length,10);
+    assert.notDeepEqual(replacementCodes.codes,enrolled.codes);
+    assert.equal((await call(settings,{action:'disable',password:'NewStrong!Password123',code:totp(begin.secret,freshStep)},newCookie)).status,400,'Same authenticator code cannot approve two security changes');
+    assert.equal((await call(settings,{action:'disable',password:'NewStrong!Password123',code:totp(begin.secret,freshStep+1)},newCookie)).status,'ok');
+    const removedStatus=await call(settings,null,newCookie);
+    assert.equal(removedStatus.enabled,false);
+    assert.equal(removedStatus.remaining,0);
+    assert.equal((await call(profile,null,newCookie)).status,403,'Removal restores required enrollment');
     assert.equal((await call(recovery,{action:'help',studentNumber:'7654333',contact:'synthetic@example.invalid',message:'Synthetic test request only.'},'')).status,200);
     assert.equal((await call(adminRecovery,null,'')).status,401);
     const admin=(await db.query("insert into admin_accounts(email,display_name,password_hash) values('admin@example.invalid','Test administrator','unused') returning id,password_changed_at,role")).rows[0];admin.password_changed_at=admin.password_changed_at.toISOString();
