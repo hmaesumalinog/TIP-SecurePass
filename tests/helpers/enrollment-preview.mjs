@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 
 const root=resolve('public');
 let enabled=false,broken=false,logoutFails=false,phoneVerified=false,smsFailure=false,remaining=0,policiesAccepted=false;
+let alternateMode='normal', alternateState=null, alternateStats={starts:0,verifications:0,saves:0,sms:0,help:0};
 const now=()=>new Date().toISOString();
 const directory=Array.from({length:5},(_,i)=>({id:`00000000-0000-4000-8000-00000000000${i}`,student_number:`765432${i}`,email:`demo${i}@example.invalid`,first_name:['Alex','Casey','Jordan','Morgan','Riley'][i],last_name:'Test Student',birth_date:i?'2004-03-15':null,program:'Bachelor of Science in Information Technology',year_level:'3rd Year',active:i!==4,record_version:1,must_change_password:i===0,temporary_password_expires_at:now(),created_at:now(),authenticator_enabled:i===2||i===3,phone_verified:i===2,backup_codes_remaining:i===2?10:0,policies_accepted:i>1,policies_accepted_at:now(),invitation_expired:i===0,security_status:['invited','setup','ready','attention','inactive'][i]}));
 const activity=['recovery_confirm','login_failed','policies_accepted','student_created','recovery_phone_confirm'].map((type,i)=>({id:`s-${i}`,event_type:type,created_at:now(),student_id:directory[i].id,student_number:directory[i].student_number,student_name:directory[i].first_name+' Test Student',actor:'Student / system',source:'student'}));
@@ -17,6 +18,44 @@ const student={studentNumber:'7654321',firstName:'Demo',lastName:'Student',fullN
 const server=createServer(async(req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1:4175');
   const json=(value,status=200)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
+  if(url.pathname==='/__alternate') {
+    res.writeHead(200,{'Content-Type':'text/html'});
+    res.end('<h1>Local-only alternate recovery QA</h1><p>No real accounts, SMS, or email. Use 7654321, a 32-character hexadecimal backup code, and verification code 123456. Credentials are synthetic only.</p>'+['normal','slow','start-error','verify-expiry','save-expiry','save-error','notice-error','limited','wrong-code','help-error'].map(mode=>`<p><a href="/__alternate/${mode}">${mode}</a></p>`).join('')+'<p><a href="/__alternate-stats">Request counts (no secrets)</a></p>');return;
+  }
+  if(url.pathname.startsWith('/__alternate/')) {
+    alternateMode=url.pathname.split('/').pop();alternateState=null;alternateStats={starts:0,verifications:0,saves:0,sms:0,help:0};
+    res.writeHead(302,{Location:alternateMode==='help-error'?'/recovery-help.html':'/recover.html'});res.end();return;
+  }
+  if(url.pathname==='/__alternate-stats')return json(alternateStats);
+  if(url.pathname==='/.netlify/functions/alternate-recovery') {
+    let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body);
+    if(alternateMode==='slow')await new Promise(resolve=>setTimeout(resolve,1200));
+    if(input.action==='start') {
+      alternateStats.starts++;
+      if(alternateMode==='limited')return json({message:'Too many requests. Please try again in an hour.'},429);
+      if(alternateMode==='start-error'){res.destroy();return;}
+      alternateState={token:'V'.repeat(43),verified:false,used:false,eligible:input.studentNumber==='7654321'};
+      if(input.method==='sms'&&alternateState.eligible)alternateStats.sms++;
+      return json({token:alternateState.token,message:'Synthetic recovery only.'});
+    }
+    if(input.action==='verify') {
+      alternateStats.verifications++;
+      if(!alternateState?.eligible||alternateState.used||input.token!==alternateState.token||input.code!=='123456'||alternateMode==='wrong-code')return json({message:'Recovery details could not be verified.'},400);
+      alternateState.verified=true;return json({message:'Synthetic verification only.'});
+    }
+    if(input.action==='complete') {
+      alternateStats.saves++;
+      if(alternateMode==='save-error'){res.destroy();return;}
+      if(!alternateState?.verified||alternateState.used||input.token!==alternateState.token)return json({message:'The reset could not be completed.'},400);
+      alternateState.used=true;return json({message:'Synthetic completion only.',noticeSent:alternateMode!=='notice-error'});
+    }
+    if(input.action==='help') {
+      alternateStats.help++;
+      if(alternateMode==='help-error'){res.destroy();return;}
+      return json({message:'Synthetic request recorded; nothing sent to an administrator.'});
+    }
+    return json({message:'Not available in local fixture.'},400);
+  }
   if(url.pathname==='/__migration') {
     const sql=await readFile(resolve('supabase/migrations/20260920090000_student_owned_onboarding.sql'),'utf8');
     res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'no-store'});
@@ -94,7 +133,16 @@ const server=createServer(async(req,res)=>{
   if(!path.startsWith(root+sep)){res.writeHead(403);res.end();return;}
   try{
     const types={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.svg':'image/svg+xml'};
-    const content=await readFile(path);res.writeHead(200,{'Content-Type':types[extname(path)]||'application/octet-stream','Cache-Control':'no-store'});res.end(content);
+    let content=await readFile(path);
+    // Fast timers exist ONLY in this local fixture, never in published assets.
+    if(url.pathname==='/assets/js/recovery.js') {
+      let script=content.toString();
+      if(alternateMode==='verify-expiry')script=script.replace('started + 300000','started + 3000');
+      if(alternateMode==='save-expiry')script=script.replace('started + 600000','started + 3000');
+      if(['verify-expiry','save-expiry','wrong-code'].includes(alternateMode))script=script.replace('started + 60000','started + 2000');
+      content=script;
+    }
+    res.writeHead(200,{'Content-Type':types[extname(path)]||'application/octet-stream','Cache-Control':'no-store'});res.end(content);
   }catch{res.writeHead(404);res.end('Not found');}
 });
 server.listen(4175,'127.0.0.1',()=>console.log('Local-only QA: http://127.0.0.1:4175/__fixtures'));

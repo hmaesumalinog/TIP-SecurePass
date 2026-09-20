@@ -4,12 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>Request account recovery help | TIP SecurePass</title>
+    <title>Get recovery help | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/recovery.css?v=20260917" />
-    <script src="assets/js/recovery.js?v=20260917" defer></script>
+    <link rel="stylesheet" href="assets/css/recovery.css?v=20260920r1" />
+    <script type="module" src="assets/js/recovery.js?v=20260920r1"></script>
   </head>
   <body data-recovery-page="help">
+    <a class="skip-link" href="#recovery-main">Skip to request form</a>
     <header class="sr-header">
       <a class="sr-brand" href="index.html"
         ><img
@@ -17,65 +18,152 @@
           alt=""
           width="32"
           height="40"
-        />TIP SecurePass</a
+        /><span>TIP SecurePass<small>STUDENT ACCOUNT RECOVERY</small></span></a
+      ><a class="header-link" href="recover.html"
+        >Back to recovery <span aria-hidden="true">↗</span></a
       >
-      <nav aria-label="Portal navigation">
-        <a href="index.html">Sign in</a><a href="forgot.html">Email recovery</a>
-      </nav>
     </header>
-    <main class="sr-main">
-      <h1>Request account recovery help</h1>
-      <div
-        id="sr-message"
-        role="status"
-        aria-live="polite"
-        tabindex="-1"
-        hidden
-      ></div>
-      <p class="sr-lead">
-        No access to your enrolled recovery methods? Ask the demonstration
-        administrator to review your situation remotely.
-      </p>
-      <div class="sr-notice">
-        This form does not reset your password. Do not submit passwords, OTPs,
-        recovery codes, identity documents, or sensitive personal information. A
-        reply is not guaranteed immediately.
+    <main class="sr-main" id="recovery-main">
+      <div class="page-heading">
+        <p class="eyebrow">You don’t have to figure it out alone</p>
+        <h1>Get recovery help</h1>
+        <p class="sr-lead">
+          No backup code or access to your recovery methods? Tell an
+          administrator what happened.
+        </p>
       </div>
-      <form id="help-form" class="sr-card">
-        <label for="help-number">Student number</label
-        ><input
-          id="help-number"
-          name="studentNumber"
-          inputmode="numeric"
-          pattern="[0-9]{7}"
-          maxlength="7"
-          required
-        /><label for="help-contact"
-          >How can the administrator contact you?</label
-        ><input
-          id="help-contact"
-          name="contact"
-          minlength="5"
-          maxlength="254"
-          required
-          autocomplete="email"
-        /><small
-          >This is an unverified contact for communication only. It will not
-          replace your account email.</small
-        ><label for="help-message">What access have you lost?</label
-        ><textarea
-          id="help-message"
-          name="message"
-          minlength="10"
-          maxlength="1000"
-          rows="5"
-          required
-        ></textarea
-        ><button>Submit for review</button>
-      </form>
+      <div class="recovery-layout">
+        <aside class="help-sidebar">
+          <p class="journey-label">WHAT HAPPENS NEXT</p>
+          <ol class="help-timeline">
+            <li>
+              <span class="timeline-number" aria-hidden="true">1</span>
+              <strong>Your request is recorded</strong>
+              <p>An administrator can review it in the recovery queue.</p>
+            </li>
+            <li>
+              <span class="timeline-number" aria-hidden="true">2</span>
+              <strong>Your identity needs to be checked</strong>
+              <p>
+                The contact you provide is for communication, not proof that you
+                own the account.
+              </p>
+            </li>
+            <li>
+              <span class="timeline-number" aria-hidden="true">3</span>
+              <strong>Get guidance on the next step</strong>
+              <p>
+                There is no guaranteed response time. Submitting this form does
+                not reset your password.
+              </p>
+            </li>
+          </ol>
+          <a class="subtle-link" href="recover.html"
+            >Still have a backup code? Try self-service recovery</a
+          >
+        </aside>
+        <div class="flow-column">
+          <div class="flow-card">
+            <div
+              id="sr-message"
+              class="flow-message"
+              role="alert"
+              tabindex="-1"
+              hidden
+            ></div>
+            <form id="help-form" novalidate>
+              <p class="step-eyebrow">REQUEST A REVIEW</p>
+              <h2 tabindex="-1">Tell us how we can help</h2>
+              <p class="section-intro">
+                Keep it brief. Share only what’s needed to explain the access
+                problem.
+              </p>
+              <div class="field">
+                <label for="help-number">Student number</label
+                ><input
+                  id="help-number"
+                  name="studentNumber"
+                  inputmode="numeric"
+                  pattern="[0-9]{7}"
+                  minlength="7"
+                  maxlength="7"
+                  required
+                  autocomplete="username"
+                  placeholder="Your 7-digit student number"
+                />
+              </div>
+              <div class="field">
+                <label for="help-contact">A contact you can access now</label
+                ><input
+                  id="help-contact"
+                  name="contact"
+                  minlength="5"
+                  maxlength="254"
+                  required
+                  autocomplete="off"
+                  placeholder="A reachable email address or phone number"
+                  aria-describedby="contact-help"
+                /><small id="contact-help"
+                  >You can use a different email address. This will not replace
+                  the email or phone on your account.</small
+                >
+              </div>
+              <div class="field">
+                <label for="help-message">What are you unable to access?</label
+                ><textarea
+                  id="help-message"
+                  name="message"
+                  minlength="10"
+                  maxlength="1000"
+                  rows="4"
+                  required
+                  placeholder="For example: I lost my old phone and can’t find my saved backup codes."
+                  aria-describedby="help-privacy"
+                ></textarea>
+              </div>
+              <div class="quiet-note" id="help-privacy">
+                <strong>Keep your recovery details private.</strong>Don’t
+                include passwords, verification codes, backup codes, identity
+                documents, or other sensitive information.
+              </div>
+              <button class="primary-button full" type="submit">
+                Send request for review <span aria-hidden="true">→</span>
+              </button>
+              <p class="form-footnote">
+                Your account and password stay unchanged when you submit this
+                form.
+              </p>
+            </form>
+            <section id="help-success" hidden>
+              <div class="state-icon success" aria-hidden="true">✓</div>
+              <p class="step-eyebrow">REQUEST RECORDED</p>
+              <h2 tabindex="-1">You’ve asked for help</h2>
+              <p class="section-intro">
+                Your request is in the administrator’s review queue. They can
+                use the contact you provided to follow up after reviewing it.
+              </p>
+              <div class="quiet-note">
+                Your password has not been reset. Identity verification is still
+                required, and there is no guaranteed response time. You don’t
+                need to submit the same request again.
+              </div>
+              <a class="primary-button full" href="index.html"
+                >Return to sign in</a
+              ><a class="subtle-link centered" href="recover.html"
+                >Review other recovery options</a
+              >
+            </section>
+          </div>
+        </div>
+      </div>
+      <noscript
+        ><p class="flow-message">
+          Enable JavaScript to submit a recovery request.
+        </p></noscript
+      >
     </main>
     <footer>
-      Academic demonstration · Not the official TIP student portal
+      Academic demonstration · Not the official T.I.P. student portal
     </footer>
   </body>
 </html>

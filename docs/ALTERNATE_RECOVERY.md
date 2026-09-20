@@ -41,12 +41,12 @@ ten single-use backup codes. Codes can be copied, downloaded, or printed, and ar
 shown only in that response. Losing that response requires authenticated code
 regeneration. New codes invalidate every old code and pending alternate recovery.
 
-Phone recovery must first verify the current phone on the student record. The
-security page does not change contact details. First-time phone verification
-also generates backup codes when no authenticator or codes exist. SMS-only users
-request a fresh phone code before replacing backup codes. Changing the stored phone invalidates
-phone verification and pending SMS recovery. SMS delivery uses the existing
-UniSMS integration; there is no simulated-code fallback.
+Students add or replace their own recovery phone on the security page. Current
+password and fresh authenticator proof are required before the SMS verification
+step, and the new number is activated only after SMS verification succeeds.
+Administrators do not enter student phone numbers. Changing the stored phone
+invalidates outstanding SMS recovery. Delivery uses the existing UniSMS
+integration; there is no simulated-code fallback in production.
 
 `recover.html` requires a backup code plus either the enrolled authenticator or
 verified phone. A verified request grants ten minutes to change the password; it
@@ -54,6 +54,37 @@ does not sign the user in or allow contact/factor changes. Codes are consumed at
 successful verification, even if the student subsequently leaves the reset flow.
 The browser keeps the request token in memory, not local storage or URLs. A page
 reload starts a new recovery flow; unused backup codes remain available.
+
+### Guided recovery screens
+
+The public page now separates **Choose a method → Your details → Verify it’s you
+→ New password**. Method cards explain which app or phone must already be
+enrolled. A backup-code explanation and administrator-help route are available
+before a student submits anything. The long backup code and six-digit proof have
+different fields and instructions. Pasted backup-code separators and OTP spaces
+are accepted; password guidance matches the endpoint's conservative no-seven-digit
+number policy.
+
+The five-minute verification and ten-minute password windows have client-side
+countdowns; database expiry remains authoritative. Requests are never sent on
+page load or automatically retried. Buttons lock while a request is pending, and
+a 60-second client cooldown complements existing database limits. Requesting a
+new SMS requires explicitly starting again and re-entering an unused backup
+code. Starting over after verification explains that the previous backup code
+has already been consumed. The server still permits only three eligible starts
+per hour and five verification attempts per request.
+
+Expired, failed, rate-limited and uncertain network outcomes have distinct
+guidance. If a password-save response is lost, the page suggests trying the new
+password at sign-in rather than claiming the account is unchanged. Page exit
+clears proofs and abandons in-flight responses; no token is placed in storage or
+a URL. The assistance page explains the separate identity-review process and
+shows a receipt state without claiming immediate access or automatic replies.
+
+This UI release requires no new SQL migration. Browser fixtures use synthetic
+accounts and mocked provider responses only; they are outside the publish
+directory. Automated database/API tests cover the underlying real SQL and
+handlers. Live-device delivery is a separate check.
 
 ## Security controls
 
