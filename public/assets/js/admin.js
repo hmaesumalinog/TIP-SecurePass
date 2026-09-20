@@ -671,6 +671,7 @@
     $("#student-last-name").value = student?.last_name || "";
     $("#student-birthday").value = student?.birth_date || "";
     $("#student-birthday").required = !student || !!student.birth_date;
+    $("#student-birthday").dispatchEvent(new Event("change"));
     const select = $("#student-program");
     select.querySelector("[data-existing-program]")?.remove();
     if (

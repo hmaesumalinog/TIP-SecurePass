@@ -11,7 +11,15 @@
       type="image/svg+xml"
     />
     <link rel="stylesheet" href="../assets/css/admin.css?v=20260920b" />
-    <script src="../assets/js/admin.js?v=20260920b" defer></script>
+    <link
+      rel="stylesheet"
+      href="../assets/css/birthday-picker.css?v=20260920"
+    />
+    <script
+      type="module"
+      src="../assets/js/birthday-picker.mjs?v=20260920"
+    ></script>
+    <script src="../assets/js/admin.js?v=20260920c" defer></script>
   </head>
   <body data-admin-page="students">
     <a class="admin-skip" href="#admin-main">Skip to content</a>
@@ -187,9 +195,11 @@
               class="admin-input"
               id="student-birthday"
               type="date"
+              data-birthday-picker
+              aria-describedby="birthday-help"
               required
             />
-            <small
+            <small id="birthday-help"
               >For student records, not an identity-verification answer. Leave
               blank only for an existing record with no known birthday.</small
             >
