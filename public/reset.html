@@ -3,301 +3,338 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="Verify identity and create a new student portal password."
-    />
-    <title>Secure Password Reset | TIP SecurePass</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Let’s reset your password | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260905" />
-    <script src="assets/js/site.js?v=20260917" defer></script>
+    <link rel="stylesheet" href="assets/css/recovery.css?v=20260920r1" />
+    <link rel="stylesheet" href="assets/css/email-recovery.css?v=20260920e1" />
+    <script
+      type="module"
+      src="assets/js/email-recovery.js?v=20260920e1"
+    ></script>
   </head>
-  <body data-page="reset">
-    <div class="top-strip"></div>
-    <header class="site-header">
-      <a class="brand" href="index.html"
-        ><img src="assets/images/brand-mark.svg" alt="" /><span
-          class="brand-copy"
-          ><span class="brand-name">TIP SecurePass</span
-          ><span class="brand-subtitle"
-            >Student portal · Quezon City</span
-          ></span
-        ></a
+  <body data-email-page="reset">
+    <a class="skip-link" href="#recovery-main">Skip to recovery</a>
+    <header class="sr-header">
+      <a class="sr-brand" href="index.html"
+        ><img
+          src="assets/images/brand-mark.svg"
+          alt=""
+          width="32"
+          height="40"
+        /><span>TIP SecurePass<small>STUDENT ACCOUNT RECOVERY</small></span></a
+      ><a class="header-link" href="index.html"
+        >Back to sign in <span aria-hidden="true">↗</span></a
       >
     </header>
-    <main class="page-shell">
-      <section class="auth-grid" aria-labelledby="page-title">
-        <div class="story-panel">
-          <div class="story-content">
-            <p class="eyebrow">Two-channel verification</p>
-            <h1 id="page-title">
-              One more check protects everything behind this login.
-            </h1>
-            <p class="lead">
-              Email access alone cannot authorize the change. The phone code
-              confirms control of an independent channel.
+    <main class="sr-main" id="recovery-main">
+      <div class="page-heading">
+        <p class="eyebrow">A little help getting back in</p>
+        <h1>Let’s reset your password</h1>
+        <p class="sr-lead">
+          You’re in the right place. Keep this page open as you complete the
+          next steps.
+        </p>
+      </div>
+      <div class="recovery-layout">
+        <aside class="journey" aria-label="Your recovery progress">
+          <p class="journey-label">ONE STEP AT A TIME</p>
+          <ol class="progress-list" id="email-progress">
+            <li>
+              <span class="step-number" aria-hidden="true">1</span
+              ><span
+                ><strong>Your email</strong
+                ><small>Tell us where to send the link</small></span
+              >
+            </li>
+            <li>
+              <span class="step-number" aria-hidden="true">2</span
+              ><span
+                ><strong>Check your inbox</strong
+                ><small>Open your recovery email</small></span
+              >
+            </li>
+            <li aria-current="step">
+              <span class="step-number" aria-hidden="true">3</span
+              ><span
+                ><strong>Phone code</strong
+                ><small>Verify with your registered phone</small></span
+              >
+            </li>
+            <li>
+              <span class="step-number" aria-hidden="true">4</span
+              ><span
+                ><strong>New password</strong
+                ><small>Get back to your portal</small></span
+              >
+            </li>
+          </ol>
+          <div class="journey-note">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              aria-hidden="true"
+            >
+              <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
+              <path d="m8 12 3 3 5-6" />
+            </svg>
+            <p>
+              Two checks. One fresh start.<span
+                >Your email link and phone code work together before a password
+                can change.</span
+              >
             </p>
           </div>
-          <div class="trust-list">
-            <div class="trust-item">
-              <div class="trust-icon">5m</div>
-              <span
-                ><strong>Short expiry</strong><br />OTP expires quickly</span
-              >
-            </div>
-            <div class="trust-item">
-              <div class="trust-icon">5×</div>
-              <span
-                ><strong>Attempt limit</strong><br />Challenge locks after
-                failures</span
-              >
-            </div>
-            <div class="trust-item">
-              <div class="trust-icon">1×</div>
-              <span
-                ><strong>Single use</strong><br />Tokens cannot be
-                replayed</span
-              >
-            </div>
-          </div>
-        </div>
-        <div class="form-panel">
-          <div class="form-panel-inner">
-            <ol class="stepper" aria-label="Password reset progress">
-              <li class="step done">
-                <span class="step-dot">✓</span><span>Request</span>
-              </li>
-              <li class="step done">
-                <span class="step-dot">✓</span><span>Email link</span>
-              </li>
-              <li class="step active" id="otp-step">
-                <span class="step-dot">3</span><span>Phone code</span>
-              </li>
-              <li class="step" id="password-step">
-                <span class="step-dot">4</span><span>New password</span>
-              </li>
-            </ol>
-
-            <div id="loading-view" class="centered" aria-live="polite">
-              <span class="loading" aria-hidden="true"></span>
-              <p class="form-intro">Checking your secure link…</p>
-            </div>
-
-            <div id="recovery-error-view" class="hidden">
-              <h2 id="recovery-error-title"></h2>
-              <p
-                class="form-intro"
-                id="recovery-error-message"
-                role="alert"
-              ></p>
-              <div class="stack">
-                <button class="button full" type="button" id="retry-reset">
-                  Try again
-                </button>
-                <a class="button secondary full" href="forgot.html"
-                  >Request a new reset link</a
-                >
-                <a class="text-button centered" href="index.html"
-                  >Return to sign in</a
-                >
-              </div>
-            </div>
-            <div id="invalid-view" class="hidden">
-              <h2>This link can’t be used</h2>
-              <p class="form-intro">
-                It may have expired, already been used, or been copied
-                incorrectly.
+          <p class="email-alternative">
+            No access to your email or phone?<br /><a href="recover.html"
+              >See other recovery options</a
+            >
+          </p>
+        </aside>
+        <div class="flow-column">
+          <div class="flow-card" id="email-flow">
+            <div
+              class="flow-message"
+              id="flow-error"
+              role="alert"
+              tabindex="-1"
+              hidden
+            ></div>
+            <section data-view="loading">
+              <p class="step-eyebrow">CHECKING YOUR REQUEST</p>
+              <h2 tabindex="-1">Opening your reset link…</h2>
+              <p class="section-intro" role="status">
+                Please wait while we check your link and prepare the phone
+                verification step.
               </p>
-              <div class="stack">
-                <div class="notice error">
-                  <span class="notice-icon">!</span>
-                  <div>
-                    <strong>Your account has not changed.</strong>Request a
-                    fresh link to safely start again.
-                  </div>
-                </div>
-                <a class="button full" href="forgot.html"
-                  >Request a new reset link</a
-                >
-                <a class="button secondary full" href="index.html"
-                  >Return to sign in</a
-                >
-              </div>
-            </div>
-
-            <div id="otp-view" class="hidden">
-              <h2>Enter your phone code</h2>
-              <p class="form-intro">
-                We sent a 6-digit code to
-                <strong id="masked-phone">your registered phone</strong>. The
-                code expires in 5 minutes.
+            </section>
+            <section data-view="stopped" hidden>
+              <div class="state-icon warning" aria-hidden="true">!</div>
+              <h2 id="stopped-title" tabindex="-1">We couldn’t continue yet</h2>
+              <p class="section-intro" id="stopped-message"></p>
+              <button
+                class="secondary-button full"
+                type="button"
+                id="retry-reset"
+                hidden
+              >
+                Check this request again</button
+              ><a class="primary-button full restart-button" href="forgot.html"
+                >Request a new reset link</a
+              ><a class="subtle-link centered" href="recover.html"
+                >Need another recovery method?</a
+              >
+            </section>
+            <section data-view="otp" hidden>
+              <p class="step-eyebrow">STEP 3 OF 4</p>
+              <h2 tabindex="-1">Check your phone</h2>
+              <p class="section-intro">
+                Enter the six-digit code for this request, sent to
+                <strong id="masked-phone">your registered phone</strong>.
               </p>
-              <p id="delivery-status" class="hint" role="status"></p>
-              <form class="stack" id="otp-form" novalidate>
+              <div id="delivery-status" class="quiet-note" role="status"></div>
+              <form id="otp-form" novalidate>
                 <div class="field">
-                  <label for="otp-1">Verification code</label>
-                  <div class="otp-entry">
-                    <input
-                      id="otp-1"
-                      name="code"
-                      type="text"
-                      aria-label="Six-digit verification code"
-                      inputmode="numeric"
-                      autocomplete="one-time-code"
-                      maxlength="6"
-                      pattern="[0-9]{6}"
-                      placeholder="000000"
-                      aria-describedby="delivery-status otp-error"
-                      required
-                    />
-                  </div>
-                  <div class="otp-meta">
-                    <span>5 attempts maximum</span
-                    ><span class="timer" id="otp-timer">05:00</span>
-                  </div>
+                  <label for="otp-code">Six-digit text message code</label
+                  ><input
+                    id="otp-code"
+                    class="otp-input"
+                    name="code"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="12"
+                    pattern="[0-9]{6}"
+                    placeholder="000000"
+                    aria-describedby="otp-help"
+                    required
+                  /><small id="otp-help"
+                    >Enter or paste all 6 digits. This isn’t your authenticator
+                    or backup code.</small
+                  >
                 </div>
-                <div id="demo-sms" class="demo-card hidden">
-                  <div class="demo-card-header">
-                    <h3>Demonstration verification code</h3>
-                  </div>
-                  <div class="demo-code" id="demo-otp-code">000000</div>
-                  <p>
-                    In production this code would be delivered by an SMS
-                    provider, never shown in the browser.
-                  </p>
+                <div class="timer-row">
+                  <span>Time left to use this code</span
+                  ><strong id="otp-timer" class="countdown" aria-live="off"
+                    >05:00</strong
+                  >
                 </div>
-                <p class="form-error" id="otp-error" role="alert"></p>
-                <button class="button full" type="submit">
-                  Verify code <span aria-hidden="true">→</span>
+                <button class="primary-button full" type="submit">
+                  Verify and continue <span aria-hidden="true">→</span>
                 </button>
-                <a class="text-button centered" href="support.html"
-                  >I can’t access this phone</a
-                >
+                <p class="form-footnote">
+                  Up to 5 attempts per code. Keep your code private.
+                </p>
               </form>
-
-              <div class="stack">
-                <button
-                  class="button secondary full"
-                  type="button"
-                  id="resend-code"
-                  disabled
-                >
-                  Resend code
-                </button>
-                <a class="text-button centered" href="forgot.html"
-                  >Request a new reset link</a
-                >
+              <div id="demo-sms" class="quiet-note" hidden>
+                <strong>Simulated code — local demonstration only</strong
+                ><span id="demo-code"></span>
               </div>
-              <div class="stack hidden" id="otp-expired" tabindex="-1">
-                <div class="notice error">
-                  <span class="notice-icon">!</span>
-                  <div>
-                    <strong>This code has expired.</strong>Verification codes
-                    are short-lived on purpose. Your account has not changed —
-                    request a new reset link to start again.
-                  </div>
-                </div>
-                <a class="button full" href="forgot.html"
-                  >Request a new reset link</a
-                >
-                <a class="button secondary full" href="index.html"
-                  >Back to sign in</a
-                >
-              </div>
-            </div>
-
-            <div id="password-view" class="hidden">
-              <h2>Create a new password</h2>
-              <p class="form-intro">
-                Use a unique passphrase you don’t use for email or other
-                services.
+              <details class="help-disclosure">
+                <summary>Haven’t received a text?</summary>
+                <p>
+                  Check your mobile signal and blocked or filtered messages.
+                  Delivery can take a moment. Keep this page open; reopening the
+                  email does not send a new code.
+                </p>
+                <p>
+                  If needed, use the button below when it becomes available. A
+                  new code replaces the old one. Texts are never resent
+                  automatically.
+                </p>
+              </details>
+              <button
+                class="secondary-button full restart-button"
+                type="button"
+                id="resend-code"
+                disabled
+              >
+                Send a new code
+              </button>
+              <p class="form-footnote" id="sms-wait" aria-live="off"></p>
+              <a class="subtle-link centered" href="recover.html"
+                >I can’t use this phone</a
+              >
+            </section>
+            <section data-view="password" hidden>
+              <p class="step-eyebrow">STEP 4 OF 4</p>
+              <h2 tabindex="-1">Choose your new password</h2>
+              <p class="section-intro">
+                You’re verified. Choose a password you don’t use for email or
+                any other account.
               </p>
-              <p id="password-time" class="hint" role="status"></p>
-              <p id="password-match" class="hint" role="status"></p>
-              <form class="stack" id="password-form" novalidate>
+              <div class="verified-note">
+                <span aria-hidden="true">✓</span
+                ><span
+                  ><strong>Email and phone checks complete</strong>One last
+                  step, then you can sign in again.</span
+                >
+              </div>
+              <form id="password-form" novalidate>
                 <div class="field">
                   <label for="new-password">New password</label>
-                  <div class="input-wrap">
+                  <div class="password-field">
                     <input
                       id="new-password"
                       type="password"
                       autocomplete="new-password"
+                      minlength="12"
                       maxlength="128"
-                      placeholder="At least 12 characters"
                       required
-                    />
-                    <button
-                      class="icon-button"
+                      aria-describedby="password-rules"
+                    /><button
+                      class="reveal-button"
                       type="button"
-                      data-toggle-password="new-password"
-                      aria-label="Show password"
+                      data-reveal="new-password"
+                      aria-label="Show new password"
+                      aria-pressed="false"
                     >
-                      ◉
+                      Show
                     </button>
                   </div>
-                  <div class="strength" id="strength" data-score="0">
-                    <div class="strength-bars" aria-hidden="true">
-                      <span></span><span></span><span></span><span></span>
-                    </div>
-                    <div class="strength-copy">
-                      <span>Password strength</span
-                      ><strong id="strength-label">Start typing</strong>
-                    </div>
-                  </div>
-                  <ul class="requirements" id="password-requirements">
-                    <li data-rule="length">12+ characters</li>
-                    <li data-rule="upper">Uppercase letter</li>
-                    <li data-rule="lower">Lowercase letter</li>
-                    <li data-rule="number">Number</li>
-                    <li data-rule="symbol">Symbol</li>
-                    <li data-rule="student">Not your student ID</li>
-                  </ul>
                 </div>
+                <ul class="password-rules" id="password-rules">
+                  <li data-rule="length">12–128 characters</li>
+                  <li data-rule="case">Uppercase and lowercase letters</li>
+                  <li data-rule="number">At least one number</li>
+                  <li data-rule="symbol">At least one symbol</li>
+                  <li data-rule="identifier">
+                    No 7-digit number, such as a student number
+                  </li>
+                </ul>
                 <div class="field">
                   <label for="confirm-password">Confirm new password</label>
-                  <input
-                    id="confirm-password"
-                    type="password"
-                    autocomplete="new-password"
-                    maxlength="128"
-                    placeholder="Enter it again"
-                    required
-                  />
+                  <div class="password-field">
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      autocomplete="new-password"
+                      minlength="12"
+                      maxlength="128"
+                      required
+                      aria-describedby="password-match"
+                    /><button
+                      class="reveal-button"
+                      type="button"
+                      data-reveal="confirm-password"
+                      aria-label="Show confirm new password"
+                      aria-pressed="false"
+                    >
+                      Show
+                    </button>
+                  </div>
+                  <small id="password-match"
+                    >Enter the same password again.</small
+                  >
                 </div>
-                <p class="form-error" id="password-error" role="alert"></p>
-                <button class="button full" type="submit">
-                  Update password securely
+                <div class="timer-row">
+                  <span>Time left to save your password</span
+                  ><strong id="password-timer" class="countdown" aria-live="off"
+                    >10:00</strong
+                  >
+                </div>
+                <button class="primary-button full" type="submit">
+                  Save new password
                 </button>
+                <p class="form-footnote">
+                  Saving signs out previous sessions and closes outstanding
+                  reset requests.
+                </p>
               </form>
-            </div>
-
-            <div id="complete-view" class="hidden" tabindex="-1">
-              <div class="complete-icon" aria-hidden="true">✓</div>
-              <div class="centered">
-                <h2>Password updated</h2>
-                <p class="form-intro">
-                  Your reset credentials are now invalid. A confirmation has
-                  been sent to your school email.
+              <div class="quiet-note restart-button" id="uncertain-save" hidden>
+                The save may have completed even though we couldn’t confirm it.
+                <a href="index.html">Try signing in with your new password</a>
+                before starting another reset.
+              </div>
+            </section>
+            <section data-view="complete" hidden>
+              <div class="state-icon success" aria-hidden="true">✓</div>
+              <p class="step-eyebrow">ALL DONE</p>
+              <h2 tabindex="-1">Your new password is ready</h2>
+              <p class="section-intro">
+                Sign in with your student number and the password you just
+                created.
+              </p>
+              <div class="success-summary">
+                <p>
+                  <span aria-hidden="true">✓</span> Previous sessions have been
+                  signed out.
+                </p>
+                <p>
+                  <span aria-hidden="true">✓</span> Your email link and phone
+                  code cannot be reused.
                 </p>
               </div>
-              <div class="stack">
-                <div class="notice success">
-                  <span class="notice-icon">✓</span>
-                  <div>
-                    <strong>Security check complete</strong>Your email link and
-                    phone code cannot be reused.
-                  </div>
-                </div>
-                <a class="button full" href="index.html">Continue to sign in</a>
-              </div>
-            </div>
+              <p class="quiet-note" id="notice-status"></p>
+              <a class="primary-button full" href="index.html"
+                >Return to sign in <span aria-hidden="true">→</span></a
+              >
+              <p class="form-footnote">
+                After signing in, review your methods in Security &amp;
+                recovery.
+              </p>
+            </section>
+          </div>
+          <div class="support-strip">
+            <span>Need a hand?</span
+            ><a href="recovery-help.html"
+              >Ask an administrator for help
+              <span aria-hidden="true">→</span></a
+            >
           </div>
         </div>
-      </section>
+      </div>
+      <noscript
+        ><p class="flow-message">
+          Please enable JavaScript to use password recovery. No messages will be
+          sent without it.
+        </p></noscript
+      >
     </main>
-    <footer class="site-footer">
-      <strong>Academic project environment.</strong> Not affiliated with or
-      connected to the official TIP student portal.
+    <footer>
+      Academic demonstration · Not the official T.I.P. student portal
     </footer>
   </body>
 </html>

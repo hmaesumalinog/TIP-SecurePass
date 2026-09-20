@@ -92,6 +92,9 @@ These checks confirm the project files and tested provider contracts. A final re
 
 ## Important operating notes
 
+See [Email recovery and transactional messages](docs/EMAIL_RECOVERY.md) for the
+student flow, shared email templates, and local-only visual test scenarios.
+
 - Use synthetic or specifically authorized student information during demonstrations.
 - Keep `DEMO_MODE=false` when demonstrating real SMS delivery. A visible demonstration code must never be exposed after a real SMS attempt.
 - Change the sample database record and password before sharing a deployed environment.

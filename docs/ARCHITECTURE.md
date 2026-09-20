@@ -27,6 +27,9 @@ The frontend is plain HTML, CSS, and vanilla JavaScript.
 - `index.html` handles student sign-in.
 - `forgot.html` starts password recovery.
 - `reset.html` handles the email-link, phone-code, and new-password stages.
+- `assets/js/email-recovery.js` controls both email-recovery pages. It shares
+  password and code-format helpers with the alternate-recovery flow; login
+  behavior remains in `assets/js/site.js`.
 - `portal.html` is the authenticated academic dashboard.
 - `profile.html` displays the signed-in student's Supabase-backed information.
 - `support.html` provides a safe lost-phone fallback message.

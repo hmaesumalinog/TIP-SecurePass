@@ -1,51 +1,17 @@
-function escapeHtml(value) {
-  return String(value).replace(
-    /[&<>'"]/g,
-    (character) =>
-      ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;'
-      })[character]
-  );
-}
-
-function withEmailIdentity(message) {
-  const appName = String(process.env.EMAIL_APP_NAME || 'Reset Workflow').trim() || 'Reset Workflow';
-  let siteHost = 'resetworkflow.site';
-  try {
-    siteHost = new URL(process.env.SITE_URL || 'https://resetworkflow.site').host;
-  } catch {
-    /* Keep the safe fallback when SITE_URL is malformed. */
-  }
-  return Object.fromEntries(
-    Object.entries(message).map(([key, value]) => {
-      if (typeof value !== 'string') return [key, value];
-      const html = key === 'html';
-      return [key, value.replaceAll('Reset Workflow', html ? escapeHtml(appName) : appName).replaceAll('resetworkflow.site', html ? escapeHtml(siteHost) : siteHost)];
-    })
-  );
-}
+import { transactionalEmail } from './email-template.mjs';
 
 export async function sendEmail({ to, subject, html, text, idempotencyKey }) {
   const apiKey = process.env.RESEND_API_KEY;
-  // Keep the visible identity aligned with the domain that actually sends the
-  // message. The site is an academic demonstration, not an official school
-  // mail system, so the sender must not imply otherwise.
+  // The sending domain identifies the academic project, not the school.
   const from = process.env.RESEND_FROM || 'TIP SecurePass <portal@auth.resetworkflow.site>';
   if (!apiKey) {
     if (process.env.DEMO_MODE === 'true') return { skipped: true };
     throw new Error('RESEND_API_KEY is not configured.');
   }
+  if (!subject || !html || !text) throw new Error('A complete email template is required.');
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'Idempotency-Key': idempotencyKey
-    },
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
     body: JSON.stringify({ from, to: [to], subject, html, text })
   });
   const data = await response.json().catch(() => ({}));
@@ -54,56 +20,98 @@ export async function sendEmail({ to, subject, html, text, idempotencyKey }) {
 }
 
 export function resetEmail({ firstName, resetLink, expiresMinutes = 15 }) {
-  const name = escapeHtml(firstName || 'Student');
-  const link = escapeHtml(resetLink);
-  return withEmailIdentity({
-    subject: 'Reset Workflow: requested password reset',
-    text: `Hello ${firstName || 'Student'},\n\nYou requested a password reset for the Reset Workflow academic demonstration at resetworkflow.site. This is not the official TIP student portal.\n\nOpen this single-use link to continue: ${resetLink}\n\nThe link expires in ${expiresMinutes} minutes. You will also need the code sent to your registered phone. If you did not request this, ignore this email.`,
-    html: `<!doctype html><html><body style="margin:0;background:#f2f4f5;font-family:Arial,sans-serif;color:#1e252c"><div style="max-width:560px;margin:32px auto;background:#fff;border-top:6px solid #f5c400;padding:36px;border-radius:8px"><p style="font-size:12px;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:#786000">Reset Workflow · Academic demonstration</p><h1 style="font-size:26px;margin:18px 0">Continue your password reset</h1><p>Hello ${name},</p><p>You requested a password reset for the demonstration at <strong>resetworkflow.site</strong>. This is not the official TIP student portal.</p><p>The link is single-use, expires in ${expiresMinutes} minutes, and does not change your password by itself.</p><p style="margin:28px 0"><a href="${link}" style="display:inline-block;background:#f5c400;color:#1e252c;text-decoration:none;font-weight:bold;padding:14px 20px;border-radius:7px">Continue at resetworkflow.site</a></p><p>You will still need the verification code sent to your registered phone.</p><hr style="border:0;border-top:1px solid #dce1e4;margin:28px 0"><p style="font-size:13px;color:#59656d">If you did not request this, no action is needed. Do not forward this email or share the link.</p></div></body></html>`
+  return transactionalEmail({
+    kind: 'password-reset', subject: 'requested password reset', firstName,
+    category: 'Account recovery', title: 'Let’s get you back in',
+    preview: `Your password reset link is ready. It expires in ${expiresMinutes} minutes.`,
+    paragraphs: ['We received a request to reset your student account password. Opening this link does not change your password by itself.'],
+    callout: { title: `Use this link within ${expiresMinutes} minutes`, text: 'Keep your registered phone nearby. You will need its six-digit text message code next.' },
+    action: { label: 'Continue password reset', url: resetLink },
+    steps: ['Open the reset link on a device you trust.', 'Enter the six-digit code sent to your registered phone.', 'Choose a new password, then sign in again.'],
+    safety: 'Didn’t request this? You can ignore this email. Do not forward it or share the reset link or verification code.'
   });
 }
 
-export function recoveryOptionsEmail({firstName,origin,invited}) {
-  const text = `Hello ${firstName || 'Student'},\n\nYou requested account recovery for the Reset Workflow academic demonstration, not the official TIP portal.\n\n${invited ? 'Your account is waiting for first-time setup. Use the latest invitation and temporary password, or ask the project administrator to reissue an expired invitation.' : 'No verified recovery phone is enrolled. You can use a saved backup code together with your authenticator to recover your account.'}\n\n${invited ? origin+'/' : origin+'/recover.html'}\n\nIf you cannot use your enrolled methods, request reviewed assistance at ${origin}/recovery-help.html. This email does not change your password or grant account access. If you did not request it, ignore it.`;
-  return withEmailIdentity({subject:'Reset Workflow: your account recovery options',text,html:`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;line-height:1.6"><h1>Account recovery options</h1><p style="white-space:pre-line">${escapeHtml(text)}</p></div>`});
+export function recoveryOptionsEmail({ firstName, origin, invited }) {
+  const base = origin.replace(/\/$/, '');
+  return transactionalEmail({
+    kind: invited ? 'invitation-help' : 'recovery-options', subject: 'your account recovery options', firstName,
+    category: 'Account recovery', title: invited ? 'Let’s finish your account setup' : 'Another way to recover your account',
+    preview: invited ? 'Use your latest invitation to finish first-time setup.' : 'Use your saved backup code and authenticator to continue.',
+    paragraphs: [invited
+      ? 'Your account is waiting for first-time setup. Find your latest invitation email and use its student number and temporary password.'
+      : 'Your account does not have a verified recovery phone. You can recover without email using one unused backup code and the authenticator app you connected earlier.'],
+    callout: { title: invited ? 'Invitation expired or missing?' : 'What you’ll need', text: invited
+      ? 'Ask the project administrator to issue a new temporary password. This message does not include a new one.'
+      : 'Your seven-digit student number, one saved backup code, and the current six-digit code from your authenticator app.' },
+    action: { label: invited ? 'Go to student sign in' : 'View recovery options', url: invited ? `${base}/` : `${base}/recover.html` },
+    secondary: { label: 'Missing a recovery method? Request administrator help', url: `${base}/recovery-help.html` },
+    safety: 'This email does not change your password or grant account access. If you did not request recovery, you can ignore it.'
+  });
 }
 
 export function resetConfirmationEmail({ firstName }) {
-  const name = escapeHtml(firstName || 'Student');
-  return withEmailIdentity({
-    subject: 'Reset Workflow: password changed',
-    text: `Hello ${firstName || 'Student'},\n\nYour password for the Reset Workflow academic demonstration at resetworkflow.site was changed. This is not the official TIP student portal. If this was not you, contact the demonstration administrator immediately.`,
-    html: `<!doctype html><html><body style="margin:0;background:#f2f4f5;font-family:Arial,sans-serif;color:#1e252c"><div style="max-width:560px;margin:32px auto;background:#fff;border-top:6px solid #178450;padding:36px;border-radius:8px"><p style="font-size:12px;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:#356147">Reset Workflow · Security notice</p><h1 style="font-size:26px;margin:18px 0">Password changed</h1><p>Hello ${name},</p><p>Your password for the academic demonstration at <strong>resetworkflow.site</strong> was changed after ownership verification. This is not the official TIP student portal.</p><div style="background:#f0faf4;border:1px solid #b9dfca;padding:14px;border-radius:7px;margin:24px 0"><strong>Previous sessions and outstanding reset authorizations are now invalid.</strong></div><p>If you did not make this change, contact the demonstration administrator immediately.</p></div></body></html>`
+  return transactionalEmail({
+    kind: 'password-changed', subject: 'password changed', firstName,
+    category: 'Security notice', title: 'Your password has been changed',
+    preview: 'Your password reset is complete. Review this notice if it wasn’t you.',
+    paragraphs: ['Your account password was changed after ownership verification. You can now sign in with your student number and new password.'],
+    callout: { title: 'Previous access has been closed', text: 'Previous sessions and outstanding reset authorizations are now invalid.' },
+    safety: 'If you did not make this change, contact the demonstration administrator immediately. No password or recovery code is included in this notice.'
   });
 }
 
 export function studentWelcomeEmail({ firstName, studentNumber, temporaryPassword, signInLink, expiresHours = 24 }) {
-  const name = escapeHtml(firstName || 'Student');
-  const safeNumber = escapeHtml(studentNumber);
-  const safePassword = escapeHtml(temporaryPassword);
-  const safeLink = escapeHtml(signInLink);
-  return withEmailIdentity({
-    subject: 'Your Reset Workflow demo account is ready',
-    text: `Hello ${firstName || 'Student'},\n\nAn administrator created an account for you in the Reset Workflow academic demonstration at resetworkflow.site. This is not the official TIP student portal.\n\nStudent number: ${studentNumber}\nTemporary password: ${temporaryPassword}\n\nSign in at ${signInLink}\n\nThe temporary password expires in ${expiresHours} hours and works only for first-time setup. After signing in, review the terms and privacy notice, create a personal password, connect an authenticator and save your backup codes. You can then add and verify your own optional mobile number. Do not share this email or password.`,
-    html: `<!doctype html><html><body style="margin:0;background:#f2f4f5;font-family:Arial,sans-serif;color:#1e252c"><div style="max-width:560px;margin:32px auto;background:#fff;border-top:6px solid #f5c400;padding:36px;border-radius:8px"><p style="font-size:12px;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:#786000">Reset Workflow · Academic demonstration</p><h1 style="font-size:26px;margin:18px 0">Your demo account is ready</h1><p>Hello ${name},</p><p>An administrator created an account for you in the demonstration at <strong>resetworkflow.site</strong>. This is not the official TIP student portal.</p><p>Use these one-time credentials to sign in:</p><div style="margin:24px 0;padding:18px;background:#fff8d8;border:1px solid #ead474;border-radius:8px"><p style="margin:0 0 10px"><strong>Student number</strong><br><span style="font-size:20px">${safeNumber}</span></p><p style="margin:0"><strong>Temporary password</strong><br><code style="display:inline-block;margin-top:5px;font-size:20px;font-weight:bold;letter-spacing:.04em;color:#1e252c">${safePassword}</code></p></div><p style="margin:28px 0"><a href="${safeLink}" style="display:inline-block;background:#f5c400;color:#1e252c;text-decoration:none;font-weight:bold;padding:14px 20px;border-radius:7px">Sign in at resetworkflow.site</a></p><p>The temporary password expires in ${expiresHours} hours. Review the terms and privacy notice, create your own password, connect an authenticator and save your backup codes. You can then add and verify an optional mobile number yourself.</p><hr style="border:0;border-top:1px solid #dce1e4;margin:28px 0"><p style="font-size:13px;color:#59656d">Do not forward this email or share the temporary password. If you were not expecting this account, contact the demonstration administrator.</p></div></body></html>`
+  return transactionalEmail({
+    kind: 'student-invitation', subject: 'your demo account is ready', firstName,
+    category: 'Welcome to your student account', title: 'Your account is ready to set up',
+    preview: 'Your student sign-in details and first-time setup steps.',
+    paragraphs: ['An administrator created an account for you. Use these temporary credentials for first-time setup.'],
+    credentials: [{ label: 'Student number', value: studentNumber }, { label: 'Temporary password', value: temporaryPassword }],
+    callout: { title: `Temporary password expires in ${expiresHours} hours`, text: 'It works only for first-time setup. You will replace it with your own password.' },
+    action: { label: 'Set up my student account', url: signInLink },
+    steps: ['Sign in, review the terms and privacy notice, and create your own password.', 'Connect your authenticator app and save your backup codes.', 'You can then add and verify your own optional mobile number.'],
+    safety: 'Do not forward this email or share the temporary password. If you were not expecting this account, contact the demonstration administrator.'
   });
 }
 
 export function firstLoginConfirmationEmail({ firstName }) {
-  const name = escapeHtml(firstName || 'Student');
-  return withEmailIdentity({
-    subject: 'Reset Workflow: password setup complete',
-    text: `Hello ${firstName || 'Student'},\n\nYour permanent password for the Reset Workflow academic demonstration at resetworkflow.site has been created, and the temporary password is no longer valid. This is not the official TIP student portal. If this was not you, contact the demonstration administrator immediately.`,
-    html: `<!doctype html><html><body style="margin:0;background:#f2f4f5;font-family:Arial,sans-serif;color:#1e252c"><div style="max-width:560px;margin:32px auto;background:#fff;border-top:6px solid #178450;padding:36px;border-radius:8px"><p style="font-size:12px;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:#356147">Reset Workflow · Security notice</p><h1 style="font-size:26px;margin:18px 0">Password setup complete</h1><p>Hello ${name},</p><p>Your permanent password for the academic demonstration at <strong>resetworkflow.site</strong> has been created successfully. This is not the official TIP student portal.</p><div style="background:#f0faf4;border:1px solid #b9dfca;padding:14px;border-radius:7px;margin:24px 0"><strong>The temporary password is now invalid and cannot be reused.</strong></div><p>If you did not complete this setup, contact the demonstration administrator immediately.</p></div></body></html>`
+  return transactionalEmail({
+    kind: 'password-setup', subject: 'password setup complete', firstName,
+    category: 'Security notice', title: 'Your own password is now set',
+    preview: 'Password setup is complete. Your temporary password no longer works.',
+    paragraphs: ['Your permanent password has been created successfully. Continue the on-screen setup to connect your authenticator and save your backup codes if you haven’t done so yet.'],
+    callout: { title: 'Your temporary password is now invalid', text: 'It cannot be used again. Keep your new password private.' },
+    safety: 'If you did not complete this setup, contact the demonstration administrator immediately.'
   });
 }
 
 export function adminVerificationEmail({ displayName, code, expiresMinutes = 5 }) {
-  const name = escapeHtml(displayName || 'Administrator');
-  const safeCode = escapeHtml(code);
-  return withEmailIdentity({
-    subject: 'Reset Workflow administrator sign-in code',
-    text: `Hello ${displayName || 'Administrator'},\n\nYour administrator verification code for the Reset Workflow academic demonstration at resetworkflow.site is ${code}. It expires in ${expiresMinutes} minutes and can be used once. If you did not attempt to sign in, do not share this code.`,
-    html: `<!doctype html><html><body style="margin:0;background:#f2f4f5;font-family:Arial,sans-serif;color:#1e252c"><div style="max-width:540px;margin:32px auto;background:#fff;border-top:6px solid #f5c400;padding:36px;border-radius:8px"><p style="font-size:12px;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:#786000">Reset Workflow · Administrator verification</p><h1 style="font-size:25px;margin:18px 0">Confirm your sign-in</h1><p>Hello ${name},</p><p>Enter this one-time code in the administrator sign-in screen for <strong>resetworkflow.site</strong>:</p><div style="margin:26px 0;padding:18px;background:#fff7ce;border:1px solid #ead474;border-radius:8px;text-align:center;font-size:30px;font-weight:bold;letter-spacing:.24em">${safeCode}</div><p>The code expires in ${expiresMinutes} minutes and works once. If you did not attempt to sign in, do not share it.</p></div></body></html>`
+  return transactionalEmail({
+    kind: 'admin-verification', subject: 'administrator sign-in code', firstName: displayName || 'Administrator',
+    category: 'Administrator verification', title: 'Confirm your sign-in',
+    preview: 'Use your one-time code on the administrator sign-in screen.',
+    paragraphs: ['Enter this one-time code on the administrator sign-in screen you already opened.'],
+    credentials: [{ label: 'Verification code', value: code }],
+    callout: { title: `Expires in ${expiresMinutes} minutes`, text: 'This code works once. It is not a student password-reset code.' },
+    safety: 'If you did not attempt to sign in, do not use or share this code. Contact the project administrator if these notices keep arriving.'
+  });
+}
+
+const securityEvents = {
+  confirm: ['Authenticator connected', 'An authenticator app was connected to your account for recovery.'],
+  codes: ['New backup codes created', 'A new set of backup recovery codes was created. The previous set is no longer valid. Keep the new codes somewhere private.'],
+  disable: ['Authenticator recovery removed', 'Your authenticator recovery method was removed. Review Security & recovery after signing in to check which methods are still available.'],
+  phone_confirm: ['Recovery phone verified', 'A mobile number was verified for account recovery. Review Security & recovery after signing in if you need to check your registered phone.'],
+  'password reset': ['Your password has been changed', 'Your password was changed using an enrolled recovery method and a backup code. Previous sessions and outstanding reset authorizations are now invalid.']
+};
+export function securityNoticeEmail({ event }) {
+  const [title, description] = securityEvents[event] || ['Your account security settings changed', 'A security setting was changed on your account. Review Security & recovery after signing in.'];
+  return transactionalEmail({
+    kind: 'account-security', subject: 'account security notice', category: 'Security notice', title,
+    preview: 'A security change was completed. Please review this notice.',
+    paragraphs: [description],
+    callout: { title: 'Was this you?', text: 'If you recognize this change, no action is needed for this notice.' },
+    safety: 'If this was not you, contact the demonstration administrator immediately. No passwords, authenticator secrets, phone numbers, or recovery codes are included in this notice.'
   });
 }

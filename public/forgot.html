@@ -3,159 +3,268 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="Request a secure student portal password reset."
-    />
-    <title>Forgot Password | TIP SecurePass</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Forgot your password? | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260920b" />
-    <script src="assets/js/site.js?v=20260917" defer></script>
+    <link rel="stylesheet" href="assets/css/recovery.css?v=20260920r1" />
+    <link rel="stylesheet" href="assets/css/email-recovery.css?v=20260920e1" />
+    <script
+      type="module"
+      src="assets/js/email-recovery.js?v=20260920e1"
+    ></script>
   </head>
-  <body data-page="forgot">
-    <div class="top-strip"></div>
-    <header class="site-header">
-      <a class="brand" href="index.html"
-        ><img src="assets/images/brand-mark.svg" alt="" /><span
-          class="brand-copy"
-          ><span class="brand-name">TIP SecurePass</span
-          ><span class="brand-subtitle"
-            >Student portal · Quezon City</span
-          ></span
-        ></a
+  <body data-email-page="forgot">
+    <a class="skip-link" href="#recovery-main">Skip to recovery</a>
+    <header class="sr-header">
+      <a class="sr-brand" href="index.html"
+        ><img
+          src="assets/images/brand-mark.svg"
+          alt=""
+          width="32"
+          height="40"
+        /><span>TIP SecurePass<small>STUDENT ACCOUNT RECOVERY</small></span></a
+      ><a class="header-link" href="index.html"
+        >Back to sign in <span aria-hidden="true">↗</span></a
       >
     </header>
-    <main class="page-shell">
-      <section class="auth-grid" aria-labelledby="page-title">
-        <div class="story-panel">
-          <div class="story-content">
-            <p class="eyebrow">Account recovery</p>
-            <h1 id="page-title">
-              Reset access without giving email all the power.
-            </h1>
-            <p class="lead">
-              We first confirm your school email. A second, separate
-              verification step is required before a password can change.
+    <main class="sr-main" id="recovery-main">
+      <div class="page-heading">
+        <p class="eyebrow">A little help getting back in</p>
+        <h1>Forgot your password?</h1>
+        <p class="sr-lead">
+          It happens. We’ll guide you back to your account, one step at a time.
+        </p>
+      </div>
+      <div class="recovery-layout">
+        <aside class="journey" aria-label="Your recovery progress">
+          <p class="journey-label">ONE STEP AT A TIME</p>
+          <ol class="progress-list" id="email-progress">
+            <li aria-current="step">
+              <span class="step-number" aria-hidden="true">1</span
+              ><span
+                ><strong>Your email</strong
+                ><small>Tell us where to send the link</small></span
+              >
+            </li>
+            <li>
+              <span class="step-number" aria-hidden="true">2</span
+              ><span
+                ><strong>Check your inbox</strong
+                ><small>Open your recovery email</small></span
+              >
+            </li>
+            <li>
+              <span class="step-number" aria-hidden="true">3</span
+              ><span
+                ><strong>Phone code</strong
+                ><small>Verify with your registered phone</small></span
+              >
+            </li>
+            <li>
+              <span class="step-number" aria-hidden="true">4</span
+              ><span
+                ><strong>New password</strong
+                ><small>Get back to your portal</small></span
+              >
+            </li>
+          </ol>
+          <div class="journey-note">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              aria-hidden="true"
+            >
+              <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
+              <path d="m8 12 3 3 5-6" />
+            </svg>
+            <p>
+              Two checks. One fresh start.<span
+                >Your email link and phone code work together before a password
+                can change.</span
+              >
             </p>
           </div>
-          <div class="trust-list">
-            <div class="trust-item">
-              <div class="trust-icon">1</div>
-              <span><strong>Request</strong><br />Enter school email</span>
-            </div>
-            <div class="trust-item">
-              <div class="trust-icon">2</div>
-              <span
-                ><strong>Verify</strong><br />Use email link + SMS code</span
-              >
-            </div>
-            <div class="trust-item">
-              <div class="trust-icon">3</div>
-              <span
-                ><strong>Secure</strong><br />Create a stronger password</span
-              >
-            </div>
-          </div>
-        </div>
-        <div class="form-panel">
-          <div class="form-panel-inner">
-            <ol class="stepper" aria-label="Password reset progress">
-              <li class="step active">
-                <span class="step-dot">1</span><span>Request</span>
-              </li>
-              <li class="step">
-                <span class="step-dot">2</span><span>Email link</span>
-              </li>
-              <li class="step">
-                <span class="step-dot">3</span><span>Phone code</span>
-              </li>
-              <li class="step">
-                <span class="step-dot">4</span><span>New password</span>
-              </li>
-            </ol>
-
-            <div id="request-view">
-              <h2>Forgot your password?</h2>
-              <p class="form-intro">
-                Enter the school email connected to your account. We’ll send a
-                single-use link that expires in 15 minutes.
+          <p class="email-alternative">
+            No access to your email or phone?<br /><a href="recover.html"
+              >See other recovery options</a
+            >
+          </p>
+        </aside>
+        <div class="flow-column">
+          <div class="flow-card" id="email-flow">
+            <div
+              class="flow-message"
+              id="flow-error"
+              role="alert"
+              tabindex="-1"
+              hidden
+            ></div>
+            <section data-view="request">
+              <p class="step-eyebrow">STEP 1 OF 4</p>
+              <h2 tabindex="-1">Start with your email</h2>
+              <p class="section-intro">
+                Use the email connected to your student account. We’ll send
+                instructions for the recovery options available to you.
               </p>
-              <form class="stack" id="forgot-form" novalidate>
+              <form id="forgot-form" novalidate>
                 <div class="field">
-                  <label for="school-email">School email</label>
-                  <input
+                  <label for="school-email">Account email address</label
+                  ><input
                     id="school-email"
-                    name="email"
                     type="email"
+                    name="email"
                     autocomplete="email"
-                    placeholder="student@tip.edu.ph"
+                    inputmode="email"
+                    maxlength="254"
+                    spellcheck="false"
+                    autocapitalize="none"
+                    placeholder="e.g. student@tip.edu.ph"
+                    aria-describedby="email-help"
                     required
-                  />
-                  <span class="hint"
-                    >For privacy, the response is the same whether or not an
-                    account exists.</span
+                  /><small id="email-help"
+                    >Enter the address you use for this portal, not your student
+                    number.</small
                   >
                 </div>
-                <p class="form-error" id="forgot-error" role="alert"></p>
-                <button class="button full" type="submit">
-                  Send secure reset link <span aria-hidden="true">→</span>
+                <button
+                  class="primary-button full"
+                  id="send-email"
+                  type="submit"
+                >
+                  Send recovery email <span aria-hidden="true">→</span>
                 </button>
-                <a class="button secondary full" href="index.html"
-                  >Back to sign in</a
-                >
-                <a class="text-button centered" href="recover.html"
-                  >Can’t access your email? Try another recovery method</a
-                >
-              </form>
-            </div>
-
-            <div id="sent-view" class="hidden" tabindex="-1">
-              <div class="complete-icon" aria-hidden="true">✓</div>
-              <div class="centered">
-                <h2>Check your email</h2>
-                <p class="form-intro">
-                  If an account matches that email, we’ll send the next steps.
-                  Accounts with a verified phone receive a single-use reset link
-                  that expires in 15 minutes. Otherwise, the message explains
-                  invitation setup or backup-code recovery.
+                <p
+                  class="form-footnote"
+                  id="request-wait"
+                  aria-live="off"
+                  hidden
+                ></p>
+                <p class="form-footnote">
+                  Requesting an email will not change your password.
                 </p>
-              </div>
-              <div class="stack">
-                <div class="notice">
-                  <span class="notice-icon">i</span>
-                  <div>
-                    <strong>Nothing arrived?</strong>Check spam, wait a minute,
-                    or try again. For safety, we limit repeated requests.
-                  </div>
-                </div>
-                <button
-                  class="button secondary full"
-                  type="button"
-                  id="send-again"
-                >
-                  Change email address
-                </button>
-                <button
-                  class="button full"
-                  type="button"
-                  id="resend-email"
-                  disabled
-                >
-                  Resend email in 60 seconds
-                </button>
-                <p id="email-status" class="hint" role="status"></p>
-                <a class="text-button centered" href="support.html"
-                  >I no longer have access to my phone</a
+              </form>
+              <div class="what-to-expect">
+                <strong>Have these ready</strong
+                ><span
+                  >Access to your account email and the phone you previously
+                  verified. The reset link lasts 15 minutes.</span
                 >
               </div>
-            </div>
+              <details class="help-disclosure">
+                <summary>New account or no verified phone?</summary>
+                <p>
+                  Your email will explain the right next step. New accounts use
+                  their invitation and temporary password. If you haven’t
+                  verified a phone, you may need your saved backup code and
+                  authenticator instead.
+                </p>
+              </details>
+              <a class="help-route" href="recover.html"
+                ><span>Can’t open your email?</span
+                ><span>Other options →</span></a
+              >
+            </section>
+            <section data-view="sent" hidden>
+              <div class="state-icon mail-symbol" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                >
+                  <rect x="3" y="5" width="18" height="14" rx="3" />
+                  <path d="m4 7 8 6 8-6" />
+                </svg>
+              </div>
+              <p class="step-eyebrow">STEP 2 OF 4</p>
+              <h2 tabindex="-1">Check your email</h2>
+              <p class="section-intro">
+                If an account matches the address below, we’ll email its next
+                steps. For your privacy, we don’t confirm whether an account
+                exists.
+              </p>
+              <div class="email-destination">
+                <span>ADDRESS YOU ENTERED</span
+                ><strong id="email-destination"></strong
+                ><button id="change-email" class="text-button" type="button">
+                  Edit email address
+                </button>
+              </div>
+              <ol class="inbox-steps">
+                <li>
+                  <span class="inbox-number" aria-hidden="true">1</span>
+                  <strong>Look for the recovery message</strong
+                  ><span
+                    >Check your inbox and Spam or Junk folder. Delivery can take
+                    a few minutes.</span
+                  >
+                </li>
+                <li>
+                  <span class="inbox-number" aria-hidden="true">2</span>
+                  <strong>Follow the steps in that email</strong
+                  ><span
+                    >A reset link lasts 15 minutes. You’ll then verify your
+                    phone code and choose a new password. If your account needs
+                    setup or another method, the email explains it.</span
+                  >
+                </li>
+              </ol>
+              <div
+                class="quiet-note"
+                id="email-status"
+                role="status"
+                hidden
+              ></div>
+              <button
+                class="secondary-button full"
+                id="resend-email"
+                type="button"
+                disabled
+              >
+                Send another email
+              </button>
+              <p class="form-footnote" id="email-wait" aria-live="off"></p>
+              <details class="help-disclosure">
+                <summary>Still can’t find the message?</summary>
+                <p>
+                  Check the address above for spelling mistakes. Search your
+                  mail for “requested password reset” or “account recovery
+                  options”. If you requested more than one message, use the most
+                  recent one.
+                </p>
+                <p>
+                  A delivered email may be filtered by your email provider.
+                  Sending repeatedly won’t guarantee inbox placement, and
+                  requests are limited for your safety.
+                </p>
+              </details>
+              <a class="help-route" href="recover.html"
+                ><span>Lost access to email or phone?</span
+                ><span>Other options →</span></a
+              >
+            </section>
+          </div>
+          <div class="support-strip">
+            <span>Need a hand?</span
+            ><a href="recovery-help.html"
+              >Ask an administrator for help
+              <span aria-hidden="true">→</span></a
+            >
           </div>
         </div>
-      </section>
+      </div>
+      <noscript
+        ><p class="flow-message">
+          Please enable JavaScript to use password recovery. No messages will be
+          sent without it.
+        </p></noscript
+      >
     </main>
-    <footer class="site-footer">
-      <strong>Academic project environment.</strong> Not affiliated with or
-      connected to the official TIP student portal.
+    <footer>
+      Academic demonstration · Not the official T.I.P. student portal
     </footer>
   </body>
 </html>

@@ -47,7 +47,7 @@ export default async function handler(request) {
         details: {}
       },
       'id'
-    );
+    ).catch(() => console.error('Verified OTP audit event could not be recorded.'));
     return json({ grantToken, expiresIn: 600 });
   } catch (error) {
     return handleError(error);

@@ -97,3 +97,14 @@ test('verified codes cannot be replayed', async () => {
   const response=await verify(request({challengeId:id,code:'123456'}));
   assert.equal(response.status,410); assert.equal(calls,1);
 });
+test('an audit outage after OTP verification does not hide the issued reset grant', async () => {
+  globalThis.fetch=async url=>{
+    if(url.includes('otp_challenges?'))return Response.json([{id,student_id:id,otp_hash:otpDigest('012345'),expires_at:new Date(Date.now()+300000).toISOString(),attempts:0}]);
+    if(url.includes('consume_student_otp_attempt'))return Response.json([{status:'verified',student_id:id}]);
+    if(url.includes('reset_grants?'))return Response.json([{id}]);
+    if(url.includes('audit_events?'))return Response.json({message:'Synthetic audit outage'},{status:503});
+    throw new Error('Unexpected test request');
+  };
+  const response=await verify(request({challengeId:id,code:'012345'}));
+  assert.equal(response.status,200);assert.ok((await response.json()).grantToken);
+});

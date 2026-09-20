@@ -26,12 +26,14 @@ export default async function handler(request) {
     if (!student?.email) throw new HttpError(410, 'This verified reset session has expired or already been used.');
 
     const mail = resetConfirmationEmail({ firstName: student.first_name });
+    let noticeSent = false;
     try {
-      await sendEmail({
+      const delivery = await sendEmail({
         to: student.email,
         ...mail,
         idempotencyKey: `changed-${student.event_id}`
       });
+      noticeSent = !delivery.skipped;
     } catch (emailError) {
       console.error('Password changed; confirmation email failed:', emailError instanceof Error ? emailError.message : 'Unknown error');
       await insert(
@@ -42,9 +44,9 @@ export default async function handler(request) {
           details: {}
         },
         'id'
-      );
+      ).catch(() => console.error('Confirmation failure could not be recorded.'));
     }
-    return json({ message: 'Password updated successfully.' });
+    return json({ message: 'Password updated successfully.', noticeSent });
   } catch (error) {
     return handleError(error);
   }

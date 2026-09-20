@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } f
 import { HttpError, otpDigest, safeEqual, sha256 } from './http.mjs';
 import { supabase, query } from './supabase.mjs';
 import { readSession } from './session.mjs';
-import { sendEmail } from './resend.mjs';
+import { sendEmail, securityNoticeEmail } from './resend.mjs';
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 export function base32(bytes) {
@@ -74,8 +74,7 @@ export function sameOrigin(request) {
 }
 export async function securityNotice(email, event, id) {
   try {
-    const text = `A security change (${event}) was completed for your Reset Workflow academic demonstration account at resetworkflow.site. This is not the official TIP portal. If this was not you, contact the demonstration administrator immediately. No recovery codes are included in this notice.`;
-    await sendEmail({to:email,subject:'Reset Workflow: account security notice',text,html:`<p>${text}</p>`,idempotencyKey:`recovery-${id}`});
-    return true;
+    const result = await sendEmail({to:email,...securityNoticeEmail({event}),idempotencyKey:`recovery-${id}`});
+    return !result.skipped;
   } catch { console.error('Recovery security notification could not be delivered.'); return false; }
 }
