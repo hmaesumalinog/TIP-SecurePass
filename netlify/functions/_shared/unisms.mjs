@@ -50,13 +50,13 @@ async function unisms(path, body) {
   const apiKey = required('UNISMS_API_KEY');
   const credentials = Buffer.from(`${apiKey}:`, 'utf8').toString('base64');
   const response = await fetch(`${baseUrl()}${path}`, {
-    method: 'POST',
+    method: body === undefined ? 'GET' : 'POST',
     headers: {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/json',
       Accept: 'application/json'
     },
-    body: JSON.stringify(body),
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     signal: AbortSignal.timeout(10_000)
   });
   const data = await response.json().catch(() => ({}));
@@ -67,23 +67,49 @@ async function unisms(path, body) {
   return data;
 }
 
-export async function sendUniSmsOtp(phone, otp) {
-  const recipient = normalizeUniSmsPhone(phone);
+export function otpMessage(otp, purpose = 'password_reset') {
   if (!/^\d{6}$/.test(String(otp))) throw new Error('The SMS verification code must contain 6 digits.');
+  const purposes = {
+    password_reset: 'reset your password',
+    phone_verification: 'verify your recovery phone number'
+  };
+  if (!Object.hasOwn(purposes, purpose)) throw new Error('Unsupported SMS verification purpose.');
+  // Both database challenges expire after five minutes. Use plain GSM text and
+  // include brand, OTP, purpose and expiry as required by provider filtering.
+  return `Your Reset Workflow OTP code is ${otp}. Use it to ${purposes[purpose]}. Please do not share. Expires in 5 minutes.`;
+}
+
+function delivery(message) {
+  const status = String(message?.status || '').toLowerCase();
+  if (['failed', 'rejected', 'error'].includes(status)) return 'failed';
+  if (status === 'sent') return 'sent';
+  if (['pending', 'queued', 'retrying'].includes(status)) return 'pending';
+  return 'unknown';
+}
+
+export async function getUniSmsStatus(referenceId) {
+  if (!/^[A-Za-z0-9_-]{1,100}$/.test(referenceId || '')) throw new Error('Invalid SMS reference.');
+  const data = await unisms(`/sms/${encodeURIComponent(referenceId)}`);
+  // Never forward the provider payload: it contains the recipient and OTP.
+  return { status: delivery(data?.message || data) };
+}
+
+export async function sendUniSmsOtp(phone, otp, purpose = 'password_reset') {
+  const recipient = normalizeUniSmsPhone(phone);
   const data = await unisms('/sms', {
     recipient,
-    // UniSMS requires the service name and a clear account-reset purpose in
-    // transactional SMS content. Keep this concise enough for one SMS part.
-    content: `Your Reset Workflow verification code is ${otp} for UniSMS account reset. Do not share.`,
+    content: otpMessage(otp, purpose),
     sender_id: required('UNISMS_SENDER_ID'),
-    metadata: { template: 'password_reset_otp' }
+    metadata: { template: `${purpose}_otp` }
   });
   const message = data?.message || data;
-  const status = String(message?.status || '').toLowerCase();
-  if (['failed', 'rejected', 'error'].includes(status)) {
-    throw new Error(message?.fail_reason || 'UniSMS rejected the SMS message.');
+  const status = delivery(message);
+  if (status === 'failed') {
+    const error = new Error('UniSMS rejected the SMS message.');
+    error.code = 'SMS_REJECTED';
+    throw error;
   }
   const referenceId = message?.reference_id || data?.reference_id || data?.id || '';
-  if (!referenceId) throw new Error('UniSMS did not return a message reference.');
-  return { referenceId, recipient };
+  if (typeof referenceId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(referenceId)) throw new Error('UniSMS did not return a valid message reference.');
+  return { referenceId, recipient, status };
 }

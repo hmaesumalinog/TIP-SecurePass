@@ -16,6 +16,75 @@
   let phoneNumber = "",
     phoneProof = "",
     phoneDestination = "";
+  let deliveryReceipt = "",
+    deliveryStatus = "unknown",
+    deliveryTimer = 0,
+    deliveryGeneration = 0,
+    deliveryChecks = 0,
+    deliveryBusy = false;
+
+  function stopDeliveryChecks() {
+    clearTimeout(deliveryTimer);
+    deliveryGeneration++;
+    deliveryReceipt = "";
+    deliveryChecks = 0;
+    deliveryBusy = false;
+  }
+  function showDelivery(value) {
+    deliveryStatus = value;
+    const messages = {
+      pending:
+        "SMS queued. The provider is still processing it. You do not need to send another code.",
+      sent: "The SMS provider reports that your code was sent. Check your phone; mobile-network delivery can still take a moment.",
+      failed:
+        "The SMS provider could not send this code. Your phone number has not changed. Wait before trying again; if it fails again, contact the portal administrator.",
+      unknown:
+        "We could not confirm the SMS status. If a code arrives, you can still enter it. Check your messages before requesting another.",
+    };
+    $("#sms-delivery").textContent = messages[value] || messages.unknown;
+    $("#sms-delivery").hidden = false;
+    $("#sms-delivery").classList.toggle("form-error", value === "failed");
+    updateTimers();
+  }
+  async function checkDelivery() {
+    if (
+      !deliveryReceipt ||
+      deliveryBusy ||
+      busy ||
+      deliveryChecks >= 10 ||
+      ["sent", "failed"].includes(deliveryStatus)
+    )
+      return;
+    clearTimeout(deliveryTimer);
+    const generation = deliveryGeneration;
+    deliveryBusy = true;
+    deliveryChecks++;
+    updateTimers();
+    try {
+      const result = await api({
+        action: "phone_status",
+        receipt: deliveryReceipt,
+      });
+      if (generation !== deliveryGeneration) return;
+      showDelivery(result.deliveryStatus || "unknown");
+    } catch (error) {
+      if (generation !== deliveryGeneration) return;
+      showDelivery("unknown");
+      if ([410, 429].includes(error.status)) deliveryReceipt = "";
+    } finally {
+      if (generation === deliveryGeneration) {
+        deliveryBusy = false;
+        updateTimers();
+        // At most three automatic read-only checks. Never send another SMS here.
+        if (
+          deliveryReceipt &&
+          deliveryStatus === "pending" &&
+          deliveryChecks < 3
+        )
+          deliveryTimer = setTimeout(checkDelivery, 7000);
+      }
+    }
+  }
 
   function notice(text, error = false) {
     const node = $("#page-message");
@@ -111,6 +180,7 @@
     });
   }
   function clearPrivate() {
+    stopDeliveryChecks();
     password = "";
     phoneNumber = "";
     phoneProof = "";
@@ -413,6 +483,7 @@
     }),
   );
   async function sendSms() {
+    stopDeliveryChecks();
     // Start cooldown before the request; an uncertain delivery must not cause repeats.
     smsUntil = Date.now() + 60 * 1000;
     try {
@@ -425,8 +496,11 @@
       phoneDestination = result.maskedPhone || "the number you entered";
       phoneProof = "";
       errorAt("#phone-error", "");
+      deliveryReceipt = result.deliveryReceipt || "";
+      showDelivery(result.deliveryStatus || "unknown");
     } catch (error) {
       if (![0, 502].includes(error.status)) throw error;
+      showDelivery("unknown");
       errorAt("#phone-error", error.message);
     }
     $("#manage-form").reset();
@@ -436,6 +510,8 @@
       `A verification SMS was requested for ${phoneDestination || "the number you entered"}. Check that phone for the latest code. Your number is not changed until verification succeeds.`;
     $("#sms-code").value = "";
     $("#sms-code").focus();
+    if (deliveryReceipt && deliveryStatus === "pending")
+      deliveryTimer = setTimeout(checkDelivery, 3000);
   }
   onSubmit("#manage-form", "#manage-error", async () => {
     const proof = $("#manage-password").value;
@@ -495,6 +571,7 @@
     if (Date.now() < smsUntil) return;
     run($("#resend-sms"), "#phone-error", sendSms);
   });
+  $("#check-sms-delivery").addEventListener("click", checkDelivery);
   function updateTimers() {
     const remaining = Math.max(0, Math.ceil((setupUntil - Date.now()) / 1000));
     if (pendingSetup) {
@@ -505,6 +582,13 @@
     }
     const smsWait = Math.max(0, Math.ceil((smsUntil - Date.now()) / 1000));
     $("#resend-sms").disabled = busy || smsWait > 0;
+    $("#check-sms-delivery").hidden =
+      !deliveryReceipt || ["sent", "failed"].includes(deliveryStatus);
+    $("#check-sms-delivery").disabled =
+      busy || deliveryBusy || deliveryChecks >= 10;
+    $("#check-sms-delivery").textContent = deliveryBusy
+      ? "Checking SMS status…"
+      : "Check SMS status";
     $("#sms-wait").textContent = smsWait
       ? `You can request another SMS in ${smsWait} seconds.`
       : "No SMS yet? You can request another code. Delivery depends on your mobile network.";

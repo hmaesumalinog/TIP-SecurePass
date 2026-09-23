@@ -1,9 +1,10 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import QRCode from 'qrcode';
-import { assertPost, handleError, HttpError, json, maskPhone, otpDigest, randomOtp, readJson } from './_shared/http.mjs';
+import { assertPost, handleError, HttpError, json, maskPhone, otpDigest, randomOtp, readJson, sha256 } from './_shared/http.mjs';
 import { query, supabase } from './_shared/supabase.mjs';
 import { base32, codeHash, currentStudent, encryptSecret, matchingStep, rate, recoveryCodes, rpc, sameOrigin, securityNotice } from './_shared/recovery.mjs';
-import { canUseUniSmsForPhone, normalizeUniSmsPhone, sendUniSmsOtp } from './_shared/unisms.mjs';
+import { canUseUniSmsForPhone, getUniSmsStatus, normalizeUniSmsPhone, sendUniSmsOtp } from './_shared/unisms.mjs';
+import { createSmsReceipt, readSmsReceipt } from './_shared/sms-receipt.mjs';
 import { policiesAccepted, POLICY_VERSION } from './_shared/onboarding.mjs';
 
 export default async function handler(request) {
@@ -17,6 +18,16 @@ export default async function handler(request) {
     assertPost(request); sameOrigin(request);
     const input = await readJson(request);
     const action = String(input.action || '');
+    if (action === 'phone_status') {
+      const rows = await supabase(`student_recovery?${query({select:'pending_phone_hash,pending_phone_until',student_id:`eq.${student.id}`,limit:1})}`);
+      const pending=rows[0];
+      const receipt=readSmsReceipt(input.receipt,{sid:student.id,version:session.pv,hash:pending?.pending_phone_hash});
+      if (!receipt || !(Date.parse(pending?.pending_phone_until || '') > Date.now())) throw new HttpError(410,'This delivery check has expired. Use your latest phone request.');
+      const allowed=await rpc('recovery_rate',{p_key:sha256(`phone-status:${input.receipt}`),p_limit:12});
+      if (!allowed) throw new HttpError(429,'Delivery checks are limited. Check your phone before requesting another code.');
+      try { return json({status:'ok',deliveryStatus:(await getUniSmsStatus(receipt.ref)).status}); }
+      catch { return json({status:'ok',deliveryStatus:'unknown'}); }
+    }
     if (!['accept_policies','begin','confirm','phone_start','phone_confirm','codes','disable'].includes(action)) throw new HttpError(400,'Choose a supported security action.');
     await rate(request,`settings:${student.id}`,20);
     if (action === 'accept_policies') {
@@ -44,11 +55,17 @@ export default async function handler(request) {
     const result = await rpc(action.startsWith('phone_') ? 'student_phone_settings' : 'recovery_settings',{p_sid:student.id,p_version:session.pv,p_action:action,p_data:data});
     if (result.status !== 'ok') throw new HttpError(result.status === 'limited' ? 429 : 400,
       result.status === 'limited' ? 'Wait before trying again. Five failed attempts lock security changes for 15 minutes; SMS also has a 60-second cooldown.' : 'Could not verify this change. Check your current password and verification code. If you just used an authenticator code, wait for its next code.');
-    if (otp) {
-      try { await sendUniSmsOtp(data.phone,otp); }
-      catch { throw new HttpError(502,'SMS delivery could not be confirmed. If a code arrives, you can still enter it. Wait at least 60 seconds before trying again.'); }
-    }
     const output = {status:'ok',message:'Security settings updated.'};
+    if (otp) {
+      try {
+        const sent=await sendUniSmsOtp(data.phone,otp,'phone_verification');
+        output.deliveryStatus=sent.status;
+        output.deliveryReceipt=createSmsReceipt({sid:student.id,version:session.pv,hash:data.hash,referenceId:sent.referenceId});
+      } catch(error) {
+        output.deliveryStatus=error.code==='SMS_REJECTED'?'failed':'unknown';
+      }
+      output.message='Phone verification requested. Your number is unchanged until its code is verified.';
+    }
     if (data.phone) output.maskedPhone=maskPhone(data.phone);
     if (secret) {
       const uri = `otpauth://totp/${encodeURIComponent(`Reset Workflow:${student.email}`)}?secret=${secret}&issuer=Reset%20Workflow&algorithm=SHA1&digits=6&period=30`;

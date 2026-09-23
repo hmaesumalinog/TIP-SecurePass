@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 
 const root=resolve('public');
 let enabled=false,broken=false,logoutFails=false,phoneVerified=false,smsFailure=false,remaining=0,policiesAccepted=false;
+let phoneStats={sends:0,checks:0};
 let alternateMode='normal', alternateState=null, alternateStats={starts:0,verifications:0,saves:0,sms:0,help:0};
 const now=()=>new Date().toISOString();
 const directory=Array.from({length:5},(_,i)=>({id:`00000000-0000-4000-8000-00000000000${i}`,student_number:`765432${i}`,email:`demo${i}@example.invalid`,first_name:['Alex','Casey','Jordan','Morgan','Riley'][i],last_name:'Test Student',birth_date:i?'2004-03-15':null,program:'Bachelor of Science in Information Technology',year_level:'3rd Year',active:i!==4,record_version:1,must_change_password:i===0,temporary_password_expires_at:now(),created_at:now(),authenticator_enabled:i===2||i===3,phone_verified:i===2,backup_codes_remaining:i===2?10:0,policies_accepted:i>1,policies_accepted_at:now(),invitation_expired:i===0,security_status:['invited','setup','ready','attention','inactive'][i]}));
@@ -101,6 +102,7 @@ const server=createServer(async(req,res)=>{
     res.end('<h1>Local-only enrollment QA</h1><p>No real accounts or providers are connected. Use any password except wrong; code 123456.</p><a href="/__fixture/new">New student setup</a><br><a href="/__fixture/existing">Existing unenrolled student</a><br><a href="/__fixture/enrolled">Enrolled student</a><br><a href="/__fixture/error">Database error</a><br><a href="/__fixture/logout-error">Sign-out error</a><br><a href="/__fixture/sms-error">SMS provider error</a><br><a href="/__fixture/empty-codes">No backup codes left</a>');return;
   }
   if(url.pathname.startsWith('/__fixture/')){
+    phoneStats={sends:0,checks:0};
     const mode=url.pathname.split('/').pop();enabled=['enrolled','sms-error','empty-codes'].includes(mode);policiesAccepted=mode!=='existing';broken=mode==='error';logoutFails=mode==='logout-error';smsFailure=mode==='sms-error';phoneVerified=false;remaining=enabled&&mode!=='empty-codes'?10:0;
     res.writeHead(302,{Location:mode==='existing'?'/portal.html':'/security.html?onboarding=1'});res.end();return;
   }
@@ -109,11 +111,13 @@ const server=createServer(async(req,res)=>{
     if(!policiesAccepted)return json({code:'POLICIES_REQUIRED',message:'Review policies'},403);
     return enabled?json({student}):json({code:'AUTHENTICATOR_SETUP_REQUIRED',message:'Set up authenticator'},403);
   }
+  if(url.pathname==='/__phone-stats')return json(phoneStats);
   if(url.pathname==='/api/logout') return json({message:logoutFails?'Try again':'Signed out'},logoutFails?500:200);
   if(url.pathname==='/.netlify/functions/security-settings'){
     if(req.method==='GET')return broken?json({message:'Local test: settings unavailable. Use another fixture to restore.'},503):json({status:'ok',enabled,remaining,phoneVerified,maskedPhone:phoneVerified?'+63 ••• ••• 0000':null,policiesAccepted,policyVersion:'2026-09-20'});
     let body='';for await(const chunk of req)body+=chunk;
     const input=JSON.parse(body);
+    if(input.action==='phone_status'){phoneStats.checks++;return json({status:'ok',deliveryStatus:smsFailure?'failed':'sent'});}
     if(input.action==='accept_policies'){policiesAccepted=true;return json({status:'ok'});}
     if(!input.password||input.password==='wrong')return json({message:'Could not verify this change. Check your current password and verification code.'},400);
     if(input.action==='begin')return json({message:'Local visual test only: enter 123456 to confirm.',secret:'LOCAL-PREVIEW-NOT-A-REAL-SETUP-KEY',qr:previewQr});
@@ -121,7 +125,7 @@ const server=createServer(async(req,res)=>{
       if(input.code!=='123456')return json({message:'Could not verify this change. Check your verification code.'},400);
       enabled=true;remaining=10;return json({message:'Authenticator confirmed in local preview.',codes:previewCodes()});
     }
-    if(input.action==='phone_start')return smsFailure?json({message:'SMS delivery could not be confirmed. If a code arrives, you can still enter it. Wait at least 60 seconds before trying again.'},502):json({message:'SMS sent in preview only.'});
+    if(input.action==='phone_start'){phoneStats.sends++;return json({status:'ok',message:'Local SMS simulation only.',deliveryStatus:'pending',deliveryReceipt:'local-preview-only',maskedPhone:'+63 ••• ••• 0000'});}
     if(input.code!=='123456')return json({message:'Could not verify this change. Check the code and try again.'},400);
     if(input.action==='phone_confirm'){phoneVerified=true;return json({message:'Phone verified in preview.'});}
     if(input.action==='codes'){remaining=10;return json({message:'Replacement codes in preview.',codes:previewCodes()});}

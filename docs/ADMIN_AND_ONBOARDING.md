@@ -63,6 +63,17 @@ subscription to confidential database tables.
 - Phone changes use database-backed attempt limits, a 60-second resend cooldown,
   a five-minute SMS expiry and current-session-version checks. An uncertain
   provider response does not trigger an automatic second SMS.
+- Phone enrollment SMS identifies Reset Workflow, the phone-verification purpose,
+  the six-digit code and its five-minute expiry. Password recovery uses a separate
+  purpose in the same structured format. Provider acceptance still requires a
+  live check; a format change alone is not proof of successful delivery.
+- After requesting a phone code, the page shows queued, sent, failed or unknown
+  provider status. It makes at most three automatic read-only checks, with a
+  manual check available afterward. These checks never send another SMS. A
+  short-lived signed receipt is bound to the signed-in student, password version
+  and latest pending challenge; cancellation stops browser checks. The server
+  allows at most 12 checks per receipt and never returns the SMS body or OTP.
+  A provider-reported **sent** status is not proof of physical handset receipt.
 - Number changes invalidate outstanding email/SMS reset authorizations. Email
   or active-status changes revoke existing sessions and pending authorizations.
 - Invitation reissue is only for accounts still awaiting first login. It is
