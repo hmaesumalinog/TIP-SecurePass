@@ -31,3 +31,25 @@ a new link; it never treats email access alone as proof of phone verification.
 Automated provider tests use mocked transport and do not prove handset delivery.
 Check actual SMS receipt during the authorized student test. Never record a
 student's password, OTP, reset token, or reset grant in test reports.
+
+## Phone setup: provider content rejection
+
+UniSMS can accept a request into its queue and reject its content later. A
+successful HTTP response is not a sent or delivered SMS. The authenticated
+phone-status endpoint returns only a fixed `content_rejected` category when the
+provider reports this problem; it never returns the raw provider payload.
+
+Check the local `sms-content-rejected` enrollment fixture: the message should
+explain the service issue, stop polling, and disable resending that rejected
+message in the current flow. Cancel must remain available, and the number must
+remain unverified. Existing authenticator and backup-code protections stay in
+place. The other delivery states and OTP verification must still work.
+
+For a live rejection, record the provider reference, sender ID, failure reason
+and a redacted message template. Ask UniSMS support to review the template and
+sender eligibility before spending credits on another test. Do not invent a
+different brand, mislabel the purpose, or change a five-minute expiry merely to
+pass a filter. Shared test sender IDs are not production approval. After the
+provider resolves the issue, use one explicitly authorized phone test and check
+both the final provider result and receipt on the phone before reporting SMS as
+restored.

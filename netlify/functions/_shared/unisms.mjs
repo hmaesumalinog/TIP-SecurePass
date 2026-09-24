@@ -62,7 +62,13 @@ async function unisms(path, body) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const providerMessage = data?.message?.fail_reason || data?.message?.error || data?.error || data?.message;
-    throw new Error(typeof providerMessage === 'string' ? providerMessage : `UniSMS returned ${response.status}.`);
+    const error = new Error(`UniSMS returned ${response.status}.`);
+    if ([400, 422].includes(response.status) && contentRejected(providerMessage)) {
+      error.code = 'SMS_REJECTED';
+      error.failureCode = 'content_rejected';
+    }
+    // Error responses may contain the submitted message, code or recipient.
+    throw error;
   }
   return data;
 }
@@ -76,7 +82,7 @@ export function otpMessage(otp, purpose = 'password_reset') {
   if (!Object.hasOwn(purposes, purpose)) throw new Error('Unsupported SMS verification purpose.');
   // Both database challenges expire after five minutes. Use plain GSM text and
   // include brand, OTP, purpose and expiry as required by provider filtering.
-  return `Your Reset Workflow OTP code is ${otp}. Use it to ${purposes[purpose]}. Please do not share. Expires in 5 minutes.`;
+  return `Your ResetWorkflowApp OTP code is ${otp}. Use it to ${purposes[purpose]}. Please do not share. Expires in 5 minutes.`;
 }
 
 function delivery(message) {
@@ -87,11 +93,23 @@ function delivery(message) {
   return 'unknown';
 }
 
+function contentRejected(reason) {
+  return typeof reason === 'string' && /unacceptable content|otp does not follow valid format|content filter/i.test(reason);
+}
+
+function failureCode(message) {
+  // Return a fixed category, never a provider error that may echo an OTP or phone.
+  return delivery(message) === 'failed' && contentRejected(message?.fail_reason)
+    ? 'content_rejected' : undefined;
+}
+
 export async function getUniSmsStatus(referenceId) {
   if (!/^[A-Za-z0-9_-]{1,100}$/.test(referenceId || '')) throw new Error('Invalid SMS reference.');
   const data = await unisms(`/sms/${encodeURIComponent(referenceId)}`);
   // Never forward the provider payload: it contains the recipient and OTP.
-  return { status: delivery(data?.message || data) };
+  const message = data?.message || data;
+  const issue = failureCode(message);
+  return { status: delivery(message), ...(issue ? {failureCode:issue} : {}) };
 }
 
 export async function sendUniSmsOtp(phone, otp, purpose = 'password_reset') {
@@ -107,6 +125,7 @@ export async function sendUniSmsOtp(phone, otp, purpose = 'password_reset') {
   if (status === 'failed') {
     const error = new Error('UniSMS rejected the SMS message.');
     error.code = 'SMS_REJECTED';
+    error.failureCode = failureCode(message);
     throw error;
   }
   const referenceId = message?.reference_id || data?.reference_id || data?.id || '';

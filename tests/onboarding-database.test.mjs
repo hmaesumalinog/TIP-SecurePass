@@ -61,7 +61,9 @@ test('new onboarding migration enforces consent, student-owned phone proof, priv
     assert.ok(events.events.length);assert.ok(events.events.every(e=>e.student_name==='Test Student'));
     assert.ok(events.events.every(e=>e.details===undefined));
     const admin=await one("insert into admin_accounts(email,display_name,password_hash) values('admin@example.invalid','Test Admin','unused') returning id");
-    const help=await one("insert into recovery_help_requests(student_number,contact,message) values('1234567','test@example.invalid','Synthetic assistance request.') returning *");
+    // Give the fixture a distinct initial version: embedded clocks may resolve
+    // creation and review to the same millisecond during a fast test run.
+    const help=await one("insert into recovery_help_requests(student_number,contact,message,updated_at) values('1234567','test@example.invalid','Synthetic assistance request.',clock_timestamp()-interval '1 second') returning *");
     let expected=help.updated_at.toISOString();
     const review=async(status)=>(await one('select review_recovery_request($1,$2,$3,$4,$5) as result',[help.id,admin.id,status,'Synthetic reviewed support note.',expected])).result;
     assert.equal((await review('resolved')).status,'invalid','Must review before resolving');

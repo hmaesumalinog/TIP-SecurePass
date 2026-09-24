@@ -25,7 +25,10 @@ export default async function handler(request) {
       if (!receipt || !(Date.parse(pending?.pending_phone_until || '') > Date.now())) throw new HttpError(410,'This delivery check has expired. Use your latest phone request.');
       const allowed=await rpc('recovery_rate',{p_key:sha256(`phone-status:${input.receipt}`),p_limit:12});
       if (!allowed) throw new HttpError(429,'Delivery checks are limited. Check your phone before requesting another code.');
-      try { return json({status:'ok',deliveryStatus:(await getUniSmsStatus(receipt.ref)).status}); }
+      try {
+        const delivery=await getUniSmsStatus(receipt.ref);
+        return json({status:'ok',deliveryStatus:delivery.status,...(delivery.failureCode ? {deliveryIssue:delivery.failureCode} : {})});
+      }
       catch { return json({status:'ok',deliveryStatus:'unknown'}); }
     }
     if (!['accept_policies','begin','confirm','phone_start','phone_confirm','codes','disable'].includes(action)) throw new HttpError(400,'Choose a supported security action.');
@@ -63,6 +66,7 @@ export default async function handler(request) {
         output.deliveryReceipt=createSmsReceipt({sid:student.id,version:session.pv,hash:data.hash,referenceId:sent.referenceId});
       } catch(error) {
         output.deliveryStatus=error.code==='SMS_REJECTED'?'failed':'unknown';
+        if (error.code==='SMS_REJECTED' && error.failureCode==='content_rejected') output.deliveryIssue='content_rejected';
       }
       output.message='Phone verification requested. Your number is unchanged until its code is verified.';
     }

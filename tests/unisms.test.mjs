@@ -77,7 +77,7 @@ test('rejects a failed UniSMS response', async () => {
 test('both OTP templates include the real brand, purpose, code and actual five-minute expiry in one SMS', () => {
   for(const purpose of ['password_reset','phone_verification']) {
     const message=otpMessage('012345',purpose);
-    assert.match(message,/Your Reset Workflow OTP code is 012345\. Use it to /);
+    assert.match(message,/Your ResetWorkflowApp OTP code is 012345\. Use it to /);
     assert.match(message,/Expires in 5 minutes/);
     assert.match(message,/Please do not share\./);
     assert.match(message,purpose==='password_reset'?/reset your password/:/verify your recovery phone number/);
@@ -115,4 +115,35 @@ test('delivery lookups are read-only and never return message content, OTP or re
   assert.equal(calls,5);
   await assert.rejects(()=>getUniSmsStatus('../other'));
   assert.equal(calls,5);
+});
+
+test('content-filter failures expose only a fixed safe category, for queued and immediate rejections',async()=>{
+  configure();
+  for(const reason of [
+    'Unacceptable content: OTP does not follow valid format. Your code is 012345 for +639000000000.',
+    'Blocked by content filter: PRIVATE'
+  ]) {
+    globalThis.fetch=async()=>Response.json({message:{status:'failed',fail_reason:reason,content:'012345',recipient:'+639000000000'}});
+    assert.deepEqual(await getUniSmsStatus('msg_rejected'),{status:'failed',failureCode:'content_rejected'});
+    await assert.rejects(()=>sendUniSmsOtp('09000000000','012345','phone_verification'),{
+      code:'SMS_REJECTED',failureCode:'content_rejected',message:'UniSMS rejected the SMS message.'
+    });
+  }
+  for(const status of ['pending','sent']) {
+    globalThis.fetch=async()=>Response.json({message:{status,fail_reason:'Unacceptable content'}});
+    assert.deepEqual(await getUniSmsStatus('msg_not-failed'),{status});
+  }
+});
+
+test('HTTP content rejections are classified without leaking raw error text or retrying',async()=>{
+  configure();let calls=0;
+  for(const status of [400,422]) {
+    globalThis.fetch=async()=>{calls++;return Response.json({error:'Unacceptable content: OTP does not follow valid format. Private code 012345.'},{status});};
+    await assert.rejects(()=>sendUniSmsOtp('09000000000','012345','phone_verification'),{
+      code:'SMS_REJECTED',failureCode:'content_rejected',message:`UniSMS returned ${status}.`
+    });
+  }
+  assert.equal(calls,2,'One provider request per explicit send');
+  globalThis.fetch=async()=>Response.json({error:'Private account diagnostic'},{status:401});
+  await assert.rejects(()=>sendUniSmsOtp('09000000000','012345'),{message:'UniSMS returned 401.'});
 });

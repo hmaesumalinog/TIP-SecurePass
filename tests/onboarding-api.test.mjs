@@ -18,7 +18,7 @@ import { totp } from '../netlify/functions/_shared/recovery.mjs';
 
 test('administrator invitation to student-owned onboarding works through actual HTTP handlers and PostgreSQL',async(t)=>{
  Object.assign(process.env,{APP_PEPPER:'test-onboarding-pepper-only-1234567890',SUPABASE_URL:'https://database.example.invalid',SUPABASE_SECRET_KEY:'sb_secret_test',SITE_URL:'https://portal.example.invalid',RESEND_API_KEY:'test',SMS_PROVIDER:'unisms',UNISMS_API_KEY:'test',UNISMS_SENDER_ID:'test',UNISMS_TRIAL_MODE:'false'});
- const db=new PGlite({extensions:{pgcrypto,citext}});const emails=[];let sentCode='',smsCount=0,failEmail=false,deliveryStatus='pending',statusReads=0;
+ const db=new PGlite({extensions:{pgcrypto,citext}});const emails=[];let sentCode='',smsCount=0,failEmail=false,deliveryStatus='pending',statusReads=0,failReason='PRIVATE';
  try {
   await db.exec('create role anon; create role authenticated; create role service_role; create schema extensions; create publication supabase_realtime;');
   for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql'])await db.exec(await readFile(new URL('../supabase/'+file,import.meta.url),'utf8'));
@@ -26,7 +26,7 @@ test('administrator invitation to student-owned onboarding works through actual 
    const parsed=new URL(url),body=options.body?JSON.parse(options.body):{};
    if(parsed.hostname==='api.resend.com'){if(failEmail)return Response.json({message:'test delivery failure'},{status:503});emails.push(body);return Response.json({id:'synthetic-email'});}
    if(parsed.hostname==='unismsapi.com'){
-    if(options.method==='GET'){statusReads++;return Response.json({message:{status:deliveryStatus,content:'PRIVATE '+sentCode,recipient:'+639000000000',fail_reason:'PRIVATE'}});}
+    if(options.method==='GET'){statusReads++;return Response.json({message:{status:deliveryStatus,content:'PRIVATE '+sentCode,recipient:'+639000000000',fail_reason:failReason}});}
     smsCount++;assert.match(body.content,/verify your recovery phone number\. Please do not share\. Expires in 5 minutes/);sentCode=body.content.match(/\b\d{6}\b/)[0];return Response.json({message:{reference_id:'synthetic-sms',status:'queued'}});
    }
    assert.equal(parsed.hostname,'database.example.invalid');
@@ -105,8 +105,12 @@ test('administrator invitation to student-owned onboarding works through actual 
    deliveryStatus=state;
    assert.deepEqual((await checkDelivery()).data,{status:'ok',deliveryStatus:state});
   }
+  deliveryStatus='failed';failReason='Unacceptable content: OTP does not follow valid format. PRIVATE '+sentCode;
+  assert.deepEqual((await checkDelivery()).data,{status:'ok',deliveryStatus:'failed',deliveryIssue:'content_rejected'});
+  assert.equal((await one('select phone from demo_students where id=$1',[sid])).phone,'','A rejected message never attaches the phone');
+  deliveryStatus='sent';failReason='';
   assert.equal(smsCount,1,'Delivery lookups never send additional messages');
-  for(let i=3;i<12;i++)assert.equal((await checkDelivery()).http,200);
+  for(let i=4;i<12;i++)assert.equal((await checkDelivery()).http,200);
   assert.equal((await checkDelivery()).http,429,'Polling has its own bounded rate limit');
   assert.equal(statusReads,12);
   assert.equal((await call(settings,{method:'POST',auth:studentCookie,body:phoneBody})).http,429);assert.equal(smsCount,1,'Double-send request is rejected before provider call');

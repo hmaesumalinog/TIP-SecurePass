@@ -6,7 +6,7 @@ import { resolve, extname, sep } from 'node:path';
 import QRCode from 'qrcode';
 
 const root=resolve('public');
-let enabled=false,broken=false,logoutFails=false,phoneVerified=false,smsFailure=false,remaining=0,policiesAccepted=false;
+let enabled=false,broken=false,logoutFails=false,phoneVerified=false,smsFailure=false,smsContentRejected=false,remaining=0,policiesAccepted=false;
 let phoneStats={sends:0,checks:0};
 let alternateMode='normal', alternateState=null, alternateStats={starts:0,verifications:0,saves:0,sms:0,help:0};
 const now=()=>new Date().toISOString();
@@ -99,11 +99,11 @@ const server=createServer(async(req,res)=>{
   }
   if(url.pathname==='/__fixtures'){
     res.writeHead(200,{'Content-Type':'text/html'});
-    res.end('<h1>Local-only enrollment QA</h1><p>No real accounts or providers are connected. Use any password except wrong; code 123456.</p><a href="/__fixture/new">New student setup</a><br><a href="/__fixture/existing">Existing unenrolled student</a><br><a href="/__fixture/enrolled">Enrolled student</a><br><a href="/__fixture/error">Database error</a><br><a href="/__fixture/logout-error">Sign-out error</a><br><a href="/__fixture/sms-error">SMS provider error</a><br><a href="/__fixture/empty-codes">No backup codes left</a>');return;
+    res.end('<h1>Local-only enrollment QA</h1><p>No real accounts or providers are connected. Use any password except wrong; code 123456.</p><a href="/__fixture/new">New student setup</a><br><a href="/__fixture/existing">Existing unenrolled student</a><br><a href="/__fixture/enrolled">Enrolled student</a><br><a href="/__fixture/error">Database error</a><br><a href="/__fixture/logout-error">Sign-out error</a><br><a href="/__fixture/sms-error">SMS provider error</a><br><a href="/__fixture/sms-content-rejected">SMS content rejected</a><br><a href="/__fixture/empty-codes">No backup codes left</a>');return;
   }
   if(url.pathname.startsWith('/__fixture/')){
     phoneStats={sends:0,checks:0};
-    const mode=url.pathname.split('/').pop();enabled=['enrolled','sms-error','empty-codes'].includes(mode);policiesAccepted=mode!=='existing';broken=mode==='error';logoutFails=mode==='logout-error';smsFailure=mode==='sms-error';phoneVerified=false;remaining=enabled&&mode!=='empty-codes'?10:0;
+    const mode=url.pathname.split('/').pop();enabled=['enrolled','sms-error','sms-content-rejected','empty-codes'].includes(mode);policiesAccepted=mode!=='existing';broken=mode==='error';logoutFails=mode==='logout-error';smsFailure=mode==='sms-error';smsContentRejected=mode==='sms-content-rejected';phoneVerified=false;remaining=enabled&&mode!=='empty-codes'?10:0;
     res.writeHead(302,{Location:mode==='existing'?'/portal.html':'/security.html?onboarding=1'});res.end();return;
   }
   if(url.pathname==='/api/profile'){
@@ -117,7 +117,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET')return broken?json({message:'Local test: settings unavailable. Use another fixture to restore.'},503):json({status:'ok',enabled,remaining,phoneVerified,maskedPhone:phoneVerified?'+63 ••• ••• 0000':null,policiesAccepted,policyVersion:'2026-09-20'});
     let body='';for await(const chunk of req)body+=chunk;
     const input=JSON.parse(body);
-    if(input.action==='phone_status'){phoneStats.checks++;return json({status:'ok',deliveryStatus:smsFailure?'failed':'sent'});}
+    if(input.action==='phone_status'){phoneStats.checks++;return json({status:'ok',deliveryStatus:smsFailure||smsContentRejected?'failed':'sent',...(smsContentRejected?{deliveryIssue:'content_rejected'}:{})});}
     if(input.action==='accept_policies'){policiesAccepted=true;return json({status:'ok'});}
     if(!input.password||input.password==='wrong')return json({message:'Could not verify this change. Check your current password and verification code.'},400);
     if(input.action==='begin')return json({message:'Local visual test only: enter 123456 to confirm.',secret:'LOCAL-PREVIEW-NOT-A-REAL-SETUP-KEY',qr:previewQr});

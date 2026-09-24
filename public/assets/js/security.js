@@ -18,6 +18,7 @@
     phoneDestination = "";
   let deliveryReceipt = "",
     deliveryStatus = "unknown",
+    deliveryIssue = "",
     deliveryTimer = 0,
     deliveryGeneration = 0,
     deliveryChecks = 0,
@@ -27,11 +28,14 @@
     clearTimeout(deliveryTimer);
     deliveryGeneration++;
     deliveryReceipt = "";
+    deliveryIssue = "";
     deliveryChecks = 0;
     deliveryBusy = false;
   }
-  function showDelivery(value) {
+  function showDelivery(value, issue = "") {
     deliveryStatus = value;
+    deliveryIssue =
+      value === "failed" && issue === "content_rejected" ? issue : "";
     const messages = {
       pending:
         "SMS queued. The provider is still processing it. You do not need to send another code.",
@@ -41,7 +45,9 @@
       unknown:
         "We could not confirm the SMS status. If a code arrives, you can still enter it. Check your messages before requesting another.",
     };
-    $("#sms-delivery").textContent = messages[value] || messages.unknown;
+    $("#sms-delivery").textContent = deliveryIssue
+      ? "The SMS service rejected the verification message before sending it. This is a service issue, not a problem with the code you entered. Your phone number has not changed. Please contact the portal administrator; your authenticator and saved backup codes are still available."
+      : messages[value] || messages.unknown;
     $("#sms-delivery").hidden = false;
     $("#sms-delivery").classList.toggle("form-error", value === "failed");
     updateTimers();
@@ -66,7 +72,7 @@
         receipt: deliveryReceipt,
       });
       if (generation !== deliveryGeneration) return;
-      showDelivery(result.deliveryStatus || "unknown");
+      showDelivery(result.deliveryStatus || "unknown", result.deliveryIssue);
     } catch (error) {
       if (generation !== deliveryGeneration) return;
       showDelivery("unknown");
@@ -497,7 +503,7 @@
       phoneProof = "";
       errorAt("#phone-error", "");
       deliveryReceipt = result.deliveryReceipt || "";
-      showDelivery(result.deliveryStatus || "unknown");
+      showDelivery(result.deliveryStatus || "unknown", result.deliveryIssue);
     } catch (error) {
       if (![0, 502].includes(error.status)) throw error;
       showDelivery("unknown");
@@ -568,7 +574,7 @@
     );
   });
   $("#resend-sms").addEventListener("click", () => {
-    if (Date.now() < smsUntil) return;
+    if (Date.now() < smsUntil || deliveryIssue) return;
     run($("#resend-sms"), "#phone-error", sendSms);
   });
   $("#check-sms-delivery").addEventListener("click", checkDelivery);
@@ -581,7 +587,7 @@
       $("#confirm-app").disabled = busy || !remaining;
     }
     const smsWait = Math.max(0, Math.ceil((smsUntil - Date.now()) / 1000));
-    $("#resend-sms").disabled = busy || smsWait > 0;
+    $("#resend-sms").disabled = busy || smsWait > 0 || !!deliveryIssue;
     $("#check-sms-delivery").hidden =
       !deliveryReceipt || ["sent", "failed"].includes(deliveryStatus);
     $("#check-sms-delivery").disabled =
@@ -589,9 +595,11 @@
     $("#check-sms-delivery").textContent = deliveryBusy
       ? "Checking SMS status…"
       : "Check SMS status";
-    $("#sms-wait").textContent = smsWait
-      ? `You can request another SMS in ${smsWait} seconds.`
-      : "No SMS yet? You can request another code. Delivery depends on your mobile network.";
+    $("#sms-wait").textContent = deliveryIssue
+      ? "Sending the same message again will not resolve this rejection. You can cancel and keep using your current recovery methods while the administrator contacts the SMS service."
+      : smsWait
+        ? `You can request another SMS in ${smsWait} seconds.`
+        : "No SMS yet? You can request another code. Delivery depends on your mobile network.";
   }
   setInterval(updateTimers, 1000);
   window.addEventListener("beforeunload", (event) => {

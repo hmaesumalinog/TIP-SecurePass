@@ -9,7 +9,7 @@ test('security page binds its dedicated controller to unique existing elements',
   assert.equal(ids.length,new Set(ids).size,'HTML IDs must be unique');
   for(const [,id] of script.matchAll(/\$\("#([a-z][a-z0-9-]*)/g))assert.ok(ids.includes(id),`Missing controller target: ${id}`);
   for(const [,src] of html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g))assert.ok(!src.includes('recovery.js'),'Shared public reset controller must not control student settings');
-  assert.match(html,/security\.js\?v=20260923a/);
+  assert.match(html,/security\.js\?v=20260924a/);
 });
 test('separate recovery forms identify the code source and protect saved-code handoff',()=>{
   for(const id of ['identity-form','connect-form','manage-form','phone-form','saved-form'])assert.match(html,new RegExp(`<form id="${id}"`));
