@@ -4,43 +4,75 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow,noarchive" />
-    <title>Recovery assistance | TIP SecurePass Admin</title>
+    <meta name="color-scheme" content="light only" />
+    <title>Recovery requests | TIP SecurePass Admin</title>
     <link
       rel="icon"
       href="../assets/images/brand-mark.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260920b" />
-    <script src="../assets/js/admin.js?v=20260920b" defer></script>
+    <link rel="stylesheet" href="../assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260928" />
+    <script src="../assets/js/admin.js?v=20260928b" type="module"></script>
   </head>
   <body data-admin-page="recovery">
-    <a class="admin-skip" href="#admin-main">Skip to content</a>
-    <div class="admin-strip"></div>
+    <a class="skip-link" href="#admin-main">Skip to content</a>
     <header class="admin-header">
       <a class="admin-brand" href="dashboard.html"
-        ><img src="../assets/images/brand-mark.svg" alt="" /><span
-          ><strong>TIP SecurePass</strong>Administration</span
-        ></a
+        ><img
+          src="../assets/images/brand-mark.svg"
+          width="36"
+          height="42"
+          alt=""
+        /><span><strong>TIP SecurePass</strong>Administration</span></a
       >
       <nav class="admin-nav" aria-label="Administration">
-        <a href="dashboard.html">Security</a><a href="students.html">Students</a
-        ><a href="audit.html">Audit log</a
-        ><a href="recovery.html" aria-current="page">Recovery requests</a
-        ><button type="button" id="admin-sign-out">Sign out</button>
+        <a href="dashboard.html">Overview</a><a href="students.html">Students</a
+        ><a href="recovery.html" aria-current="page"
+          ><span class="nav-label-long">Recovery requests</span
+          ><span class="nav-label-short">Requests</span
+          ><span class="nav-badge" data-request-badge hidden></span></a
+        ><a href="audit.html">Audit log</a>
       </nav>
+      <div class="admin-account">
+        <span class="admin-identity" id="admin-identity" hidden
+          ><span class="admin-identity-text"
+            ><strong id="admin-identity-name"></strong
+            ><small id="admin-identity-role"></small></span
+          ><span
+            class="admin-avatar"
+            id="admin-avatar"
+            aria-hidden="true"
+          ></span
+        ></span>
+        <button type="button" class="admin-signout" id="admin-sign-out">
+          Sign out
+        </button>
+      </div>
     </header>
     <main class="admin-main" id="admin-main">
       <div class="admin-page-heading">
         <div>
-          <p class="admin-kicker">Student access & account safety</p>
-          <h1>Recovery assistance</h1>
+          <p class="admin-kicker">Student access &amp; account safety</p>
+          <h1>Recovery requests</h1>
           <p>
             A guided review queue for students who cannot use their enrolled
             recovery methods.
           </p>
         </div>
         <button class="admin-button secondary" id="refresh-page" type="button">
-          Refresh
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+            <path d="M20 4v7h-7" /></svg
+          >Refresh
         </button>
       </div>
       <p
@@ -79,44 +111,99 @@
       </section>
       <div class="admin-toolbar">
         <label class="admin-search"
-          ><span class="sr-only">Search student number</span
+          ><span class="sr-only">Search by student number</span
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" /></svg
           ><input
             class="admin-input"
             type="search"
             id="request-number"
             inputmode="numeric"
             maxlength="7"
-            placeholder="Seven-digit student number"
-            data-filter /></label
-        ><label class="admin-filter"
-          >Request status<select
-            class="admin-input"
-            id="request-status"
+            placeholder="Search a 7-digit student number"
             data-filter
-          >
-            <option value="open">Open requests</option>
-            <option value="pending">Pending</option>
-            <option value="reviewing">Under review</option>
-            <option value="resolved">Resolved</option>
-            <option value="declined">Declined</option>
-            <option value="all">All requests</option>
-          </select></label
+        /></label>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label" id="request-status-label">Status</span>
+        <div
+          class="filter-chips"
+          role="group"
+          aria-labelledby="request-status-label"
+          id="request-status"
+          data-chip-group
         >
+          <button
+            type="button"
+            class="filter-chip"
+            data-value="open"
+            aria-pressed="true"
+          >
+            Open</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="pending"
+            aria-pressed="false"
+          >
+            Pending</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="reviewing"
+            aria-pressed="false"
+          >
+            Under review</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="resolved"
+            aria-pressed="false"
+          >
+            Resolved</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="declined"
+            aria-pressed="false"
+          >
+            Declined</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="all"
+            aria-pressed="false"
+          >
+            All
+          </button>
+        </div>
       </div>
       <section class="admin-card admin-section">
         <div class="admin-table-wrap">
-          <table class="admin-table">
+          <table class="admin-table requests-table">
             <thead>
               <tr>
                 <th scope="col">Student number</th>
                 <th scope="col">Status</th>
                 <th scope="col">Submitted</th>
-                <th scope="col">Action</th>
+                <th scope="col"><span class="sr-only">Action</span></th>
               </tr>
             </thead>
             <tbody id="request-rows">
-              <tr>
-                <td colspan="4" class="admin-loading-row">Loading…</td>
+              <tr class="admin-skeleton-row">
+                <td colspan="4">
+                  <span class="skeleton skeleton-line"></span
+                  ><span class="skeleton skeleton-line"></span
+                  ><span class="skeleton skeleton-line"></span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -127,14 +214,14 @@
             id="previous-page"
             type="button"
           >
-            Previous</button
+            ← Previous</button
           ><span id="page-summary" role="status">Loading…</span
           ><button
             class="admin-button secondary small"
             id="next-page"
             type="button"
           >
-            Next
+            Next →
           </button>
         </div>
       </section>
@@ -218,7 +305,7 @@
       </div>
     </dialog>
     <div class="admin-toast hidden" id="admin-toast" role="status"></div>
-    <footer class="admin-footer">
+    <footer class="site-footer">
       Academic demonstration · Not the official T.I.P. portal. Security proofs
       stay private.
     </footer>

@@ -7,12 +7,12 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 54px;
+  min-height: var(--control-h);
   padding: 12px 15px;
-  border: 1px solid #cbd3d7;
-  border-radius: 12px;
-  background: #fff;
-  color: #64717a;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -21,18 +21,18 @@
   flex: 0 0 22px;
   width: 22px;
   height: 22px;
-  color: #786213;
+  color: var(--brand-text);
 }
 .birthday-trigger:hover {
-  background: #fffdf5;
-  border-color: #b9a65e;
+  background: var(--brand-tint-2);
+  border-color: var(--brand-border);
 }
 .birthday-trigger[aria-expanded="true"] {
-  border-color: #a08215;
-  box-shadow: 0 0 0 3px #f5c40022;
+  border-color: var(--brand-border);
+  box-shadow: var(--ring);
 }
 .birthday-trigger.has-date {
-  color: var(--admin-ink);
+  color: var(--ink);
 }
 .birthday-value {
   flex: 1;
@@ -40,18 +40,18 @@
   font-weight: 550;
 }
 .birthday-trigger-hint {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: #77641c;
+  color: var(--brand-text);
 }
 .birthday-panel {
   width: min(100%, 376px);
   margin-top: 10px;
   padding: 20px;
-  border: 1px solid #e1dcc8;
+  border: 1px solid var(--brand-line);
   border-radius: 18px;
-  background: linear-gradient(#fffdf4, #fff 96px);
-  box-shadow: 0 10px 30px #17232d0d;
+  background: linear-gradient(var(--brand-tint-2), var(--surface) 96px);
+  box-shadow: var(--shadow);
 }
 .birthday-intro {
   display: grid;
@@ -65,8 +65,8 @@
 }
 .birthday-intro > span {
   grid-column: 1;
-  color: #67727b;
-  font-size: 0.73rem;
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 .birthday-intro > button {
   grid-column: 2;
@@ -86,28 +86,28 @@
   width: 34px;
   height: 36px;
   padding: 0;
-  border: 1px solid #e2e5e6;
+  border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fff;
-  color: #39474f;
+  background: var(--surface);
+  color: var(--ink-2);
   font: inherit;
   font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;
 }
 .birthday-icon-button:hover:not(:disabled) {
-  background: #fff4bf;
-  border-color: #d5b955;
+  background: var(--brand-tint);
+  border-color: var(--brand-border);
 }
 .birthday-select {
   width: 100%;
   min-width: 0;
   height: 38px;
   padding: 0 5px;
-  border: 1px solid #e2e5e6;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
-  color: var(--admin-ink);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 0.82rem;
   font-weight: 700;
@@ -124,8 +124,8 @@
 .birthday-weekday {
   padding: 7px 0 10px;
   text-align: center;
-  color: #7b858b;
-  font-size: 0.67rem;
+  color: var(--muted);
+  font-size: 0.74rem;
   font-weight: 700;
 }
 .birthday-day {
@@ -136,28 +136,28 @@
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: #26333c;
+  color: var(--ink);
   font: inherit;
   font-size: 0.83rem;
   font-weight: 600;
   cursor: pointer;
 }
 .birthday-day.is-outside {
-  color: #939aa0;
+  color: var(--faint);
   font-weight: 400;
 }
 .birthday-day:disabled {
-  color: #abb1b5;
-  opacity: 0.6;
+  color: var(--faint);
+  opacity: 0.45;
 }
 .birthday-day:hover:not(:disabled) {
-  background: #fff3b8;
+  background: var(--brand-tint);
 }
 .birthday-day.is-selected,
 .birthday-day.is-selected:hover {
-  background: var(--admin-yellow);
-  border-color: #ddaf00;
-  color: #1d252c;
+  background: var(--brand);
+  border-color: var(--brand-border);
+  color: var(--brand-ink);
   font-weight: 850;
   box-shadow: 0 3px 7px #b896001a;
 }
@@ -173,33 +173,33 @@
   gap: 10px;
   padding-top: 12px;
   margin-top: 12px;
-  border-top: 1px solid #edf0f1;
+  border-top: 1px solid var(--line-2);
 }
 .birthday-selection {
-  font-size: 0.73rem;
-  color: #637079;
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 .birthday-clear {
   padding: 8px 10px;
   border: none;
   border-radius: 8px;
-  background: #f3f5f6;
-  color: #3a4952;
+  background: var(--surface-3);
+  color: var(--ink-2);
   font: inherit;
-  font-size: 0.73rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
 }
 .birthday-clear:hover:not(:disabled) {
-  background: #e8edef;
+  background: var(--hover);
 }
 .birthday-error {
   margin: 8px 0 0;
   font-size: 0.8rem;
-  color: var(--admin-danger);
+  color: var(--danger);
 }
 .birthday-trigger[aria-invalid="true"] {
-  border-color: var(--admin-danger);
+  border-color: var(--danger);
 }
 @media (max-width: 400px) {
   #student-dialog {

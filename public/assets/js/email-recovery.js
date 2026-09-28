@@ -301,25 +301,33 @@ if (page === "forgot") {
             );
             return;
           }
-          if (!["active", "pending", "failed", "expired"].includes(data.status))
+          if (
+            !["active", "pending", "unknown", "failed", "expired"].includes(
+              data.status,
+            )
+          )
             throw new Error("Unexpected recovery response");
           $("#masked-phone").textContent =
             data.maskedPhone || "your registered phone";
           codeAvailable =
-            (data.status === "active" || data.status === "failed") &&
+            ["active", "pending", "unknown"].includes(data.status) &&
             data.expiresIn > 0;
           $("#delivery-status").textContent =
             data.status === "active"
               ? data.sent
                 ? resend
-                  ? "A new text was requested. Use its code; the previous code no longer works."
-                  : "Your text was requested. It may take a moment to arrive."
+                  ? "Your SMS provider reports the new text as sent. Use its code; the previous code no longer works."
+                  : "Your SMS provider reports the text as sent. It may take a moment to reach your phone."
                 : "A code is already active. Use the text previously sent for this request."
               : data.status === "pending"
-                ? "Your text is being processed. Please keep this page open; there is no need to request another one."
-                : data.status === "failed"
-                  ? "We couldn’t confirm text delivery. If a code arrives, you can still try it before it expires. Otherwise, use Send a new code when available."
-                  : "This code has expired. Use Send a new code below, or request a new reset email.";
+                ? "Your text is being processed. You can enter the code as soon as it arrives. We are checking delivery without sending another text."
+                : data.status === "unknown"
+                  ? "Delivery has not been confirmed. If your code arrives, you can enter it here before it expires. You can request another code after the waiting time."
+                  : data.status === "failed"
+                    ? data.deliveryIssue === "content_rejected"
+                      ? "The SMS service rejected this message. Please use another recovery method or ask the administrator for help. Sending the same message again will not resolve this."
+                      : "The SMS provider could not send this text. You can request another code after the waiting time, or use another recovery method."
+                    : "This code has expired. Use Send a new code below, or request a new reset email.";
           $("#demo-sms").hidden = !data.demoOtp;
           $("#demo-code").textContent = data.demoOtp || "";
           if (data.sent) {
@@ -330,13 +338,10 @@ if (page === "forgot") {
           if (data.status === "pending") {
             // Status-only calls reuse the reserved challenge; they never request a resend.
             if (++polls <= 6)
-              pollTimer = setTimeout(() => start(false, true), 2500);
+              pollTimer = setTimeout(() => start(false, true), 6000);
             else
-              stop(
-                "Your text is taking longer than usual",
-                "Delivery has not been confirmed yet. Check this request again without sending another text, or try another recovery method.",
-                true,
-              );
+              $("#delivery-status").textContent =
+                "Your text is taking longer than usual. You can still enter its code if it arrives before the timer ends. Request another code only if you need it.";
           }
         } catch (error) {
           if (!alive) return;

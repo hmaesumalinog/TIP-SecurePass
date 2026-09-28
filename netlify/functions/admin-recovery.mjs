@@ -20,12 +20,9 @@ export default async function handler(request) {
       const page=Math.max(1,Math.min(Number.parseInt(params.get('page'),10)||1,100000));
       const number=(params.get('number') || '').trim();
       if (number && !/^\d{7}$/.test(number)) throw new HttpError(400,'Search by a complete seven-digit student number.');
-      const filters={select:'id,student_number,status,created_at,updated_at',order:'created_at.desc,id',limit:21,offset:(page-1)*20};
-      if (filter==='open') filters.status='in.(pending,reviewing)';
-      else if (['pending','reviewing','resolved','declined'].includes(filter)) filters.status=`eq.${filter}`;
-      if (number) filters.student_number=`eq.${number}`;
-      const rows=await supabase(`recovery_help_requests?${query(filters)}`);
-      return json({requests:rows.slice(0,20),hasMore:rows.length>20,page,refreshedAt:new Date().toISOString()});
+      if (!['all','open','pending','reviewing','resolved','declined'].includes(filter)) throw new HttpError(400,'Choose a supported request status.');
+      const queue = await rpc('admin_recovery_queue',{p_status:filter,p_number:number,p_page:page});
+      return json({...queue,refreshedAt:new Date().toISOString()});
     }
     assertPost(request); requireCsrf(request,session);
     const {id,status,note,expectedUpdatedAt,confirmed}=await readJson(request);

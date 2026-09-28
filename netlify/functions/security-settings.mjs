@@ -11,7 +11,7 @@ export default async function handler(request) {
   try {
     const {student,session} = await currentStudent(request);
     if (request.method === 'GET') {
-      const status = await rpc('recovery_settings',{p_sid:student.id,p_version:session.pv,p_action:'status',p_data:{}});
+      const status = await rpc('recovery_status',{p_sid:student.id,p_version:session.pv});
       return json({...status, ...(status.status === 'ok' ? {maskedPhone:student.phone ? maskPhone(student.phone) : null,
         policiesAccepted:policiesAccepted(student),policyVersion:POLICY_VERSION} : {})});
     }

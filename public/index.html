@@ -7,20 +7,23 @@
       name="description"
       content="Secure student portal sign-in and account recovery."
     />
+    <meta name="color-scheme" content="light only" />
     <title>Student Portal | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260920b" />
-    <script src="assets/js/site.js?v=20260917" defer></script>
+    <link rel="stylesheet" href="assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/site.css?v=20260928" />
+    <script src="assets/js/site.js?v=20260928" defer></script>
   </head>
   <body data-page="login">
+    <a class="skip-link" href="#login-form">Skip to sign in</a>
     <div class="top-strip"></div>
     <header class="site-header">
       <a
         class="brand"
         href="index.html"
-        aria-label="SecurePass student portal home"
+        aria-label="TIP SecurePass student portal home"
       >
-        <img src="assets/images/brand-mark.svg" alt="" />
+        <img src="assets/images/brand-mark.svg" width="38" height="44" alt="" />
         <span class="brand-copy"
           ><span class="brand-name">TIP SecurePass</span
           ><span class="brand-subtitle"
@@ -43,24 +46,24 @@
           </div>
           <ul class="trust-list" aria-label="Portal benefits">
             <li class="trust-item">
-              <div class="trust-icon">01</div>
+              <div class="trust-icon" aria-hidden="true">01</div>
               <span
-                ><strong>Independent checks</strong><br />Email link plus phone
-                code</span
+                ><strong>Layered recovery</strong><br />Email, authenticator, or
+                backup code</span
               >
             </li>
             <li class="trust-item">
-              <div class="trust-icon">02</div>
+              <div class="trust-icon" aria-hidden="true">02</div>
               <span
-                ><strong>Short-lived access</strong><br />Single-use reset
-                credentials</span
+                ><strong>Short-lived access</strong><br />Single-use links and
+                codes</span
               >
             </li>
             <li class="trust-item">
-              <div class="trust-icon">03</div>
+              <div class="trust-icon" aria-hidden="true">03</div>
               <span
-                ><strong>Clear guidance</strong><br />Specific, human error
-                messages</span
+                ><strong>Clear guidance</strong><br />Plain-language steps and
+                errors</span
               >
             </li>
           </ul>
@@ -70,10 +73,15 @@
           <div class="form-panel-inner">
             <h2>Welcome back</h2>
             <p class="form-intro">
-              Sign in with your student portal credentials.
+              Sign in with your student number and portal password.
             </p>
-            <div class="notice hidden" id="login-notice">
-              <span class="notice-icon" id="login-notice-icon">i</span>
+            <div class="notice hidden" id="login-notice" role="status">
+              <span
+                class="notice-icon"
+                id="login-notice-icon"
+                aria-hidden="true"
+                >i</span
+              >
               <div>
                 <strong id="login-notice-title"></strong
                 ><span id="login-notice-text"></span>
@@ -96,37 +104,45 @@
                   required
                 />
                 <span class="hint" id="student-id-hint"
-                  >Enter the 7 digits assigned to your student account.</span
+                  >The 7 digits assigned to your student account.</span
                 >
               </div>
               <div class="field">
-                <label for="password">Password</label>
-                <div class="input-wrap">
+                <div class="label-row">
+                  <label for="password">Password</label>
+                  <a href="forgot.html">Forgot password?</a>
+                </div>
+                <div class="password-field">
                   <input
                     id="password"
                     name="password"
                     type="password"
                     autocomplete="current-password"
                     placeholder="Enter your password"
+                    data-caps="login-caps"
                     required
-                  />
-                  <button
-                    class="icon-button"
+                  /><button
+                    class="reveal-button"
                     type="button"
-                    data-toggle-password="password"
+                    data-reveal="password"
                     aria-label="Show password"
+                    aria-pressed="false"
                   >
-                    ◉
+                    Show
                   </button>
                 </div>
+                <p class="caps-hint" id="login-caps" role="status" hidden>
+                  Caps Lock is on
+                </p>
               </div>
               <p class="form-error" id="login-error" role="alert"></p>
               <button class="button full" type="submit">
                 Sign in to student portal <span aria-hidden="true">→</span>
               </button>
-              <a class="button secondary full" href="forgot.html"
-                >Forgot password?</a
-              >
+              <p class="signin-help">
+                Trouble signing in?
+                <a href="support.html">See your options</a>
+              </p>
             </form>
             <p class="footer-note">
               Use only on a device you trust. Always sign out on shared
@@ -152,43 +168,67 @@
         <form class="stack" id="first-login-form" novalidate>
           <div class="field">
             <label for="first-login-password">New password</label>
-            <div class="input-wrap">
+            <div class="password-field">
               <input
                 id="first-login-password"
                 type="password"
                 autocomplete="new-password"
                 maxlength="128"
                 placeholder="At least 12 characters"
+                aria-describedby="first-login-rules"
+                data-caps="first-login-caps"
                 required
-              />
-              <button
-                class="icon-button"
+              /><button
+                class="reveal-button"
                 type="button"
-                data-toggle-password="first-login-password"
-                aria-label="Show password"
+                data-reveal="first-login-password"
+                aria-label="Show new password"
+                aria-pressed="false"
               >
-                ◉
+                Show
               </button>
             </div>
+            <p class="caps-hint" id="first-login-caps" role="status" hidden>
+              Caps Lock is on
+            </p>
           </div>
-          <ul class="requirements" aria-label="Password requirements">
-            <li data-first-rule="length">12 or more characters</li>
-            <li data-first-rule="upper">One uppercase letter</li>
-            <li data-first-rule="lower">One lowercase letter</li>
-            <li data-first-rule="number">One number</li>
-            <li data-first-rule="symbol">One symbol</li>
-            <li data-first-rule="student">No student number pattern</li>
+          <ul
+            class="password-rules"
+            id="first-login-rules"
+            aria-label="Password requirements"
+          >
+            <li data-first-rule="length">12–128 characters</li>
+            <li data-first-rule="case">Uppercase and lowercase letters</li>
+            <li data-first-rule="number">At least one number</li>
+            <li data-first-rule="symbol">At least one symbol</li>
+            <li data-first-rule="student">
+              Doesn’t include your student number
+            </li>
           </ul>
           <div class="field">
             <label for="first-login-confirm">Confirm new password</label>
-            <input
-              id="first-login-confirm"
-              type="password"
-              autocomplete="new-password"
-              maxlength="128"
-              placeholder="Enter it again"
-              required
-            />
+            <div class="password-field">
+              <input
+                id="first-login-confirm"
+                type="password"
+                autocomplete="new-password"
+                maxlength="128"
+                placeholder="Enter it again"
+                aria-describedby="first-login-match"
+                required
+              /><button
+                class="reveal-button"
+                type="button"
+                data-reveal="first-login-confirm"
+                aria-label="Show confirmed password"
+                aria-pressed="false"
+              >
+                Show
+              </button>
+            </div>
+            <span class="hint match-hint" id="first-login-match"
+              >Enter the same password again.</span
+            >
           </div>
           <p class="form-error" id="first-login-error" role="alert"></p>
           <div class="policy-acknowledgment">
@@ -197,18 +237,20 @@
               Please review these before continuing.
             </p>
             <label
-              ><input type="checkbox" id="first-terms" required /> I agree to
-              the
-              <a href="terms.html" target="_blank" rel="noopener"
-                >Terms of use (opens a new tab)</a
-              >.</label
+              ><input type="checkbox" id="first-terms" required /><span
+                >I agree to the
+                <a href="terms.html" target="_blank" rel="noopener"
+                  >Terms of use (opens a new tab)</a
+                >.</span
+              ></label
             >
             <label
-              ><input type="checkbox" id="first-privacy" required /> I have read
-              the
-              <a href="privacy.html" target="_blank" rel="noopener"
-                >Privacy notice (opens a new tab)</a
-              >.</label
+              ><input type="checkbox" id="first-privacy" required /><span
+                >I have read the
+                <a href="privacy.html" target="_blank" rel="noopener"
+                  >Privacy notice (opens a new tab)</a
+                >.</span
+              ></label
             >
             <small
               >Phone recovery is optional. You enter and verify your own number

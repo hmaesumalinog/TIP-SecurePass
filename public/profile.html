@@ -2,40 +2,107 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta
       name="description"
       content="Secure student profile connected to the TIP SecurePass account service."
     />
+    <meta name="color-scheme" content="light only" />
     <title>Profile | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260920b" />
-    <link rel="stylesheet" href="assets/css/portal.css?v=20260905" />
-    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260919" />
-    <script src="assets/js/enrollment.js?v=20260919" defer></script>
-    <script src="assets/js/portal.js?v=20260919" defer></script>
+    <link rel="stylesheet" href="assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/student-shell.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/portal.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260928" />
+    <script src="assets/js/enrollment.js?v=20260928" defer></script>
+    <script src="assets/js/portal.js?v=20260928" defer></script>
   </head>
   <body class="portal-body" data-page="profile">
-    <div class="top-strip"></div>
+    <a class="skip-link" href="#main">Skip to main content</a>
     <header class="portal-header">
       <a class="portal-brand" href="portal.html"
-        ><img src="assets/images/brand-mark.svg" alt="" /><span
-          ><strong>TIP SecurePass</strong>Student Portal</span
-        ></a
+        ><img
+          src="assets/images/brand-mark.svg"
+          width="34"
+          height="40"
+          alt=""
+        /><span><strong>TIP SecurePass</strong>Student portal</span></a
       >
       <nav class="portal-nav" aria-label="Student portal">
-        <a href="portal.html">Dashboard</a>
-        <a href="profile.html" aria-current="page">Profile</a>
-        <a href="security.html">Security &amp; recovery</a>
-        <button type="button" id="sign-out">Sign out</button>
+        <a href="portal.html"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5 9.5V20h14V9.5" />
+            <path d="M10 20v-5h4v5" /></svg
+          ><span>Dashboard</span></a
+        >
+        <a href="profile.html" aria-current="page"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c1.6-4 4.6-6 8-6s6.4 2 8 6" /></svg
+          ><span>Profile</span></a
+        >
+        <a href="security.html"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3 20 6v6c0 4.8-3.4 8.1-8 9-4.6-.9-8-4.2-8-9V6l8-3Z" />
+            <path d="m8.5 12 2.5 2.5 4.5-5" /></svg
+          ><span class="nav-label-long">Security &amp; recovery</span
+          ><span class="nav-label-short">Security</span></a
+        >
+        <button type="button" id="sign-out">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+            <path d="m10 16-4-4 4-4" />
+            <path d="M6 12h10" /></svg
+          ><span>Sign out</span>
+        </button>
       </nav>
     </header>
-    <main class="portal-main">
-      <div class="portal-loading" data-loading>
-        <span
-          ><span class="loading" aria-hidden="true"></span> Loading your
-          profile…</span
-        >
+    <main class="portal-main" id="main">
+      <div
+        class="portal-loading"
+        data-loading
+        role="status"
+        aria-label="Loading your profile"
+      >
+        <div class="skeleton-profile">
+          <span class="skeleton"></span><span class="skeleton"></span>
+        </div>
       </div>
       <section
         class="profile-layout hidden"
@@ -71,7 +138,7 @@
               ><span class="detail-value" id="profile-email">—</span>
             </div>
             <div class="detail-item">
-              <span class="detail-label">Phone number</span
+              <span class="detail-label">Recovery phone</span
               ><span class="detail-value" id="profile-phone">—</span>
             </div>
             <div class="detail-item">
@@ -88,18 +155,28 @@
                 >—</span
               >
             </div>
+            <div class="detail-item">
+              <span class="detail-label">Year level</span
+              ><span class="detail-value" id="profile-year-level-copy">—</span>
+            </div>
             <div class="detail-item wide">
-              <span class="detail-label">Program and year level</span
-              ><span class="detail-value"
-                ><span id="profile-program-copy">—</span> ·
-                <span id="profile-year-level-copy">—</span></span
-              >
+              <span class="detail-label">Program</span
+              ><span class="detail-value" id="profile-program-copy">—</span>
             </div>
           </div>
-          <p class="profile-note">
-            These details are loaded from the authenticated student record.
-            Passwords are never returned to or displayed by the profile page.
-          </p>
+          <div class="profile-note">
+            <p>
+              Your administrator manages these records. Passwords are never
+              shown here. To add or change your recovery phone, open
+              <a href="security.html">Security &amp; recovery</a>.
+            </p>
+            <p>
+              Something incorrect?
+              <a href="recovery-help.html"
+                >Ask your administrator to review it</a
+              >.
+            </p>
+          </div>
         </article>
       </section>
     </main>

@@ -3,50 +3,54 @@
   width: min(540px, calc(100% - 28px));
   max-height: calc(100dvh - 28px);
   margin: auto;
-  padding: clamp(20px, 5vw, 32px);
-  border: 1px solid #d6dce0;
-  border-top: 5px solid #f5c400;
+  padding: clamp(22px, 5vw, 32px);
+  border: 0;
+  border-top: 5px solid var(--brand);
   border-radius: 18px;
-  background: #fff;
-  color: #20272c;
-  box-shadow: 0 24px 70px #11182033;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
   overflow-y: auto;
   overflow-wrap: anywhere;
-  font:
-    16px/1.55 system-ui,
-    sans-serif;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.55;
 }
 .enrollment-dialog::backdrop {
-  background: #16212ac4;
+  background: var(--backdrop);
+  backdrop-filter: blur(3px);
 }
 .enrollment-dialog .enrollment-eyebrow {
   margin: 0 0 8px;
-  color: #735b00;
-  font-size: 0.75rem;
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  color: var(--brand-text);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 .enrollment-dialog h2 {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-size: clamp(1.4rem, 5vw, 1.8rem);
+  letter-spacing: -0.03em;
   line-height: 1.2;
 }
 .enrollment-dialog p {
   margin: 0 0 16px;
+  color: var(--ink-2);
 }
 .enrollment-dialog ol {
-  padding-left: 24px;
   margin: 0 0 20px;
+  padding-left: 24px;
 }
 .enrollment-dialog li + li {
   margin-top: 8px;
 }
 .enrollment-dialog .enrollment-note {
-  padding: 12px;
-  border-radius: 8px;
-  background: #fff8d8;
-  font-size: 0.875rem;
+  padding: 12px 14px;
+  border: 1px solid var(--brand-line);
+  border-radius: 10px;
+  background: var(--brand-tint-2);
+  font-size: 0.88rem;
 }
 .enrollment-actions {
   display: flex;
@@ -55,24 +59,31 @@
 }
 .enrollment-actions button {
   display: inline-flex;
+  min-height: 48px;
+  flex: 1 1 160px;
   align-items: center;
   justify-content: center;
-  flex: 1 1 160px;
-  min-height: 48px;
-  padding: 12px 16px;
   margin: 0;
-  border: 1px solid #bb9300;
+  padding: 12px 16px;
+  border: 1px solid var(--brand-border);
   border-radius: 10px;
-  background: #f5c400;
-  color: #171c20;
+  color: var(--brand-ink);
+  background: var(--brand);
   font: inherit;
-  font-weight: 700;
+  font-weight: 750;
   cursor: pointer;
+}
+.enrollment-actions button:hover {
+  background: var(--brand-hover);
 }
 .enrollment-actions .enrollment-secondary {
   flex-basis: 100px;
-  background: #fff;
-  border-color: #aab4bb;
+  border-color: var(--field-border);
+  color: var(--ink);
+  background: var(--surface);
+}
+.enrollment-actions .enrollment-secondary:hover {
+  background: var(--hover);
 }
 .enrollment-actions button:disabled {
   opacity: 0.6;
@@ -81,16 +92,13 @@
 .enrollment-dialog .enrollment-help {
   display: inline-block;
   margin-top: 18px;
-  color: #665000;
-  font-size: 0.875rem;
+  color: var(--brand-text);
+  font-size: 0.88rem;
   text-decoration: underline;
 }
-.enrollment-dialog :focus-visible {
-  outline: 3px solid #946f00;
-  outline-offset: 3px;
-}
 .enrollment-dialog [data-enrollment-error] {
-  color: #a32121;
+  color: var(--danger);
+  font-weight: 650;
 }
 @media (max-width: 380px) {
   .enrollment-actions button {

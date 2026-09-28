@@ -13,7 +13,10 @@ export async function supabase(path, options = {}) {
   headers.set('Accept', 'application/json');
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
 
-  const response = await fetch(`${baseUrl}/rest/v1/${path}`, { ...options, headers });
+  // Bound every database operation. Mutations are never retried automatically.
+  const response = await fetch(`${baseUrl}/rest/v1/${path}`, {
+    ...options, headers, signal: options.signal || AbortSignal.timeout(8000)
+  });
   const text = await response.text();
   let data = null;
   if (text) {

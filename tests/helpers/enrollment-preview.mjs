@@ -58,9 +58,10 @@ const server=createServer(async(req,res)=>{
     return json({message:'Not available in local fixture.'},400);
   }
   if(url.pathname==='/__migration') {
-    const sql=await readFile(resolve('supabase/migrations/20260920090000_student_owned_onboarding.sql'),'utf8');
+    const source=url.searchParams.has('baseline')?'maintenance/performance-baseline.sql':'migrations/20260928090000_performance_and_delivery.sql';
+    const sql=await readFile(resolve('supabase',source),'utf8');
     res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'no-store'});
-    res.end('<h1>Reviewed local migration</h1><p>Source: 20260920090000_student_owned_onboarding.sql · no student records or credentials</p><textarea aria-label="Migration SQL" rows="30" cols="100">'+sql.replaceAll('&','&amp;').replaceAll('<','&lt;')+'</textarea>');return;
+    res.end('<h1>Reviewed local SQL</h1><p>Source: '+source+' · no student records or credentials</p><textarea aria-label="Migration SQL" rows="30" cols="100">'+sql.replaceAll('&','&amp;').replaceAll('<','&lt;')+'</textarea>');return;
   }
   if(url.pathname==='/api/admin/session')return json({admin:{display_name:'Local Test Administrator',role:'super_admin'},csrfToken:'local-only-non-secret'});
   if(url.pathname==='/api/login')return json({requiresPasswordChange:true});
@@ -74,14 +75,14 @@ const server=createServer(async(req,res)=>{
   if(url.pathname==='/api/admin/audit'){
     const search=url.searchParams.get('search')?.toLowerCase()||'',category=url.searchParams.get('category');
     const events=activity.filter(e=>(!category||category===e.source)&&(!search||JSON.stringify(e).toLowerCase().includes(search)));
-    return json({events,total:events.length,page:1,pageSize:25,refreshedAt:now()});
+    return json({events,...(url.searchParams.get('format')==='compact'?{hasMore:false,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length}:{total:events.length}),page:1,pageSize:25,refreshedAt:now()});
   }
   if(url.pathname==='/api/admin/students'){
     if(req.method==='GET'){
       if(url.searchParams.has('id'))return json({student:directory.find(s=>s.id===url.searchParams.get('id'))});
       const search=url.searchParams.get('search')?.toLowerCase()||'',filter=url.searchParams.get('filter');
       const students=directory.filter(s=>(!filter||filter===s.security_status)&&(!search||JSON.stringify(s).toLowerCase().includes(search)));
-      return json({students,total:students.length,page:1,pageSize:20,refreshedAt:now()});
+      return json({students,...(url.searchParams.get('format')==='compact'?{hasMore:false,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length}:{total:students.length}),page:1,pageSize:20,refreshedAt:now()});
     }
     let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body);
     if(req.method==='PATCH'){const s=directory.find(s=>s.id===input.id);Object.assign(s,{first_name:input.firstName,last_name:input.lastName,birth_date:input.birthday,record_version:s.record_version+1});}
@@ -92,7 +93,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET'){
       if(url.searchParams.has('id')){const r=requests.find(r=>r.id===url.searchParams.get('id'));return json({request:r,history:r.history});}
       const status=url.searchParams.get('status')||'open',number=url.searchParams.get('number');
-      return json({requests:requests.filter(r=>(!number||number===r.student_number)&&(status==='all'||status==='open'&&['pending','reviewing'].includes(r.status)||status===r.status)),hasMore:false,page:1,refreshedAt:now()});
+      return json({requests:requests.filter(r=>(!number||number===r.student_number)&&(status==='all'||status==='open'&&['pending','reviewing'].includes(r.status)||status===r.status)),hasMore:false,page:1,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length,refreshedAt:now()});
     }
     let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body),r=requests.find(r=>r.id===input.id);
     r.history.push({status:input.status,note:input.note,created_at:now()});r.status=input.status;r.updated_at=now();return json({message:'Local review saved. No account access changed.'});
@@ -109,7 +110,7 @@ const server=createServer(async(req,res)=>{
   if(url.pathname==='/api/profile'){
     if(broken)return json({message:'Security settings could not be loaded. Refresh to retry.'},503);
     if(!policiesAccepted)return json({code:'POLICIES_REQUIRED',message:'Review policies'},403);
-    return enabled?json({student}):json({code:'AUTHENTICATOR_SETUP_REQUIRED',message:'Set up authenticator'},403);
+    return enabled?json({student,recovery:{status:'ok',enabled,remaining,phoneVerified}}):json({code:'AUTHENTICATOR_SETUP_REQUIRED',message:'Set up authenticator'},403);
   }
   if(url.pathname==='/__phone-stats')return json(phoneStats);
   if(url.pathname==='/api/logout') return json({message:logoutFails?'Try again':'Signed out'},logoutFails?500:200);

@@ -23,8 +23,8 @@ export default async function handler(request) {
     if (!policiesAccepted(student)) return json({code:'POLICIES_REQUIRED',message:'Please review the terms and privacy notice before continuing.'},403);
 
     // Check confirmed database enrollment, not a browser flag or a pending QR key.
-    const recovery = await rpc('recovery_settings', {
-      p_sid: student.id, p_version: session.pv, p_action: 'status', p_data: {}
+    const recovery = await rpc('recovery_status', {
+      p_sid: student.id, p_version: session.pv
     });
     if (recovery.status !== 'ok') throw new HttpError(503, 'We could not check your recovery settings. Please try again.');
     if (recovery.enabled !== true) return json({
@@ -33,6 +33,7 @@ export default async function handler(request) {
     }, 403);
 
     return json({
+      recovery,
       student: {
         studentNumber: student.student_number,
         firstName: student.first_name,

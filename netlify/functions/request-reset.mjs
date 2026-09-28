@@ -12,13 +12,10 @@ export default async function handler(request, context) {
     const ip = context?.ip || request.headers.get('x-nf-client-connection-ip') || 'unknown';
     const identifierHash = sha256(email);
     const ipHash = sha256(ip);
-    const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-
-    const recent = await supabase(`reset_requests?${query({ select: 'id,identifier_hash,ip_hash', created_at: `gte.${since}`, or: `(identifier_hash.eq.${identifierHash},ip_hash.eq.${ipHash})` })}`);
-    const emailCount = recent.filter((item) => item.identifier_hash === identifierHash).length;
-    const ipCount = recent.filter((item) => item.ip_hash === ipHash).length;
-    if (emailCount >= 3 || ipCount >= 8) throw new HttpError(429, 'Too many reset requests. Wait 15 minutes before trying again.');
-    await insert('reset_requests', { identifier_hash: identifierHash, ip_hash: ipHash }, 'id');
+    const attemptId = await supabase('rpc/reserve_access_attempt', { method: 'POST', body: JSON.stringify({
+      p_kind: 'reset', p_identifier: identifierHash, p_ip: ipHash
+    }) });
+    if (!attemptId) throw new HttpError(429, 'Too many reset requests. Wait 15 minutes before trying again.');
 
     const students = await supabase(`demo_students?${query({ select: 'id,email,first_name', email: `eq.${email}`, active: 'eq.true', limit: 1 })}`);
     if (!students.length) return json({ message: GENERIC_MESSAGE });

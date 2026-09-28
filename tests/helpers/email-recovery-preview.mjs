@@ -47,7 +47,8 @@ const server=createServer(async(req,res)=>{
       if(verified)return json({status:'verified'});
       const sent=!active||body.resend;if(sent)stats.sms++;
       active=true;
-      return json({status:mode==='pending'&&stats.start<3?'pending':mode==='sms-failure'?'failed':'active',challengeId:'11111111-1111-4111-8111-111111111111',maskedPhone:'+63 ••• ••• 0000',expiresIn:mode==='otp-expiry'?3:300,retryAfter:3,remainingSends:Math.max(0,3-stats.sms),sent});
+      const status=mode==='pending'&&stats.start<3?'pending':['sms-failure','sms-rejected'].includes(mode)?'failed':mode==='sms-unknown'?'unknown':'active';
+      return json({status,challengeId:'11111111-1111-4111-8111-111111111111',maskedPhone:'+63 ••• ••• 0000',expiresIn:mode==='otp-expiry'?3:300,retryAfter:3,remainingSends:mode==='sms-rejected'?0:Math.max(0,3-stats.sms),sent:status==='active'&&sent,...(mode==='sms-rejected'?{deliveryIssue:'content_rejected'}:{})});
     }
     if(path==='/api/verify-otp') {
       stats.verify++;

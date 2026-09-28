@@ -8,7 +8,7 @@ test('portal enrollment gate fails closed on status errors and leaks no profile'
   const student={id:'test-student',password_changed_at:'2026-09-19T00:00:00Z',email:'synthetic@example.invalid',terms_version:'2026-09-20',privacy_version:'2026-09-20'};
   let status={status:'ok',enabled:false};
   t.mock.method(globalThis,'fetch',async(url)=>{
-    if(String(url).includes('rpc/recovery_settings')) return Response.json(status);
+    if(String(url).includes('rpc/recovery_status')) return Response.json(status);
     return Response.json([student]);
   });
   const request=new Request('https://portal.example.invalid/api/profile',{headers:{Cookie:sessionCookie(createSession(student))}});

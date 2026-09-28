@@ -5,19 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Password reset recovery support options."
+      content="Choose the right way back into your TIP SecurePass student account."
     />
-    <title>Recovery Help | TIP SecurePass</title>
+    <meta name="color-scheme" content="light only" />
+    <title>Account help | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260905" />
-    <script src="assets/js/site.js?v=20260905" defer></script>
+    <link rel="stylesheet" href="assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/site.css?v=20260928" />
   </head>
   <body data-page="support">
+    <a class="skip-link" href="#help-options">Skip to help options</a>
     <div class="top-strip"></div>
     <header class="site-header">
-      <a class="brand" href="index.html"
-        ><img src="assets/images/brand-mark.svg" alt="" /><span
-          class="brand-copy"
+      <a
+        class="brand"
+        href="index.html"
+        aria-label="TIP SecurePass student portal home"
+        ><img
+          src="assets/images/brand-mark.svg"
+          width="38"
+          height="44"
+          alt=""
+        /><span class="brand-copy"
           ><span class="brand-name">TIP SecurePass</span
           ><span class="brand-subtitle"
             >Student portal · Quezon City</span
@@ -29,85 +38,107 @@
       <section class="auth-grid" aria-labelledby="page-title">
         <div class="story-panel">
           <div class="story-content">
-            <p class="eyebrow">Recovery fallback</p>
-            <h1 id="page-title">Locked out should not mean left behind.</h1>
+            <p class="eyebrow">Account help</p>
+            <h1 id="page-title">Locked out? There’s still a safe way back.</h1>
             <p class="lead">
-              Students without a registered phone need a safe human-assisted
-              route—not a weaker shortcut around verification.
+              Pick the option that matches what you can still access. Every
+              route checks that it’s really you—none of them skip that step.
             </p>
           </div>
-          <div class="trust-list">
-            <div class="trust-item">
-              <div class="trust-icon">ID</div>
+          <ul class="trust-list">
+            <li class="trust-item">
+              <div class="trust-icon" aria-hidden="true">01</div>
               <span
-                ><strong>Identity check</strong><br />School-issued
-                identification</span
+                ><strong>No shortcuts</strong><br />Identity is always
+                verified</span
               >
-            </div>
-            <div class="trust-item">
-              <div class="trust-icon">HQ</div>
+            </li>
+            <li class="trust-item">
+              <div class="trust-icon" aria-hidden="true">02</div>
               <span
-                ><strong>Authorized staff</strong><br />Registrar or IT help
-                desk</span
+                ><strong>Your choice</strong><br />Email, app, or verified
+                phone</span
               >
-            </div>
-            <div class="trust-item">
-              <div class="trust-icon">↗</div>
+            </li>
+            <li class="trust-item">
+              <div class="trust-icon" aria-hidden="true">03</div>
               <span
-                ><strong>Escalation</strong><br />No security-question
-                bypass</span
+                ><strong>Human help</strong><br />An administrator can
+                review</span
               >
-            </div>
-          </div>
+            </li>
+          </ul>
         </div>
         <div class="form-panel">
           <div class="form-panel-inner">
-            <h2>Can’t use your registered phone?</h2>
-            <p class="form-intro">
-              For account safety, the recovery process never bypasses the second
-              verification factor online.
-            </p>
-            <div class="stack">
-              <div class="notice warning">
-                <span class="notice-icon">1</span>
-                <div>
-                  <strong>Prepare your student number</strong>Do not send your
-                  current or previous password to support.
-                </div>
-              </div>
-              <div class="notice">
-                <span class="notice-icon">2</span>
-                <div>
-                  <strong>Visit an authorized campus desk</strong>Bring a valid
-                  school ID and ask for account-recovery verification.
-                </div>
-              </div>
-              <div class="notice">
-                <span class="notice-icon">3</span>
-                <div>
-                  <strong>Update your recovery number</strong>After
-                  verification, staff can register the new number before
-                  restarting the reset.
-                </div>
-              </div>
-              <a class="button full" href="forgot.html"
-                >Return to password reset</a
+            <h2>How can we help?</h2>
+            <p class="form-intro">Choose the situation that fits you best.</p>
+            <div class="help-options" id="help-options">
+              <a class="help-option" href="forgot.html"
+                ><span class="help-option-icon" aria-hidden="true"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                  >
+                    <rect x="3" y="5" width="18" height="14" rx="3" />
+                    <path d="m4 7 8 6 8-6" /></svg></span
+                ><span
+                  ><strong>I forgot my password</strong
+                  ><span
+                    >Get a reset link by email, then confirm with the code sent
+                    to your phone.</span
+                  ></span
+                ><span class="help-option-arrow" aria-hidden="true">→</span></a
               >
-              <a class="button secondary full" href="index.html"
-                >Back to sign in</a
+              <a class="help-option" href="recover.html"
+                ><span class="help-option-icon" aria-hidden="true"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                  >
+                    <rect x="5" y="2" width="14" height="20" rx="3" />
+                    <path d="M10 18h4M9 7h6M9 11h6" /></svg></span
+                ><span
+                  ><strong>I can’t open my email</strong
+                  ><span
+                    >Use a saved backup code with your authenticator app or
+                    verified phone.</span
+                  ></span
+                ><span class="help-option-arrow" aria-hidden="true">→</span></a
+              >
+              <a class="help-option" href="recovery-help.html"
+                ><span class="help-option-icon" aria-hidden="true"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                  >
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></svg></span
+                ><span
+                  ><strong>I lost my recovery methods</strong
+                  ><span
+                    >No backup code, app, or phone? Ask an administrator to
+                    review your situation.</span
+                  ></span
+                ><span class="help-option-arrow" aria-hidden="true">→</span></a
               >
             </div>
             <p class="footer-note">
-              Defense note: this satisfies the requirement for users without a
-              registered phone without weakening the two-channel control.
+              <a href="index.html">← Back to sign in</a>
             </p>
           </div>
         </div>
       </section>
     </main>
     <footer class="site-footer">
-      <strong>Academic project environment.</strong> Support details are
-      illustrative and do not represent official TIP policy.
+      <strong>Academic project environment.</strong> Not affiliated with or
+      connected to the official TIP student portal.
     </footer>
   </body>
 </html>

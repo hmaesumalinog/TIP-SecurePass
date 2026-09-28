@@ -1,5 +1,5 @@
 import { assertPost, handleError, HttpError, json, readJson, sha256 } from './_shared/http.mjs';
-import { insert, supabase } from './_shared/supabase.mjs';
+import { insert, supabase, update } from './_shared/supabase.mjs';
 import { createSession, sessionCookie } from './_shared/session.mjs';
 
 const INVALID = 'The student number or password is incorrect.';
@@ -15,9 +15,10 @@ export default async function handler(request, context) {
     const ip = context?.ip || request.headers.get('x-nf-client-connection-ip') || 'unknown';
     const numberHash = sha256(normalizedNumber);
     const ipHash = sha256(ip);
-    const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    const recent = await supabase(`student_login_attempts?${new URLSearchParams({ select: 'student_number_hash,ip_hash,succeeded', created_at: `gte.${since}`, or: `(student_number_hash.eq.${numberHash},ip_hash.eq.${ipHash})` })}`);
-    if (recent.filter((item) => !item.succeeded && item.student_number_hash === numberHash).length >= 5 || recent.filter((item) => !item.succeeded && item.ip_hash === ipHash).length >= 12) {
+    const attemptId = await supabase('rpc/reserve_access_attempt', { method: 'POST', body: JSON.stringify({
+      p_kind: 'student', p_identifier: numberHash, p_ip: ipHash
+    }) });
+    if (!attemptId) {
       throw new HttpError(429, 'Too many sign-in attempts. Wait 15 minutes and try again.');
     }
 
@@ -29,15 +30,7 @@ export default async function handler(request, context) {
       })
     });
     const student = Array.isArray(result) ? result[0] : result;
-    await insert(
-      'student_login_attempts',
-      {
-        student_number_hash: numberHash,
-        ip_hash: ipHash,
-        succeeded: Boolean(student?.id)
-      },
-      'id'
-    );
+    if (student?.id) await update('student_login_attempts', { id: `eq.${attemptId}` }, { succeeded: true });
     if (!student?.id) {
       await insert(
         'audit_events',

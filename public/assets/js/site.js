@@ -47,11 +47,12 @@
     return data;
   }
 
+  // Mirrors the server policy: 12–128 characters, mixed case, a number, a
+  // symbol, and not the student's own number.
   function passwordRules(value, studentNumber = "") {
     return {
-      length: value.length >= 12,
-      upper: /[A-Z]/.test(value),
-      lower: /[a-z]/.test(value),
+      length: value.length >= 12 && value.length <= 128,
+      case: /[A-Z]/.test(value) && /[a-z]/.test(value),
       number: /\d/.test(value),
       symbol: /[^A-Za-z0-9]/.test(value),
       student: /^\d{7}$/.test(studentNumber)
@@ -60,17 +61,31 @@
     };
   }
 
-  $$("[data-toggle-password]").forEach((button) => {
+  $$("[data-reveal]").forEach((button) => {
     button.addEventListener("click", () => {
-      const input = document.getElementById(button.dataset.togglePassword);
+      const input = document.getElementById(button.dataset.reveal);
       const revealing = input.type === "password";
       input.type = revealing ? "text" : "password";
+      button.textContent = revealing ? "Hide" : "Show";
+      button.setAttribute("aria-pressed", String(revealing));
       button.setAttribute(
         "aria-label",
-        revealing ? "Hide password" : "Show password",
+        button
+          .getAttribute("aria-label")
+          .replace(/^(Show|Hide)/, revealing ? "Hide" : "Show"),
       );
-      button.textContent = revealing ? "◌" : "◉";
     });
+  });
+
+  $$("[data-caps]").forEach((input) => {
+    const hint = document.getElementById(input.dataset.caps);
+    const update = (event) => {
+      if (typeof event.getModifierState === "function")
+        hint.hidden = !event.getModifierState("CapsLock");
+    };
+    input.addEventListener("keydown", update);
+    input.addEventListener("keyup", update);
+    input.addEventListener("blur", () => (hint.hidden = true));
   });
 
   if (page === "login") {
@@ -84,6 +99,7 @@
     const firstLoginPassword = $("#first-login-password");
     const firstLoginConfirm = $("#first-login-confirm");
     const firstLoginError = $("#first-login-error");
+    const firstLoginMatch = $("#first-login-match");
 
     showReturnNotice();
 
@@ -136,22 +152,32 @@
       }
     });
 
-    firstLoginPassword?.addEventListener("input", () => {
+    function updateFirstLogin() {
       const rules = passwordRules(
         firstLoginPassword.value,
         studentNumber.value,
       );
       Object.entries(rules).forEach(([name, met]) =>
         $(`[data-first-rule="${name}"]`, firstLoginDialog).classList.toggle(
-          "met",
-          met,
+          "is-valid",
+          !!firstLoginPassword.value && met,
         ),
       );
+      const confirmation = firstLoginConfirm.value;
+      const matches =
+        !!confirmation && confirmation === firstLoginPassword.value;
+      firstLoginMatch.textContent = matches
+        ? "Passwords match."
+        : confirmation
+          ? "The passwords don’t match yet."
+          : "Enter the same password again.";
+      firstLoginMatch.classList.toggle("is-valid", matches);
       firstLoginError.textContent = "";
-    });
+    }
+    firstLoginPassword?.addEventListener("input", updateFirstLogin);
     firstLoginConfirm?.addEventListener("input", () => {
       firstLoginConfirm.removeAttribute("aria-invalid");
-      firstLoginError.textContent = "";
+      updateFirstLogin();
     });
     firstLoginDialog?.addEventListener("cancel", (event) =>
       event.preventDefault(),
@@ -164,6 +190,7 @@
       }).catch(() => {});
       firstLoginDialog.close();
       firstLoginForm.reset();
+      updateFirstLogin();
       studentNumber.focus();
     });
     firstLoginForm?.addEventListener("submit", async (event) => {

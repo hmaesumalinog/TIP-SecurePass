@@ -7,13 +7,15 @@
       name="description"
       content="The requested page could not be found on the TIP SecurePass student portal."
     />
+    <meta name="color-scheme" content="light only" />
     <title>Page Not Found | TIP SecurePass</title>
     <link
       rel="icon"
       href="/assets/images/brand-mark.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="/assets/css/site.css?v=20260905" />
+    <link rel="stylesheet" href="/assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="/assets/css/site.css?v=20260928" />
   </head>
   <body data-page="not-found">
     <div class="top-strip"></div>
@@ -21,9 +23,14 @@
       <a
         class="brand"
         href="/index.html"
-        aria-label="SecurePass student portal home"
+        aria-label="TIP SecurePass student portal home"
       >
-        <img src="/assets/images/brand-mark.svg" alt="" />
+        <img
+          src="/assets/images/brand-mark.svg"
+          width="38"
+          height="44"
+          alt=""
+        />
         <span class="brand-copy"
           ><span class="brand-name">TIP SecurePass</span
           ><span class="brand-subtitle"
@@ -44,29 +51,29 @@
               Nothing is wrong with your account.
             </p>
           </div>
-          <div class="trust-list">
-            <div class="trust-item">
-              <div class="trust-icon">404</div>
+          <ul class="trust-list">
+            <li class="trust-item">
+              <div class="trust-icon" aria-hidden="true">✓</div>
               <span
                 ><strong>Nothing changed</strong><br />Your account is
                 untouched</span
               >
-            </div>
-            <div class="trust-item">
-              <div class="trust-icon">→</div>
+            </li>
+            <li class="trust-item">
+              <div class="trust-icon" aria-hidden="true">→</div>
               <span
                 ><strong>Keep going</strong><br />Sign in from the home
                 page</span
               >
-            </div>
-            <div class="trust-item">
-              <div class="trust-icon">?</div>
+            </li>
+            <li class="trust-item">
+              <div class="trust-icon" aria-hidden="true">?</div>
               <span
-                ><strong>Locked out</strong><br />Recovery is still
+                ><strong>Locked out?</strong><br />Recovery is still
                 available</span
               >
-            </div>
-          </div>
+            </li>
+          </ul>
         </div>
         <div class="form-panel">
           <div class="form-panel-inner">
@@ -84,7 +91,7 @@
               <a class="button secondary full" href="/forgot.html"
                 >Reset my password</a
               >
-              <a class="text-button centered" href="/support.html"
+              <a class="text-button centered" href="/recovery-help.html"
                 >Get recovery help</a
               >
             </div>

@@ -52,7 +52,7 @@ test('the SMS code matches the reserved digest and verifies successfully', async
   assert.equal(verified.status, 200);
   assert.ok((await verified.json()).grantToken);
 });
-for (const status of ['active', 'pending', 'failed', 'expired', 'limited', 'verified']) {
+for (const status of ['active', 'pending', 'unknown', 'failed', 'expired', 'limited', 'verified']) {
   test(status + ' state never sends another SMS', async () => {
     let calls=0;
     globalThis.fetch=async (url) => {
@@ -65,16 +65,38 @@ for (const status of ['active', 'pending', 'failed', 'expired', 'limited', 'veri
     assert.equal(calls,1);
   });
 }
-test('provider failure is recorded without returning a demo code or retrying SMS', async () => {
+test('provider outage remains uncertain without returning a demo code or retrying SMS', async () => {
   let sends=0; let failed=false;
   globalThis.fetch=async (url, options) => {
     if(url.includes('prepare_reset_otp')) return Response.json({status:'reserved',challenge_id:id,phone:'+639000000000'});
     if(url.includes('unismsapi.com')) { sends++; return Response.json({error:'unavailable'},{status:503}); }
-    failed=JSON.parse(options.body).delivery_status==='failed';
+    failed=JSON.parse(options.body).delivery_status==='unknown';
     return Response.json([{id}]);
   };
   const result=await (await start(request({token:'a'.repeat(43)}))).json();
-  assert.equal(result.status,'failed'); assert.equal(sends,1); assert.ok(failed); assert.equal(result.demoOtp,undefined);
+  assert.equal(result.status,'unknown'); assert.equal(sends,1); assert.ok(failed); assert.equal(result.demoOtp,undefined);
+});
+test('pending provider acceptance is preserved and a later rejection is read without another SMS',async()=>{
+  let sends=0,reads=0,stored; let reserved=true;
+  globalThis.fetch=async(url,options={})=>{
+    const body=options.body?JSON.parse(options.body):{};
+    if(url.includes('prepare_reset_otp'))return Response.json({status:reserved?'reserved':'pending',challenge_id:id,student_id:id,
+      phone:'+639000000000',expires_at:new Date(Date.now()+300000).toISOString(),remaining_sends:2,
+      check_delivery:!reserved,provider_reference:reserved?null:'safe-reference',delivery_channel:'unisms_sms'});
+    if(url.includes('unismsapi.com')){
+      if(options.method==='GET'){reads++;return Response.json({message:{status:'failed',fail_reason:'OTP does not follow valid format. PRIVATE'}});}
+      sends++;return Response.json({message:{status:'pending',reference_id:'safe-reference'}});
+    }
+    if(url.includes('otp_challenges?'))stored=body;
+    return Response.json([{id}]);
+  };
+  const initial=await (await start(request({token:'a'.repeat(43)}))).json();
+  assert.equal(initial.status,'pending');assert.equal(initial.sent,false);assert.equal(stored.delivery_status,'pending');
+  assert.equal(stored.provider_reference,'safe-reference');assert.equal(initial.provider_reference,undefined);
+  reserved=false;
+  const final=await (await start(request({token:'a'.repeat(43)}))).json();
+  assert.equal(final.status,'failed');assert.equal(final.deliveryIssue,'content_rejected');assert.equal(final.remainingSends,0);
+  assert.equal(sends,1);assert.equal(reads,1);assert.equal(JSON.stringify(final).includes('PRIVATE'),false);
 });
 test('incorrect code consumes an attempt without granting a reset', async () => {
   globalThis.fetch=async (url, options) => {

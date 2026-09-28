@@ -2,53 +2,154 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta
       name="description"
       content="Student account dashboard for the TIP SecurePass academic project."
     />
+    <meta name="color-scheme" content="light only" />
     <title>Dashboard | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/site.css?v=20260920b" />
-    <link rel="stylesheet" href="assets/css/portal.css?v=20260905" />
-    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260919" />
-    <script src="assets/js/enrollment.js?v=20260919" defer></script>
-    <script src="assets/js/portal.js?v=20260919" defer></script>
+    <link rel="stylesheet" href="assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/student-shell.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/portal.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260928" />
+    <script src="assets/js/enrollment.js?v=20260928" defer></script>
+    <script src="assets/js/portal.js?v=20260928" defer></script>
   </head>
   <body class="portal-body" data-page="portal">
-    <div class="top-strip"></div>
+    <a class="skip-link" href="#main">Skip to main content</a>
     <header class="portal-header">
       <a class="portal-brand" href="portal.html"
-        ><img src="assets/images/brand-mark.svg" alt="" /><span
-          ><strong>TIP SecurePass</strong>Student Portal</span
-        ></a
+        ><img
+          src="assets/images/brand-mark.svg"
+          width="34"
+          height="40"
+          alt=""
+        /><span><strong>TIP SecurePass</strong>Student portal</span></a
       >
       <nav class="portal-nav" aria-label="Student portal">
-        <a href="portal.html" aria-current="page">Dashboard</a>
-        <a href="profile.html">Profile</a>
-        <a href="security.html">Security &amp; recovery</a>
-        <button type="button" id="sign-out">Sign out</button>
+        <a href="portal.html" aria-current="page"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5 9.5V20h14V9.5" />
+            <path d="M10 20v-5h4v5" /></svg
+          ><span>Dashboard</span></a
+        >
+        <a href="profile.html"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c1.6-4 4.6-6 8-6s6.4 2 8 6" /></svg
+          ><span>Profile</span></a
+        >
+        <a href="security.html"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3 20 6v6c0 4.8-3.4 8.1-8 9-4.6-.9-8-4.2-8-9V6l8-3Z" />
+            <path d="m8.5 12 2.5 2.5 4.5-5" /></svg
+          ><span class="nav-label-long">Security &amp; recovery</span
+          ><span class="nav-label-short">Security</span></a
+        >
+        <button type="button" id="sign-out">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+            <path d="m10 16-4-4 4-4" />
+            <path d="M6 12h10" /></svg
+          ><span>Sign out</span>
+        </button>
       </nav>
     </header>
-    <main class="portal-main">
-      <div class="portal-loading" data-loading>
-        <span
-          ><span class="loading" aria-hidden="true"></span> Loading your
-          portal…</span
-        >
+    <main class="portal-main" id="main">
+      <div
+        class="portal-loading"
+        data-loading
+        role="status"
+        aria-label="Loading your portal"
+      >
+        <span class="skeleton skeleton-hero"></span>
+        <div class="skeleton-grid">
+          <span class="skeleton"></span><span class="skeleton"></span
+          ><span class="skeleton"></span><span class="skeleton"></span>
+        </div>
       </div>
       <div class="hidden" data-protected-content>
         <section class="portal-hero">
           <div class="portal-hero-content">
             <p class="portal-kicker">Student dashboard</p>
             <h1>Welcome, <span id="student-first-name">Student</span>.</h1>
-            <p>
-              Your academic overview is ready. The academic information is
-              representative, while your identity and profile are loaded
-              securely from the project database.
-            </p>
+            <p>Here’s your semester at a glance.</p>
           </div>
           <span class="term-chip">1st Semester · SY 2026–2027</span>
+        </section>
+
+        <section
+          class="security-card hidden"
+          id="security-card"
+          aria-labelledby="security-card-title"
+        >
+          <span class="security-card-icon" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 3 20 6v6c0 4.8-3.4 8.1-8 9-4.6-.9-8-4.2-8-9V6l8-3Z"
+              />
+              <path d="m8.5 12 2.5 2.5 4.5-5" /></svg
+          ></span>
+          <div>
+            <h2 id="security-card-title">Account recovery</h2>
+            <ul
+              class="security-pills"
+              id="security-pills"
+              aria-label="Recovery methods"
+            ></ul>
+            <p class="security-card-hint" id="security-card-hint" hidden></p>
+          </div>
+          <a
+            class="security-card-link"
+            href="security.html"
+            id="security-card-link"
+            >Manage security</a
+          >
         </section>
 
         <section class="portal-section" aria-labelledby="overview-heading">
@@ -58,29 +159,71 @@
           </div>
           <div class="metric-grid">
             <article class="metric-card">
-              <span class="metric-icon">UN</span><strong>21</strong
-              ><span>Units enrolled</span>
+              <span class="metric-icon" aria-hidden="true"
+                ><svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"
+                  />
+                  <path d="M20 18v3H6.5A2.5 2.5 0 0 1 4 18.5" /></svg></span
+              ><strong>21</strong><span>Units enrolled</span>
             </article>
             <article class="metric-card">
-              <span class="metric-icon">CL</span><strong>7</strong
-              ><span>Active classes</span>
+              <span class="metric-icon" aria-hidden="true"
+                ><svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="5" width="18" height="16" rx="3" />
+                  <path d="M8 3v4M16 3v4M3 10h18" /></svg></span
+              ><strong>7</strong><span>Active classes</span>
             </article>
             <article class="metric-card">
-              <span class="metric-icon">GW</span><strong>1.42</strong
-              ><span>Current GWA</span>
+              <span class="metric-icon" aria-hidden="true"
+                ><svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M5 20v-8M12 20V5M19 20v-5" />
+                  <path d="M3 20h18" /></svg></span
+              ><strong>1.42</strong><span>Current GWA</span>
             </article>
             <article class="metric-card">
-              <span class="metric-icon">AN</span><strong>3</strong
-              ><span>New announcements</span>
+              <span class="metric-icon" aria-hidden="true"
+                ><svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M6 9a6 6 0 1 1 12 0c0 6 3 8 3 8H3s3-2 3-8" />
+                  <path d="M10 20a2 2 0 0 0 4 0" /></svg></span
+              ><strong>3</strong><span>New announcements</span>
             </article>
           </div>
         </section>
 
         <section class="portal-section portal-columns">
-          <article class="portal-card">
+          <article class="portal-card" aria-labelledby="classes-heading">
             <div class="card-heading">
-              <h2>Today’s classes</h2>
-              <span>Wednesday</span>
+              <h2 id="classes-heading">Today’s classes</h2>
+              <span id="today-label">Today</span>
             </div>
             <ul class="class-list">
               <li>
@@ -106,23 +249,32 @@
               </li>
             </ul>
           </article>
-          <aside class="portal-card">
+          <aside class="portal-card" aria-labelledby="announcements-heading">
             <div class="card-heading">
-              <h2>Announcements</h2>
+              <h2 id="announcements-heading">Announcements</h2>
               <span>Latest</span>
             </div>
             <ul class="announcement-list">
               <li>
-                <strong>Enrollment validation</strong
-                ><span>Complete account validation by Friday.</span>
+                <span class="announcement-dot" aria-hidden="true"></span
+                ><span
+                  ><strong>Enrollment validation</strong
+                  ><span>Complete account validation by Friday.</span></span
+                >
               </li>
               <li>
-                <strong>Library advisory</strong
-                ><span>Extended hours begin next week.</span>
+                <span class="announcement-dot" aria-hidden="true"></span
+                ><span
+                  ><strong>Library advisory</strong
+                  ><span>Extended hours begin next week.</span></span
+                >
               </li>
               <li>
-                <strong>Student services</strong
-                ><span>Profile records are available online.</span>
+                <span class="announcement-dot" aria-hidden="true"></span
+                ><span
+                  ><strong>Student services</strong
+                  ><span>Profile records are available online.</span></span
+                >
               </li>
             </ul>
           </aside>
@@ -130,8 +282,9 @@
       </div>
     </main>
     <footer class="site-footer">
-      <strong>Academic project environment.</strong> Representative portal
-      information for project demonstration only.
+      <strong>Academic project environment.</strong> Academic information shown
+      is representative, for demonstration only. Your identity and profile come
+      from the project database.
     </footer>
   </body>
 </html>

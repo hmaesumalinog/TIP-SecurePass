@@ -10,6 +10,8 @@ Run the following files in the Supabase SQL Editor in this exact order:
 2. `setup/02-administrator-schema.sql`
 3. `migrations/20260905071805_resumable_otp_delivery.sql`
 4. `migrations/20260917090000_alternate_recovery.sql`
+5. `migrations/20260920090000_student_owned_onboarding.sql`
+6. `migrations/20260928090000_performance_and_delivery.sql`
 
 The core script creates the student, sign-in-attempt, reset, OTP, grant, and audit structures. It deliberately creates no student credential; add students through the authenticated administrator portal.
 
@@ -22,13 +24,13 @@ Use these only when their feature is missing from an existing database:
 - `upgrades/student-portal-auth.sql`
 - `upgrades/temporary-password-onboarding.sql`
 
-After the earlier applicable upgrades, apply the timestamped files in `migrations/` in filename order. The latest migration adds resumable OTP delivery: refreshes reuse an active challenge, pending sends are visible, and only an explicit resend can replace a code after the cooldown. Failed sends count toward the limit because a provider timeout can still result in delivery.
+After the earlier applicable upgrades, apply the timestamped files in `migrations/` in filename order. The September 28 migration adds bounded provider-delivery checks, atomic access-attempt reservations, read-only recovery status, smaller admin reporting queries, supporting indexes, and an expired-state cleanup RPC. Apply it before deploying the matching functions and browser controllers. Failed/uncertain sends count toward the send limit because a provider timeout can still result in delivery.
 
 Review each script and back up important data before running an upgrade. Do not execute an upgrade merely because it appears in this folder; confirm whether its schema changes are already present.
 
 ## Maintenance
 
-`maintenance/cleanup-expired-records.sql` removes expired one-time reset workflow records. Review its retention periods before manual execution or scheduling.
+`security-maintenance` on Netlify calls `cleanup_expired_security_state()` four times daily after the September 28 upgrade. It removes at most 500 old rows per operational table per run, plus dependent expired artifacts. Audit history, support requests, student profiles, and recovery methods are retained. `maintenance/cleanup-expired-records.sql` invokes the same bounded routine for a manual maintenance run.
 
 ## Access model
 

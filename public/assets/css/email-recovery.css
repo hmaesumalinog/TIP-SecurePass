@@ -1,6 +1,6 @@
 .mail-symbol {
-  background: #fff5c7;
-  color: #7a620b;
+  color: var(--brand-text);
+  background: var(--brand-tint);
 }
 .mail-symbol svg {
   width: 31px;
@@ -11,60 +11,60 @@
   gap: 6px;
   margin-top: 28px;
   padding: 19px 20px;
-  border: 1px solid #e2e7e9;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fafbfb;
-  font-size: 0.8rem;
+  background: var(--surface-2);
+  font-size: 0.88rem;
 }
 .what-to-expect span {
   color: var(--muted);
 }
 .email-destination {
-  padding: 17px 20px;
-  border-radius: 12px;
-  border: 1px solid #e8dfbd;
-  background: #fffdf4;
   margin-bottom: 25px;
+  padding: 17px 20px;
+  border: 1px solid var(--brand-line);
+  border-radius: 12px;
+  background: var(--brand-tint-2);
 }
 .email-destination > span {
   display: block;
-  font-size: 0.6rem;
+  color: var(--brand-text);
+  font-size: 0.72rem;
   font-weight: 750;
   letter-spacing: 0.09em;
-  color: #827338;
 }
 .email-destination strong {
   display: block;
   margin-top: 7px;
-  font-size: 0.94rem;
+  font-size: 0.98rem;
   overflow-wrap: anywhere;
 }
 .email-destination .text-button {
   padding: 8px 0 0;
 }
 .inbox-steps {
+  margin: 0 0 25px;
   padding: 0;
   list-style: none;
-  margin: 0 0 25px;
 }
 .inbox-steps li {
   position: relative;
   padding: 0 0 22px 38px;
-  font-size: 0.83rem;
+  font-size: 0.9rem;
 }
 .inbox-steps .inbox-number {
   position: absolute;
-  left: 0;
   top: 1px;
-  width: 24px;
-  height: 24px;
+  left: 0;
   display: grid;
+  width: 25px;
+  height: 25px;
   place-items: center;
-  background: #f2f5f6;
   border-radius: 50%;
-  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--surface-3);
+  font-size: 0.76rem;
   font-weight: 800;
-  color: #62717b;
 }
 .inbox-steps strong {
   display: block;
@@ -72,7 +72,7 @@
 }
 .inbox-steps span {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.86rem;
 }
 .inbox-steps li:last-child {
   padding-bottom: 0;

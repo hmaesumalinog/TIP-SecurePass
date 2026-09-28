@@ -1,11 +1,16 @@
+import { createRefreshScheduler } from "./refresh-scheduler.mjs";
+
 (function () {
   "use strict";
 
   const page = document.body.dataset.adminPage;
   let csrfToken = "";
   let students = [];
-  let refreshTimer = 0;
+  let refreshScheduler;
   const $ = (selector, parent = document) => parent.querySelector(selector);
+  const $$ = (selector, parent = document) => [
+    ...parent.querySelectorAll(selector),
+  ];
 
   async function request(url, options = {}) {
     const headers = new Headers(options.headers || {});
@@ -15,7 +20,12 @@
       headers.set("X-Admin-CSRF", csrfToken);
     let response;
     try {
-      response = await fetch(url, { ...options, headers, cache: "no-store" });
+      response = await fetch(url, {
+        ...options,
+        headers,
+        cache: "no-store",
+        signal: options.signal || AbortSignal.timeout(20000),
+      });
     } catch {
       throw new Error(
         "We could not reach the server. Check your internet connection and try again.",
@@ -53,7 +63,7 @@
     window.clearTimeout(showToast.timer);
     showToast.timer = window.setTimeout(
       () => toast.classList.add("hidden"),
-      4200,
+      4800,
     );
   }
 
@@ -65,10 +75,68 @@
     }).format(new Date(value));
   }
 
+  // "5 minutes ago" for recent events; older events show only the date.
+  function relativeTime(value) {
+    const then = new Date(value).getTime();
+    if (!Number.isFinite(then)) return "";
+    const seconds = Math.round((Date.now() - then) / 1000);
+    if (seconds < 45) return "Just now";
+    const format = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return format.format(-minutes, "minute");
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return format.format(-hours, "hour");
+    const days = Math.round(hours / 24);
+    return days < 7 ? format.format(-days, "day") : "";
+  }
+
+  function dayLabel(value) {
+    const date = new Date(value);
+    const today = new Date();
+    const start = (day) =>
+      new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+    const difference = Math.round((start(today) - start(date)) / 86400000);
+    if (difference === 0) return "Today";
+    if (difference === 1) return "Yesterday";
+    return new Intl.DateTimeFormat(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: date.getFullYear() === today.getFullYear() ? undefined : "numeric",
+    }).format(date);
+  }
+
+  function readableDate(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return value;
+    return new Intl.DateTimeFormat("en", {
+      dateStyle: "long",
+      timeZone: "UTC",
+    }).format(new Date(`${value}T00:00:00Z`));
+  }
+
+  function waitingLabel(value) {
+    const hours = (Date.now() - new Date(value).getTime()) / 3600000;
+    if (!Number.isFinite(hours)) return "";
+    if (hours < 1) return "Waiting under an hour";
+    if (hours < 24) {
+      const rounded = Math.round(hours);
+      return `Waiting ${rounded} hour${rounded === 1 ? "" : "s"}`;
+    }
+    const days = Math.floor(hours / 24);
+    return `Waiting ${days} day${days === 1 ? "" : "s"}`;
+  }
+
   function labelEvent(value) {
     return String(value || "")
       .replaceAll("_", " ")
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  function node(tag, text, className) {
+    const element = document.createElement(tag);
+    if (text !== undefined) element.textContent = text;
+    if (className) element.className = className;
+    return element;
   }
 
   function cell(row, label, value, className = "") {
@@ -80,6 +148,84 @@
     row.append(td);
     return td;
   }
+
+  // Styled replacement for window.confirm(); resolves true when confirmed.
+  function confirmDialog({
+    title,
+    message,
+    confirmLabel = "Continue",
+    cancelLabel = "Cancel",
+    danger = false,
+  }) {
+    return new Promise((resolve) => {
+      const dialog = node("dialog", undefined, "ui-dialog");
+      dialog.classList.toggle("is-danger", danger);
+      dialog.setAttribute("aria-labelledby", "confirm-dialog-title");
+      dialog.setAttribute("aria-describedby", "confirm-dialog-message");
+      const card = node("div", undefined, "ui-dialog-card");
+      const icon = node("div", danger ? "!" : "?", "ui-dialog-icon");
+      icon.setAttribute("aria-hidden", "true");
+      const heading = node("h2", title);
+      heading.id = "confirm-dialog-title";
+      const copy = node("p", message);
+      copy.id = "confirm-dialog-message";
+      const actions = node("div", undefined, "ui-dialog-actions");
+      const cancel = node("button", cancelLabel, "ui-btn secondary");
+      cancel.type = "button";
+      const confirm = node(
+        "button",
+        confirmLabel,
+        danger ? "ui-btn danger" : "ui-btn",
+      );
+      confirm.type = "button";
+      actions.append(cancel, confirm);
+      card.append(icon, heading, copy, actions);
+      dialog.append(card);
+      const opener = document.activeElement;
+      let confirmed = false;
+      cancel.addEventListener("click", () => dialog.close());
+      confirm.addEventListener("click", () => {
+        confirmed = true;
+        dialog.close();
+      });
+      dialog.addEventListener("click", (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+      dialog.addEventListener("close", () => {
+        dialog.remove();
+        if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+        resolve(confirmed);
+      });
+      document.body.append(dialog);
+      dialog.showModal();
+      cancel.focus();
+    });
+  }
+
+  // Password fields: Show/Hide toggle and Caps Lock hint.
+  $$("[data-reveal]").forEach((button) =>
+    button.addEventListener("click", () => {
+      const input = document.getElementById(button.dataset.reveal);
+      const revealing = input.type === "password";
+      input.type = revealing ? "text" : "password";
+      button.textContent = revealing ? "Hide" : "Show";
+      button.setAttribute("aria-pressed", String(revealing));
+      button.setAttribute(
+        "aria-label",
+        revealing ? "Hide password" : "Show password",
+      );
+    }),
+  );
+  $$("[data-caps]").forEach((input) => {
+    const hint = document.getElementById(input.dataset.caps);
+    const update = (event) => {
+      if (typeof event.getModifierState === "function")
+        hint.hidden = !event.getModifierState("CapsLock");
+    };
+    input.addEventListener("keydown", update);
+    input.addEventListener("keyup", update);
+    input.addEventListener("blur", () => (hint.hidden = true));
+  });
 
   async function requireSession() {
     try {
@@ -95,13 +241,8 @@
   }
 
   function scheduleRefresh(callback) {
-    window.clearInterval(refreshTimer);
-    refreshTimer = window.setInterval(() => {
-      if (!document.hidden) callback(true);
-    }, 30000);
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) callback(true);
-    });
+    refreshScheduler?.stop();
+    refreshScheduler = createRefreshScheduler(callback);
   }
 
   function initLogin() {
@@ -132,9 +273,10 @@
       const error = $("#admin-login-error");
       const button = $('button[type="submit"]', form);
       error.textContent = "";
-      if (!email.validity.valid || !password.value) {
+      if (!email.validity.valid || !email.value.trim() || !password.value) {
         error.textContent =
           "Enter the authorized administrator email and password.";
+        (email.value.trim() && email.validity.valid ? password : email).focus();
         return;
       }
       setBusy(button, true, "Sending verification code…");
@@ -147,6 +289,7 @@
           }),
         });
         challengeId = data.challengeId;
+        $("#otp-email").textContent = email.value.trim();
         $("#credentials-view").classList.add("hidden");
         $("#otp-view").classList.remove("hidden");
         code.focus();
@@ -168,6 +311,7 @@
       error.textContent = "";
       if (!/^\d{6}$/.test(code.value)) {
         error.textContent = "Enter the complete six-digit code.";
+        code.focus();
         return;
       }
       setBusy(button, true, "Verifying…");
@@ -198,13 +342,58 @@
     pageNumber = 1,
     loading = false,
     selectedStudent = null,
-    selectedRequest = null;
+    selectedRequest = null,
+    lastEvents = [];
   const statusNames = {
     invited: "Waiting for first login",
     setup: "Setup incomplete",
     ready: "Recovery ready",
     attention: "Backup codes needed",
     inactive: "Inactive",
+  };
+  const statusTones = {
+    invited: "info",
+    setup: "pending",
+    ready: "",
+    attention: "danger",
+    inactive: "neutral",
+  };
+  const requestTones = {
+    pending: "pending",
+    reviewing: "info",
+    resolved: "",
+    declined: "neutral",
+  };
+  const programShort = {
+    "Bachelor of Science in Architecture": "BS Arch",
+    "Bachelor of Science in Civil Engineering": "BSCE",
+    "Bachelor of Science in Computer Engineering": "BSCpE",
+    "Bachelor of Science in Electrical Engineering": "BSEE",
+    "Bachelor of Science in Electronics Engineering": "BSECE",
+    "Bachelor of Science in Environmental and Sanitary Engineering": "BSEnSE",
+    "Bachelor of Science in Industrial Engineering": "BSIE",
+    "Bachelor of Science in Mechanical Engineering": "BSME",
+    "Bachelor of Science in Computer Science": "BSCS",
+    "Bachelor of Science in Data Science and Analytics": "BSDSA",
+    "Bachelor of Science in Information Systems": "BSIS",
+    "Bachelor of Science in Information Technology": "BSIT",
+    "Bachelor of Science in Accountancy": "BSA",
+    "Bachelor of Science in Accounting Information Systems": "BSAIS",
+    "Bachelor of Science in Business Administration major in Financial Management":
+      "BSBA-FM",
+    "Bachelor of Science in Business Administration major in Human Resource Management":
+      "BSBA-HRM",
+    "Bachelor of Science in Business Administration major in Logistics and Supply Management":
+      "BSBA-LSM",
+    "Bachelor of Science in Business Administration major in Marketing Management":
+      "BSBA-MM",
+    "Bachelor of Secondary Education major in English": "BSEd-English",
+    "Bachelor of Secondary Education major in Mathematics": "BSEd-Math",
+    "Bachelor of Secondary Education major in Sciences": "BSEd-Science",
+    "Bachelor of Special Needs Education": "BSNEd",
+    "Teaching Certificate Program": "TCP",
+    "Bachelor of Arts in Political Science": "AB PolSci",
+    "Bachelor of Arts in Psychology": "AB Psych",
   };
   const eventNames = {
     login_failed: [
@@ -314,22 +503,33 @@
       "info",
     ],
   };
-  function node(tag, text, className) {
-    const element = document.createElement(tag);
-    if (text !== undefined) element.textContent = text;
-    if (className) element.className = className;
-    return element;
+  function describeEvent(event) {
+    return (
+      eventNames[event.event_type] || [
+        labelEvent(event.event_type),
+        "Recorded security activity.",
+        /failed|locked|rejected/.test(event.event_type) ? "warning" : "info",
+      ]
+    );
   }
   function badge(text, type = "") {
-    return node("span", text, "admin-status " + type);
+    return node("span", text, ("admin-status " + type).trim());
   }
-  function action(label, callback, secondary = true) {
+  function studentStatus(student) {
+    if (student.invitation_expired) return ["Invitation expired", "danger"];
+    return [
+      statusNames[student.security_status] || "Unknown",
+      statusTones[student.security_status] ?? "neutral",
+    ];
+  }
+  function action(label, callback, secondary = true, accessibleName = "") {
     const button = node(
       "button",
       label,
       "admin-button small" + (secondary ? " secondary" : ""),
     );
     button.type = "button";
+    if (accessibleName) button.setAttribute("aria-label", accessibleName);
     button.addEventListener("click", () => callback(button));
     return button;
   }
@@ -343,17 +543,93 @@
     cell(row, "", message, "admin-empty").colSpan = columns;
     body.append(row);
   }
+  function timeCell(value) {
+    const wrapper = node("span");
+    const relative = relativeTime(value);
+    if (relative) wrapper.append(node("strong", relative));
+    wrapper.append(node("span", formatTime(value)));
+    return wrapper;
+  }
+
+  // Filter chips behave like a single-choice group.
+  function chipValue(id) {
+    return $(`#${id} [aria-pressed="true"]`)?.dataset.value ?? "";
+  }
+  function setChip(id, value) {
+    const chips = $$(`#${id} .filter-chip`);
+    const match = chips.some((chip) => chip.dataset.value === value);
+    chips.forEach((chip, index) =>
+      chip.setAttribute(
+        "aria-pressed",
+        String(match ? chip.dataset.value === value : index === 0),
+      ),
+    );
+  }
+  function bindChips(onChange) {
+    $$("[data-chip-group]").forEach((group) =>
+      group.addEventListener("click", (event) => {
+        const chip = event.target.closest(".filter-chip");
+        if (!chip || chip.getAttribute("aria-pressed") === "true") return;
+        setChip(group.id, chip.dataset.value);
+        onChange();
+      }),
+    );
+  }
+
+  function renderIdentity(admin) {
+    const name = admin.displayName || admin.email || "Administrator";
+    $("#admin-identity-name").textContent = name;
+    $("#admin-identity-role").textContent =
+      admin.role === "super_admin" ? "Super administrator" : "Administrator";
+    $("#admin-avatar").textContent =
+      name
+        .split(/[\s@._-]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0].toUpperCase())
+        .join("") || "A";
+    $("#admin-identity").title = admin.email || name;
+    $("#admin-identity").hidden = false;
+    if (admin.role !== "super_admin")
+      $$('.admin-nav a[href="recovery.html"]').forEach((link) => {
+        if (!link.hasAttribute("aria-current")) link.hidden = true;
+      });
+  }
+
+  function setRequestBadge(count, more = false) {
+    $$("[data-request-badge]").forEach((badgeNode) => {
+      badgeNode.hidden = !count;
+      badgeNode.replaceChildren(
+        document.createTextNode(more ? "20+" : String(count)),
+        node("span", " open", "sr-only"),
+      );
+    });
+  }
+  function updateRequestBadge(data) {
+    if (adminAccount?.role === "super_admin")
+      setRequestBadge(Number(data.pendingRequests) || 0);
+  }
+
   function renderEvents(body, events, full = false) {
     body.replaceChildren();
     if (!events.length)
       return emptyRow(body, full ? 4 : 3, "No activity matches this view.");
+    let currentDay = "";
     events.forEach((event) => {
+      if (full) {
+        const day = dayLabel(event.created_at);
+        if (day !== currentDay) {
+          currentDay = day;
+          const groupRow = node("tr", undefined, "admin-group-row");
+          const heading = node("th", day);
+          heading.colSpan = 4;
+          heading.scope = "colgroup";
+          groupRow.append(heading);
+          body.append(groupRow);
+        }
+      }
       const row = node("tr");
-      const [title, explanation, kind] = eventNames[event.event_type] || [
-        labelEvent(event.event_type),
-        "Recorded security activity.",
-        /failed|locked|rejected/.test(event.event_type) ? "warning" : "info",
-      ];
+      const [title, explanation, kind] = describeEvent(event);
       const summary = node("div");
       summary.append(
         node("strong", title),
@@ -378,6 +654,7 @@
       cell(row, "Student", person);
       if (full) {
         const actor = node("div", event.actor);
+        actor.append(document.createElement("br"));
         actor.append(
           badge(
             kind === "warning"
@@ -390,7 +667,7 @@
         );
         cell(row, "Actor / outcome", actor);
       }
-      cell(row, "Time", formatTime(event.created_at), "admin-event-time");
+      cell(row, "Time", timeCell(event.created_at), "admin-event-time");
       body.append(row);
     });
   }
@@ -419,9 +696,21 @@
       if (page === "dashboard") {
         const data = await request("/api/admin/dashboard"),
           m = data.metrics;
-        document.querySelectorAll("[data-metric]").forEach((el) => {
+        $$("[data-metric]").forEach((el) => {
           el.textContent = m[el.dataset.metric] ?? "—";
         });
+        $$("[data-action-metric]").forEach((link) =>
+          link.classList.toggle(
+            "is-zero",
+            Number(m[link.dataset.actionMetric]) === 0,
+          ),
+        );
+        $("#requests-metric").classList.toggle(
+          "has-items",
+          Number(m.pendingRequests) > 0,
+        );
+        if (adminAccount?.role === "super_admin")
+          setRequestBadge(Number(m.pendingRequests) || 0);
         const percent = m.active ? Math.round((m.ready / m.active) * 100) : 0;
         $("#readiness-progress").value = percent;
         $("#readiness-summary").textContent =
@@ -434,15 +723,17 @@
         pageState(
           "Updated " +
             formatTime(data.refreshedAt) +
-            " · refreshes every 30 seconds",
+            " · checks for updates every minute",
         );
       } else if (page === "students") {
         const params = new URLSearchParams({
           search: $("#student-search").value.trim(),
-          filter: $("#student-filter").value,
+          format: "compact",
+          filter: chipValue("student-filter"),
           page: pageNumber,
         });
         const data = await request("/api/admin/students?" + params);
+        updateRequestBadge(data);
         students = data.students;
         renderStudents();
         renderPager(data);
@@ -450,16 +741,22 @@
           "Updated " +
             formatTime(data.refreshedAt) +
             " · " +
-            data.total +
-            " matching students",
+            data.students.length +
+            " " +
+            (data.students.length === 1 ? "student" : "students") +
+            " on this page",
         );
       } else if (page === "audit") {
         const params = new URLSearchParams({
           search: $("#audit-search").value.trim(),
-          category: $("#audit-category").value,
+          format: "compact",
+          category: chipValue("audit-category"),
           page: pageNumber,
         });
         const data = await request("/api/admin/audit?" + params);
+        updateRequestBadge(data);
+        lastEvents = data.events;
+        $("#export-audit").disabled = !lastEvents.length;
         renderEvents($("#audit-rows"), data.events, true);
         renderPager(data);
         pageState(
@@ -468,7 +765,7 @@
       } else if (page === "recovery") {
         const params = new URLSearchParams({
           number: $("#request-number").value.trim(),
-          status: $("#request-status").value,
+          status: chipValue("request-status"),
           page: pageNumber,
         });
         if (params.get("number") && !/^\d{7}$/.test(params.get("number"))) {
@@ -478,6 +775,7 @@
         const data = await request(
           "/.netlify/functions/admin-recovery?" + params,
         );
+        updateRequestBadge(data);
         const body = $("#request-rows");
         body.replaceChildren();
         if (!data.requests.length)
@@ -487,7 +785,7 @@
             "No requests in this view. Try another status or student number.",
           );
         data.requests.forEach((item) => {
-          const row = node("tr");
+          const row = node("tr", undefined, "is-clickable");
           const identity = node("div");
           identity.append(
             node("strong", item.student_number),
@@ -499,19 +797,33 @@
             "Status",
             badge(
               labelEvent(item.status),
-              item.status === "pending"
-                ? "pending"
-                : item.status === "declined"
-                  ? "inactive"
-                  : "neutral",
+              requestTones[item.status] ?? "neutral",
             ),
           );
-          cell(row, "Submitted", formatTime(item.created_at));
+          const submitted = node("div", formatTime(item.created_at));
+          if (["pending", "reviewing"].includes(item.status)) {
+            const age = node("span", waitingLabel(item.created_at), "age-chip");
+            const hours =
+              (Date.now() - new Date(item.created_at).getTime()) / 3600000;
+            age.classList.toggle("is-old", hours >= 48);
+            submitted.append(document.createElement("br"), age);
+          }
+          cell(row, "Submitted", submitted);
           cell(
             row,
             "Action",
-            action("Review request", () => openRequest(item.id)),
+            action(
+              "Review",
+              () => openRequest(item.id),
+              true,
+              "Review request from student " + item.student_number,
+            ),
           );
+          row.addEventListener("click", (event) => {
+            if (event.target.closest("button, a, summary")) return;
+            if (String(window.getSelection?.() || "")) return;
+            openRequest(item.id);
+          });
           body.append(row);
         });
         renderPager(data);
@@ -521,6 +833,8 @@
             " · contact claims remain unverified",
         );
       }
+      refreshScheduler?.fresh();
+      return true;
     } catch (error) {
       if (error.status === 401)
         return location.replace("login.html?session=expired");
@@ -529,6 +843,7 @@
           " Existing data, if shown, may be out of date. Use Refresh to retry.",
         true,
       );
+      return false;
     } finally {
       loading = false;
       if (reloadRequested) {
@@ -536,6 +851,9 @@
         loadCurrent();
       }
     }
+  }
+  function detailState(tone, text) {
+    return node("span", text, "detail-state " + tone);
   }
   async function openStudent(id) {
     try {
@@ -546,45 +864,68 @@
       $("#student-view-title").textContent =
         student.first_name + " " + student.last_name;
       $("#student-view-subtitle").textContent =
-        student.student_number + " · " + statusNames[student.security_status];
+        student.student_number + " · " + studentStatus(student)[0];
       const details = $("#student-details");
       details.replaceChildren();
+      const codes = Number(student.backup_codes_remaining) || 0;
       for (const [label, value] of [
         ["Email", student.email],
-        ["Birthday", student.birth_date || "Not recorded — do not guess"],
+        [
+          "Birthday",
+          student.birth_date
+            ? readableDate(student.birth_date)
+            : "Not recorded — do not guess",
+        ],
         ["Program", student.program],
         ["Year level", student.year_level],
         [
           "Terms & privacy",
           student.policies_accepted
-            ? "Acknowledged " + formatTime(student.policies_accepted_at)
-            : "Student must review at next sign-in",
+            ? detailState(
+                "ok",
+                "Acknowledged " + formatTime(student.policies_accepted_at),
+              )
+            : detailState("warn", "Student must review at next sign-in"),
         ],
         [
           "Authenticator",
-          student.authenticator_enabled ? "Connected" : "Not connected",
+          student.authenticator_enabled
+            ? detailState("ok", "Connected")
+            : detailState("warn", "Not connected"),
         ],
         [
           "Backup codes",
-          student.backup_codes_remaining + " unused — codes are private",
+          detailState(
+            !student.authenticator_enabled ? "off" : codes > 2 ? "ok" : "warn",
+            codes + " unused — codes are private",
+          ),
         ],
         [
           "Recovery phone",
           student.phone_verified
-            ? "Verified by student — number kept private"
-            : "Not verified — optional, managed by student",
+            ? detailState("ok", "Verified by student — number kept private")
+            : detailState("off", "Not verified — optional, managed by student"),
         ],
         [
           "Invitation",
           student.must_change_password
             ? student.invitation_expired
-              ? "Expired — reissue invitation"
-              : "Expires " + formatTime(student.temporary_password_expires_at)
-            : "Personal password created",
+              ? detailState("warn", "Expired — reissue invitation")
+              : detailState(
+                  "off",
+                  "Expires " +
+                    formatTime(student.temporary_password_expires_at),
+                )
+            : detailState("ok", "Personal password created"),
         ],
       ]) {
-        details.append(node("dt", label), node("dd", value));
+        const dd = node("dd");
+        if (value instanceof Node) dd.append(value);
+        else dd.textContent = value ?? "—";
+        details.append(node("dt", label), dd);
       }
+      $("#student-activity-link").href =
+        "audit.html?search=" + encodeURIComponent(student.student_number);
       $("#student-view-edit").hidden = adminAccount.role !== "super_admin";
       const credential = $("#student-credential");
       credential.hidden = adminAccount.role !== "super_admin";
@@ -611,10 +952,10 @@
       return emptyRow(
         body,
         5,
-        "No matching students. Clear the filters or add a student.",
+        "No matching students. Try another filter or clear the search.",
       );
     students.forEach((student) => {
-      const row = node("tr"),
+      const row = node("tr", undefined, "is-clickable"),
         person = node("div");
       person.append(
         node("strong", student.first_name + " " + student.last_name),
@@ -622,20 +963,18 @@
       );
       cell(row, "Student", person);
       cell(row, "Email", student.email);
-      cell(row, "Program", student.program + " · " + student.year_level);
+      const program = node("span");
+      const short = programShort[student.program];
+      if (short) {
+        const abbr = node("abbr", short, "program-short");
+        abbr.title = student.program;
+        program.append(abbr);
+      } else program.append(node("span", student.program));
+      program.append(document.createTextNode(" · " + student.year_level));
+      cell(row, "Program", program);
       const summary = node("div");
-      summary.append(
-        badge(
-          student.invitation_expired
-            ? "Invitation expired"
-            : statusNames[student.security_status],
-          student.security_status === "ready"
-            ? ""
-            : student.security_status === "inactive"
-              ? "inactive"
-              : "pending",
-        ),
-      );
+      const [label, tone] = studentStatus(student);
+      summary.append(badge(label, tone));
       summary.append(
         node(
           "small",
@@ -652,8 +991,18 @@
       cell(
         row,
         "Action",
-        action("View student", () => openStudent(student.id)),
+        action(
+          "View",
+          () => openStudent(student.id),
+          true,
+          "View " + student.first_name + " " + student.last_name,
+        ),
       );
+      row.addEventListener("click", (event) => {
+        if (event.target.closest("button, a")) return;
+        if (String(window.getSelection?.() || "")) return;
+        openStudent(student.id);
+      });
       body.append(row);
     });
   }
@@ -672,6 +1021,10 @@
     $("#student-birthday").value = student?.birth_date || "";
     $("#student-birthday").required = !student || !!student.birth_date;
     $("#student-birthday").dispatchEvent(new Event("change"));
+    $("#birthday-help").textContent =
+      student && !student.birth_date
+        ? "No birthday is on record. Leave it blank if unknown—never guess."
+        : "For student records only—not used to verify identity.";
     const select = $("#student-program");
     select.querySelector("[data-existing-program]")?.remove();
     if (
@@ -687,6 +1040,8 @@
     $("#student-year").value = student?.year_level || "";
     $("#student-active").checked = student ? student.active : true;
     $("#active-field").classList.toggle("hidden", !student);
+    $("#year-field").classList.toggle("wide", !student);
+    $("#student-form-notice").hidden = !!student;
     $("#student-dialog-title").textContent = student
       ? "Edit student record"
       : "Invite a student";
@@ -694,6 +1049,7 @@
       ? "Save changes"
       : "Create account & email invitation";
     $("#student-dialog").showModal();
+    (student ? $("#student-email") : $("#student-number")).focus();
   }
   function initStudents() {
     $("#add-student").hidden = adminAccount.role !== "super_admin";
@@ -708,19 +1064,14 @@
       const student = selectedStudent,
         button = event.currentTarget;
       const inviting = student.must_change_password;
-      if (
-        !confirm(
-          (inviting
-            ? "Reissue an invitation to "
-            : "Send an email + SMS recovery link to ") +
-            student.email +
-            "?" +
-            (inviting
-              ? " The previous temporary password will stop working."
-              : ""),
-        )
-      )
-        return;
+      const confirmed = await confirmDialog({
+        title: inviting ? "Reissue the invitation?" : "Send a reset email?",
+        message: inviting
+          ? `A new temporary password will be emailed to ${student.email}. The previous temporary password stops working immediately.`
+          : `An email + SMS recovery link will be sent to ${student.email}. Their password does not change until they complete it.`,
+        confirmLabel: inviting ? "Reissue invitation" : "Send reset email",
+      });
+      if (!confirmed) return;
       setBusy(button, true, "Sending…");
       try {
         const result = await request(
@@ -760,12 +1111,23 @@
       if (
         editing &&
         (payload.email !== selectedStudent.email ||
-          payload.active !== selectedStudent.active) &&
-        !confirm(
-          "Save the changed email or account status? Verify this request through your approved administrative process. Deactivation blocks student access.",
-        )
-      )
-        return;
+          payload.active !== selectedStudent.active)
+      ) {
+        const deactivating = selectedStudent.active && !payload.active;
+        const confirmed = await confirmDialog({
+          title: deactivating
+            ? "Deactivate this account?"
+            : "Save the changed email?",
+          message:
+            "Verify this request through your approved administrative process." +
+            (deactivating
+              ? " Deactivation blocks the student’s access until it is re-enabled."
+              : " Future invitations and reset emails go to the new address."),
+          confirmLabel: deactivating ? "Deactivate and save" : "Save changes",
+          danger: deactivating,
+        });
+        if (!confirmed) return;
+      }
       error.textContent = "";
       setBusy(button, true, "Saving…");
       try {
@@ -800,7 +1162,10 @@
         "Request " +
         r.id.slice(0, 8) +
         " · submitted " +
-        formatTime(r.created_at);
+        formatTime(r.created_at) +
+        (["pending", "reviewing"].includes(r.status)
+          ? " · " + waitingLabel(r.created_at).toLowerCase()
+          : "");
       $("#request-contact").textContent = r.contact;
       $("#request-message").textContent = r.message;
       const closed = ["resolved", "declined"].includes(r.status);
@@ -842,6 +1207,9 @@
     }
   }
   function initRecovery() {
+    $("#request-number").addEventListener("input", (event) => {
+      event.target.value = event.target.value.replace(/\D/g, "").slice(0, 7);
+    });
     $("#review-status").addEventListener("change", () => {
       const resolving = $("#review-status").value === "resolved";
       $("#review-confirm-label").hidden = !resolving;
@@ -875,17 +1243,89 @@
       }
     });
   }
+
+  function csvCell(value) {
+    let text = String(value ?? "");
+    // Prevent spreadsheet formula execution from exported values.
+    if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+    return '"' + text.replaceAll('"', '""') + '"';
+  }
+  function initAudit() {
+    const search = $("#audit-search");
+    search.value = new URLSearchParams(location.search).get("search") || "";
+    const syncQuick = () => {
+      const value = search.value.trim();
+      $$("#audit-quick .filter-chip").forEach((chip) =>
+        chip.setAttribute(
+          "aria-pressed",
+          String(chip.dataset.search === value),
+        ),
+      );
+    };
+    syncQuick();
+    search.addEventListener("input", syncQuick);
+    $("#audit-quick").addEventListener("click", (event) => {
+      const chip = event.target.closest(".filter-chip");
+      if (!chip) return;
+      const active = chip.getAttribute("aria-pressed") === "true";
+      search.value = active ? "" : chip.dataset.search;
+      syncQuick();
+      pageNumber = 1;
+      loadCurrent();
+    });
+    $("#export-audit").disabled = true;
+    $("#export-audit").addEventListener("click", () => {
+      if (!lastEvents.length) return;
+      const header = [
+        "Time (ISO)",
+        "Time (local)",
+        "Activity",
+        "Event type",
+        "Student name",
+        "Student number",
+        "Source",
+        "Actor",
+        "Reference",
+      ];
+      const rows = lastEvents.map((event) => [
+        event.created_at,
+        formatTime(event.created_at),
+        describeEvent(event)[0],
+        event.event_type,
+        event.student_name || "",
+        event.student_number || "",
+        event.source,
+        event.actor,
+        event.id,
+      ]);
+      const csv = [header, ...rows]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\r\n");
+      const url = URL.createObjectURL(
+        new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `audit-log-page-${pageNumber}.csv`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast(`Exported ${rows.length} events from page ${pageNumber}.`);
+    });
+  }
+
   if (page === "login") {
     initLogin();
     return;
   }
   $("#admin-sign-out")?.addEventListener("click", async () => {
-    if (
-      !confirm(
-        "Sign out of the administrator area? Your student session in another tab will stay signed in.",
-      )
-    )
-      return;
+    const confirmed = await confirmDialog({
+      title: "Sign out of administration?",
+      message: "A student session in another tab, if any, stays signed in.",
+      confirmLabel: "Sign out",
+    });
+    if (!confirmed) return;
     const button = $("#admin-sign-out");
     setBusy(button, true, "Signing out…");
     try {
@@ -896,21 +1336,18 @@
       setBusy(button, false, "Sign out");
     }
   });
-  document
-    .querySelectorAll("[data-close]")
-    .forEach((button) =>
-      button.addEventListener("click", () =>
-        document.getElementById(button.dataset.close).close(),
-      ),
-    );
-  document
-    .querySelectorAll("[data-close-dialog]")
-    .forEach((button) =>
-      button.addEventListener("click", () => $("#student-dialog").close()),
-    );
+  $$("[data-close]").forEach((button) =>
+    button.addEventListener("click", () =>
+      document.getElementById(button.dataset.close).close(),
+    ),
+  );
+  $$("[data-close-dialog]").forEach((button) =>
+    button.addEventListener("click", () => $("#student-dialog").close()),
+  );
   requireSession().then((admin) => {
     if (!admin) return;
     adminAccount = admin;
+    renderIdentity(admin);
     if (page === "recovery" && admin.role !== "super_admin") {
       pageState(
         "Recovery reviews are available to super administrators only.",
@@ -919,13 +1356,13 @@
       return;
     }
     if (page === "students") {
-      $("#student-filter").value =
-        new URLSearchParams(location.search).get("filter") || "";
+      setChip(
+        "student-filter",
+        new URLSearchParams(location.search).get("filter") || "",
+      );
       initStudents();
     }
-    if (page === "audit")
-      $("#audit-search").value =
-        new URLSearchParams(location.search).get("search") || "";
+    if (page === "audit") initAudit();
     if (page === "recovery") initRecovery();
     $("#refresh-page").addEventListener("click", () => loadCurrent());
     $("#previous-page")?.addEventListener("click", () => {
@@ -936,18 +1373,19 @@
       pageNumber++;
       loadCurrent();
     });
+    bindChips(() => {
+      pageNumber = 1;
+      loadCurrent();
+    });
     let searchTimer = 0;
-    document.querySelectorAll("[data-filter]").forEach((input) =>
-      input.addEventListener(
-        input.tagName === "SELECT" ? "change" : "input",
-        () => {
-          clearTimeout(searchTimer);
-          searchTimer = setTimeout(() => {
-            pageNumber = 1;
-            loadCurrent();
-          }, 350);
-        },
-      ),
+    $$("[data-filter]").forEach((input) =>
+      input.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          pageNumber = 1;
+          loadCurrent();
+        }, 350);
+      }),
     );
     loadCurrent();
     scheduleRefresh(loadCurrent);

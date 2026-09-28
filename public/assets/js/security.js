@@ -211,6 +211,8 @@
     $("#auth-status").textContent = status.enabled ? "Connected" : "Not set up";
     $("#auth-status").classList.toggle("is-ready", status.enabled);
     $("#codes-status").textContent = `${status.remaining} unused`;
+    $("#codes-status").classList.toggle("is-ready", status.remaining > 2);
+    $("#codes-status").classList.toggle("is-warning", status.remaining <= 2);
     $("#phone-status").textContent = status.phoneVerified
       ? "Verified"
       : "Not verified";
@@ -281,8 +283,16 @@
     step(1);
     panel("setup", moveFocus);
   }
+  function loadingError(failed) {
+    $$("#loading .skeleton").forEach((node) => {
+      node.hidden = failed;
+    });
+    for (const id of ["#loading-title", "#loading-description"])
+      $(id).classList.toggle("sr-only", !failed);
+  }
   async function load() {
     $("#retry-load").hidden = true;
+    loadingError(false);
     $("#loading-title").textContent = "Checking your account…";
     try {
       await refreshStatus();
@@ -305,6 +315,7 @@
     } catch (error) {
       $("#loading-title").textContent = "We couldn’t load your settings";
       $("#loading-description").textContent = error.message;
+      loadingError(true);
       $("#retry-load").hidden = false;
     }
   }
@@ -363,7 +374,14 @@
     clearPrivate();
     codeSource = source;
     codes = result.codes.join("\n");
-    $("#backup-codes").textContent = codes;
+    $("#backup-codes").replaceChildren(
+      ...result.codes.map((code) => {
+        const item = document.createElement("li");
+        item.textContent = code;
+        return item;
+      }),
+    );
+    markCodesSaved(false);
     $("#backup-kicker").textContent =
       source === "setup"
         ? "Step 3 of 3 · App connected"
@@ -399,22 +417,34 @@
       await navigator.clipboard.writeText(text);
       $(feedback).textContent =
         "Copied. Keep it private and save it somewhere safe.";
+      return true;
     } catch {
       $(feedback).textContent =
         "Copy is unavailable in this browser. Select the text to copy it manually, or download your backup codes.";
+      return false;
     }
   }
+  // Finishing is only offered after the codes were downloaded, copied or printed.
+  function markCodesSaved(saved) {
+    $("#saved-check").disabled = !saved;
+    if (!saved) $("#saved-check").checked = false;
+    $("#finish-codes").disabled = !$("#saved-check").checked;
+    $("#save-hint").hidden = saved;
+  }
+  $("#saved-check").addEventListener("change", () => {
+    $("#finish-codes").disabled = !$("#saved-check").checked;
+  });
   $("#copy-key").addEventListener("click", () =>
     copy($("#setup-key").textContent, "#key-feedback"),
   );
-  $("#copy-codes").addEventListener("click", () =>
-    copy(codes, "#backup-feedback"),
-  );
+  $("#copy-codes").addEventListener("click", async () => {
+    if (await copy(codes, "#backup-feedback")) markCodesSaved(true);
+  });
   $("#download-codes").addEventListener("click", () => {
     if (!codes) return;
     const blob = new Blob(
       [
-        "Reset Workflow backup recovery codes\nKeep private. Each code works once with your authenticator or verified phone.\n\n" +
+        "TIP SecurePass backup recovery codes\nYour authenticator app lists this account as Reset Workflow.\nKeep private. Each code works once with your authenticator or verified phone.\n\n" +
           codes,
       ],
       { type: "text/plain" },
@@ -422,13 +452,17 @@
     const url = URL.createObjectURL(blob),
       link = document.createElement("a");
     link.href = url;
-    link.download = "reset-workflow-recovery-codes.txt";
+    link.download = "tip-securepass-backup-codes.txt";
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     $("#backup-feedback").textContent =
       "Download requested. Check your Downloads folder before finishing.";
+    markCodesSaved(true);
   });
-  $("#print-codes").addEventListener("click", () => window.print());
+  $("#print-codes").addEventListener("click", () => {
+    window.print();
+    markCodesSaved(true);
+  });
   $("#saved-form").addEventListener("submit", (event) => {
     event.preventDefault();
     codes = "";
@@ -586,6 +620,10 @@
         : "Setup expired. Start again for a fresh QR code.";
       $("#confirm-app").disabled = busy || !remaining;
     }
+    // Re-derive after run() restores button states, so a new code set can
+    // never inherit an enabled Finish button from an earlier set.
+    $("#finish-codes").disabled =
+      busy || $("#saved-check").disabled || !$("#saved-check").checked;
     const smsWait = Math.max(0, Math.ceil((smsUntil - Date.now()) / 1000));
     $("#resend-sms").disabled = busy || smsWait > 0 || !!deliveryIssue;
     $("#check-sms-delivery").hidden =

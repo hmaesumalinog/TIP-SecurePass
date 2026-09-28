@@ -110,7 +110,7 @@ A reset link can issue no more than three phone codes and enforces a 60-second c
 2. A one-time verification code is sent by email.
 3. Successful verification creates a separate 30-minute administrator cookie.
 4. Administrator write requests require a matching CSRF token and an allowed role.
-5. Dashboard, student, and audit views refresh from server APIs every eight seconds while the page is visible.
+5. Dashboard, student, audit, and recovery views check for changes once per minute while visible and online. Successful actions and manual Refresh update immediately. Failed background checks back off to at most one every five minutes.
 
 The student cookie and administrator cookie use different names, validation rules, and lifetimes. Signing in or out of one portal does not overwrite the other portal's session.
 
@@ -122,3 +122,16 @@ The student cookie and administrator cookie use different names, validation rule
 - **Database functions for password changes:** Related updates occur atomically, reducing partially completed reset states.
 - **Independent administrator session:** Student and administrator access can be tested together without session interference.
 - **Near-real-time admin refresh:** Server-mediated refresh keeps the secret database model intact while showing recent changes promptly.
+
+## Performance and delivery boundaries
+
+- Admin list responses include the open-request count, so the sidebar does not make a second request. Lists fetch one extra row to determine whether another page exists, rather than counting the complete result on every refresh.
+- The dashboard uses a dedicated eight-event query. It does not load or count the entire audit report. Composite time indexes support recent-event ordering; student and support lists have indexes for their common ordering and filters.
+- Student portal responses include their recovery summary. A normal portal load uses one browser API request and two bounded database reads. Recovery-status queries do not write enrollment rows or acquire enrollment locks.
+- Sign-in/reset limits reserve an attempt atomically in PostgreSQL before further work. A successful sign-in marks that reservation successful; an interrupted attempt remains counted for its 15-minute window. Identifier/IP row locks are acquired in a consistent order.
+- UniSMS accepting a reset SMS as pending does not mark it sent. The challenge stores its provider reference. Status checks are reserved in PostgreSQL at least five seconds apart, with at most eight per challenge. Checks never send another SMS. Provider errors are reduced to safe categories before leaving the server.
+- Database requests have an eight-second timeout by default. No database mutation, SMS, or email is automatically retried by the database transport. An uncertain SMS timeout keeps the existing challenge available if its code arrives.
+- The `security-maintenance` scheduled function runs every six hours and deletes bounded batches of operational state expired for more than one day. Student profiles, enrolled factors, audit history, and support requests are not deleted.
+- Security responses remain `no-store`; do not cache private responses at the CDN. Static assets stay on Netlify. The existing Supabase Realtime publication is not used by the browser and is not required for this refresh model.
+
+See `docs/PERFORMANCE_AND_OPERATIONS.md` for measurement and release checks.

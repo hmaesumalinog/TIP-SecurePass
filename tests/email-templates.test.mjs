@@ -95,7 +95,7 @@ test('forgot-password response does not reveal unknown, invited, or phone-enable
   let sent;
   t.mock.method(globalThis,'fetch',async(url,options={})=>{
    if(url.includes('api.resend.com')){sent=JSON.parse(options.body);return Response.json({id:'synthetic'});}
-   if(url.includes('reset_requests?'))return Response.json(options.method==='POST'?[{id:'request'}]:[]);
+   if(url.includes('rpc/reserve_access_attempt'))return Response.json('synthetic-reservation');
    if(url.includes('demo_students?'))return Response.json(state==='missing'?[]:[{id:'student',email:'test@example.invalid',first_name:'Test'}]);
    if(url.includes('admin_student_security?'))return Response.json([{phone_verified:state==='ready',must_change_password:state==='invited'}]);
    return Response.json([{id:'synthetic'}]);

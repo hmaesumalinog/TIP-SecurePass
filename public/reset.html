@@ -7,12 +7,11 @@
     <meta name="referrer" content="no-referrer" />
     <title>Let’s reset your password | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/recovery.css?v=20260920r1" />
-    <link rel="stylesheet" href="assets/css/email-recovery.css?v=20260920e1" />
-    <script
-      type="module"
-      src="assets/js/email-recovery.js?v=20260920e1"
-    ></script>
+    <meta name="color-scheme" content="light only" />
+    <link rel="stylesheet" href="assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/recovery.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/email-recovery.css?v=20260928" />
+    <script type="module" src="assets/js/email-recovery.js?v=20260928"></script>
   </head>
   <body data-email-page="reset">
     <a class="skip-link" href="#recovery-main">Skip to recovery</a>
@@ -23,9 +22,9 @@
           alt=""
           width="32"
           height="40"
-        /><span>TIP SecurePass<small>STUDENT ACCOUNT RECOVERY</small></span></a
+        /><span>TIP SecurePass<small>Student account recovery</small></span></a
       ><a class="header-link" href="index.html"
-        >Back to sign in <span aria-hidden="true">↗</span></a
+        ><span aria-hidden="true">←</span> Back to sign in</a
       >
     </header>
     <main class="sr-main" id="recovery-main">
@@ -132,7 +131,8 @@
               <p class="step-eyebrow">STEP 3 OF 4</p>
               <h2 tabindex="-1">Check your phone</h2>
               <p class="section-intro">
-                Enter the six-digit code for this request, sent to
+                Enter the six-digit code from Reset Workflow for this request,
+                for
                 <strong id="masked-phone">your registered phone</strong>.
               </p>
               <div id="delivery-status" class="quiet-note" role="status"></div>
@@ -333,7 +333,7 @@
         </p></noscript
       >
     </main>
-    <footer>
+    <footer class="site-footer">
       Academic demonstration · Not the official T.I.P. student portal
     </footer>
   </body>

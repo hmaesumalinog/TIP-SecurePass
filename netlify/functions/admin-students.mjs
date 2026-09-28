@@ -38,7 +38,8 @@ export default async function handler(request) {
         if (!rows.length) throw new HttpError(404,'Student record not found.');
         return json({student:rows[0]});
       }
-      const result=await supabase('rpc/admin_student_directory',{method:'POST',body:JSON.stringify({
+      const directory = params.get('format') === 'compact' ? 'admin_student_directory_v2' : 'admin_student_directory';
+      const result=await supabase(`rpc/${directory}`,{method:'POST',body:JSON.stringify({
         p_search:(params.get('search') || '').trim().slice(0,100),p_filter:params.get('filter') || '',
         p_page:Math.max(1,Math.min(Number.parseInt(params.get('page'),10)||1,100000))})});
       return json({ ...result, refreshedAt: new Date().toISOString() });

@@ -2,38 +2,98 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="robots" content="noindex,nofollow" />
+    <meta name="color-scheme" content="light only" />
     <title>Security & recovery | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/security.css?v=20260920b" />
-    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260919" />
-    <script src="assets/js/enrollment.js?v=20260920" defer></script>
+    <link rel="stylesheet" href="assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/student-shell.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/security.css?v=20260928" />
+    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260928" />
+    <script src="assets/js/enrollment.js?v=20260928" defer></script>
     <script src="assets/js/security.js?v=20260924a" defer></script>
   </head>
-  <body>
+  <body class="portal-body" data-page="security">
     <a class="skip-link" href="#main">Skip to security settings</a>
-    <header class="security-header">
-      <a class="brand" href="portal.html"
+    <header class="portal-header">
+      <a class="portal-brand" href="portal.html"
         ><img
           src="assets/images/brand-mark.svg"
-          width="32"
+          width="34"
           height="40"
           alt=""
-        /><span>TIP SecurePass<small>Student portal</small></span></a
+        /><span><strong>TIP SecurePass</strong>Student portal</span></a
       >
-      <nav aria-label="Student portal">
-        <a href="portal.html">Dashboard</a><a href="profile.html">Profile</a
-        ><a href="security.html" aria-current="page">Security & recovery</a>
-        <button type="button" class="text-button" id="sign-out">
-          Sign out
+      <nav class="portal-nav" aria-label="Student portal">
+        <a href="portal.html"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5 9.5V20h14V9.5" />
+            <path d="M10 20v-5h4v5" /></svg
+          ><span>Dashboard</span></a
+        >
+        <a href="profile.html"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c1.6-4 4.6-6 8-6s6.4 2 8 6" /></svg
+          ><span>Profile</span></a
+        >
+        <a href="security.html" aria-current="page"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3 20 6v6c0 4.8-3.4 8.1-8 9-4.6-.9-8-4.2-8-9V6l8-3Z" />
+            <path d="m8.5 12 2.5 2.5 4.5-5" /></svg
+          ><span class="nav-label-long">Security &amp; recovery</span
+          ><span class="nav-label-short">Security</span></a
+        >
+        <button type="button" id="sign-out">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+            <path d="m10 16-4-4 4-4" />
+            <path d="M6 12h10" /></svg
+          ><span>Sign out</span>
         </button>
       </nav>
     </header>
     <main id="main" class="security-main">
       <div class="page-heading">
         <p class="eyebrow">Your account, protected</p>
-        <h1>Security & recovery</h1>
+        <h1>Security &amp; recovery</h1>
         <p>Set up a way back into your account. We’ll guide you through it.</p>
       </div>
       <div
@@ -44,8 +104,12 @@
         hidden
       ></div>
       <section id="loading" class="panel loading-panel" aria-live="polite">
-        <h2 id="loading-title">Checking your account…</h2>
-        <p id="loading-description">Getting your current recovery settings.</p>
+        <span class="skeleton skeleton-line" aria-hidden="true"></span>
+        <span class="skeleton skeleton-line" aria-hidden="true"></span>
+        <h2 id="loading-title" class="sr-only">Checking your account…</h2>
+        <p id="loading-description" class="sr-only">
+          Getting your current recovery settings.
+        </p>
         <button id="retry-load" type="button" hidden>Try again</button>
       </section>
       <div id="security-content" hidden>
@@ -81,7 +145,7 @@
                 >.</span
               ></label
             >
-            <p>
+            <p class="muted">
               Your acknowledgment is saved with the policy version and date.
               Nothing is pre-checked. If you do not want to continue, sign out.
             </p>
@@ -129,7 +193,19 @@
                 >
                 <div class="method-list">
                   <article class="method">
-                    <div class="method-icon" aria-hidden="true">01</div>
+                    <div class="method-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <rect x="5" y="2" width="14" height="20" rx="3" />
+                        <path d="M10 18h4M9 7h6M9 11h6" />
+                      </svg>
+                    </div>
                     <div>
                       <h3>
                         Authenticator app
@@ -149,7 +225,19 @@
                     </div>
                   </article>
                   <article class="method">
-                    <div class="method-icon" aria-hidden="true">02</div>
+                    <div class="method-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <circle cx="8" cy="15" r="4" />
+                        <path d="m10.8 12.2 8.7-8.7M16 7l3 3M13.5 9.5l2 2" />
+                      </svg>
+                    </div>
                     <div>
                       <h3>
                         Backup recovery codes
@@ -165,7 +253,21 @@
                     </div>
                   </article>
                   <article class="method">
-                    <div class="method-icon" aria-hidden="true">03</div>
+                    <div class="method-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M21 14a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8Z"
+                        />
+                        <path d="M7 8h10M7 12h6" />
+                      </svg>
+                    </div>
                     <div>
                       <h3>
                         Recovery phone <span class="badge">Optional</span>
@@ -235,10 +337,19 @@
                   <div class="tip">
                     <strong>Before you start</strong>
                     <p>
-                      You’ll need a compatible authenticator app on your phone.
-                      It creates a new six-digit code about every 30
-                      seconds—even without an SMS.
+                      Install a free authenticator app on your phone. It shows a
+                      new six-digit code about every 30 seconds—no SMS needed.
+                      Any of these work:
                     </p>
+                    <ul
+                      class="app-suggestions"
+                      aria-label="Examples of authenticator apps"
+                    >
+                      <li>Google Authenticator</li>
+                      <li>Microsoft Authenticator</li>
+                      <li>Authy</li>
+                      <li>2FAS</li>
+                    </ul>
                     <details>
                       <summary>What do I choose in the app?</summary>
                       <p>
@@ -266,7 +377,7 @@
                         required
                       /><button
                         type="button"
-                        class="text-button"
+                        class="reveal-button"
                         data-reveal="setup-password"
                         aria-label="Show current portal password"
                       >
@@ -306,8 +417,8 @@
                   <h3>Add this account to your app</h3>
                   <p class="muted">
                     In your authenticator, choose Add account and scan this QR
-                    code. The account will appear as
-                    <strong>Reset Workflow</strong>.
+                    code. It will appear as <strong>Reset Workflow</strong>—the
+                    name this portal uses in authenticator apps.
                   </p>
                   <div class="connect-grid">
                     <div class="qr-frame">
@@ -394,13 +505,15 @@
                   <strong>This is your only chance to save this set.</strong>
                   <p>
                     Download, copy, or print them. Store them somewhere private,
-                    separate from your phone. Each code works once.
+                    separate from your phone. Each code works once—cross it off
+                    after you use it.
                   </p>
                 </div>
-                <pre
+                <ol
                   id="backup-codes"
+                  class="code-grid"
                   aria-label="Your single-use backup recovery codes"
-                ></pre>
+                ></ol>
                 <div class="actions">
                   <button type="button" id="download-codes">
                     Download .txt</button
@@ -413,10 +526,21 @@
                 <p id="backup-feedback" class="field-help" role="status"></p>
                 <form id="saved-form">
                   <label class="checkbox-label"
-                    ><input type="checkbox" id="saved-check" required />I saved
-                    these codes somewhere I can find them if I lose my
+                    ><input
+                      type="checkbox"
+                      id="saved-check"
+                      required
+                      disabled
+                      aria-describedby="save-hint"
+                    />I saved these codes somewhere I can find them if I lose my
                     phone.</label
-                  ><button type="submit">I saved my codes · Finish</button>
+                  >
+                  <button type="submit" id="finish-codes" disabled>
+                    I saved my codes · Finish
+                  </button>
+                  <p class="save-hint" id="save-hint">
+                    Download, copy, or print your codes first—then confirm.
+                  </p>
                 </form>
               </section>
               <section id="complete-panel" class="panel complete-panel" hidden>
@@ -486,7 +610,7 @@
                       maxlength="128"
                     /><button
                       type="button"
-                      class="text-button"
+                      class="reveal-button"
                       data-reveal="manage-password"
                       aria-label="Show current portal password"
                     >
@@ -505,8 +629,8 @@
                       aria-describedby="manage-code-help"
                     />
                     <p id="manage-code-help" class="field-help">
-                      Open your connected authenticator. If you just used a
-                      code, wait for the next one.
+                      Open your connected authenticator (listed as Reset
+                      Workflow). If you just used a code, wait for the next one.
                     </p>
                   </div>
                   <label id="confirm-change-label" class="checkbox-label"
@@ -549,8 +673,8 @@
                     aria-describedby="sms-code-help"
                   />
                   <p id="sms-code-help" class="field-help">
-                    Use the code in the SMS, not the one in your authenticator.
-                    It expires in 5 minutes.
+                    Use the code in the SMS from Reset Workflow, not the one in
+                    your authenticator. It expires in 5 minutes.
                   </p>
                   <p
                     id="phone-error"
@@ -583,8 +707,8 @@
                   <dd>The password you use to sign in.</dd>
                   <dt>Authenticator code</dt>
                   <dd>
-                    A six-digit code that changes in your app. It is not sent by
-                    text.
+                    A six-digit code that changes in your app (listed as Reset
+                    Workflow). It is not sent by text.
                   </dd>
                   <dt>Backup recovery code</dt>
                   <dd>
@@ -630,7 +754,7 @@
                 </details>
                 <a href="recovery-help.html"
                   >Ask for setup or recovery help
-                  <span aria-hidden="true">↗</span></a
+                  <span aria-hidden="true">→</span></a
                 >
               </section>
             </aside>
@@ -643,19 +767,42 @@
         </p></noscript
       >
     </main>
-    <footer>
+    <footer class="site-footer">
       Academic demonstration · Not the official TIP student portal
     </footer>
-    <dialog id="leave-dialog" aria-labelledby="leave-title">
-      <h2 id="leave-title">Sign out of the portal?</h2>
-      <p id="leave-description">
-        Any unfinished setup will need to be started again.
-      </p>
-      <p id="logout-error" class="form-error" role="alert" hidden></p>
-      <div class="actions">
-        <button class="secondary" type="button" id="cancel-signout">
-          Stay here</button
-        ><button type="button" id="confirm-signout">Sign out</button>
+    <dialog
+      id="leave-dialog"
+      class="ui-dialog"
+      aria-labelledby="leave-title"
+      aria-describedby="leave-description"
+    >
+      <div class="ui-dialog-card">
+        <div class="ui-dialog-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+            <path d="m10 16-4-4 4-4" />
+            <path d="M6 12h10" />
+          </svg>
+        </div>
+        <h2 id="leave-title">Sign out of the portal?</h2>
+        <p id="leave-description">
+          Any unfinished setup will need to be started again.
+        </p>
+        <p id="logout-error" class="ui-dialog-error" role="alert" hidden></p>
+        <div class="ui-dialog-actions">
+          <button class="ui-btn secondary" type="button" id="cancel-signout">
+            Stay here</button
+          ><button class="ui-btn" type="button" id="confirm-signout">
+            Sign out
+          </button>
+        </div>
       </div>
     </dialog>
   </body>

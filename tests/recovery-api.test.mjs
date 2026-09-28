@@ -17,7 +17,7 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
   const db=new PGlite({extensions:{pgcrypto,citext}});let smsCode='',smsCount=0,emailCount=0;
   try {
     await db.exec('create role anon; create role authenticated; create role service_role; create schema extensions; create publication supabase_realtime;');
-    for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql']) await db.exec(await readFile(new URL(`../supabase/${file}`,import.meta.url),'utf8'));
+    for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql','migrations/20260928090000_performance_and_delivery.sql']) await db.exec(await readFile(new URL(`../supabase/${file}`,import.meta.url),'utf8'));
     t.mock.method(globalThis,'fetch',async(url,options={})=>{
       const parsed=new URL(url),body=options.body?JSON.parse(options.body):{};
       if(parsed.hostname==='api.resend.com'){emailCount++;return Response.json({id:'test-email'});}

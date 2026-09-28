@@ -12,6 +12,7 @@ import settings from '../netlify/functions/security-settings.mjs';
 import profile from '../netlify/functions/profile.mjs';
 import issue from '../netlify/functions/admin-issue-temporary-password.mjs';
 import reset from '../netlify/functions/admin-send-reset.mjs';
+import login from '../netlify/functions/login.mjs';
 import { createAdminSession, adminCookie } from '../netlify/functions/_shared/admin-session.mjs';
 import { createSession, sessionCookie } from '../netlify/functions/_shared/session.mjs';
 import { totp } from '../netlify/functions/_shared/recovery.mjs';
@@ -21,7 +22,7 @@ test('administrator invitation to student-owned onboarding works through actual 
  const db=new PGlite({extensions:{pgcrypto,citext}});const emails=[];let sentCode='',smsCount=0,failEmail=false,deliveryStatus='pending',statusReads=0,failReason='PRIVATE';
  try {
   await db.exec('create role anon; create role authenticated; create role service_role; create schema extensions; create publication supabase_realtime;');
-  for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql'])await db.exec(await readFile(new URL('../supabase/'+file,import.meta.url),'utf8'));
+  for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql','migrations/20260928090000_performance_and_delivery.sql'])await db.exec(await readFile(new URL('../supabase/'+file,import.meta.url),'utf8'));
   t.mock.method(globalThis,'fetch',async(url,options={})=>{
    const parsed=new URL(url),body=options.body?JSON.parse(options.body):{};
    if(parsed.hostname==='api.resend.com'){if(failEmail)return Response.json({message:'test delivery failure'},{status:503});emails.push(body);return Response.json({id:'synthetic-email'});}
@@ -37,10 +38,10 @@ test('administrator invitation to student-owned onboarding works through actual 
      const entries=Object.entries(body);entries.forEach(([key])=>assert.match(key,/^[a-z_]+$/));
      const args=entries.map(([,v])=>v!==null&&typeof v==='object'?JSON.stringify(v):v);
      const call=name+'('+entries.map(([key],i)=>key+'=> $'+(i+1)).join(',')+')';
-     if(['admin_create_student_v2','complete_student_onboarding','reissue_student_invitation'].includes(name))return Response.json((await db.query('select * from '+call,args)).rows);
+     if(['admin_create_student_v2','complete_student_onboarding','reissue_student_invitation','authenticate_demo_student'].includes(name))return Response.json((await db.query('select * from '+call,args)).rows);
      return Response.json((await db.query('select '+call+' as result',args)).rows[0].result);
     }
-    assert.ok(['admin_accounts','demo_students','admin_student_security','student_recovery','audit_events','admin_audit_events','reset_tokens'].includes(path));
+    assert.ok(['admin_accounts','demo_students','admin_student_security','student_recovery','audit_events','admin_audit_events','reset_tokens','student_login_attempts'].includes(path));
     const params=parsed.searchParams,select=params.get('select')||'*';assert.match(select,/^[a-z_,*]+$/);
     const values=[],clauses=[];
     for(const [key,value]of params){if(['select','order','limit'].includes(key))continue;assert.match(key,/^[a-z_]+$/);assert.ok(value.startsWith('eq.'));values.push(value.slice(3));clauses.push(key+'=$'+values.length);}
@@ -136,5 +137,10 @@ test('administrator invitation to student-owned onboarding works through actual 
   assert.equal((await call(settings,{method:'POST',auth:studentCookie,body:{action:'codes',password:'Personal!Password123'}})).http,403);
   assert.equal((await call(settings,{method:'POST',auth:studentCookie,body:{action:'accept_policies',termsAccepted:true,privacyAccepted:true,policyVersion:'2026-09-20'}})).http,200);
   assert.equal((await call(profile,{auth:studentCookie})).http,200);
+  const signedIn=await call(login,{method:'POST',auth:'',body:{studentNumber:'7654321',password:'Personal!Password123'}});
+  assert.equal(signedIn.http,200);assert.match(signedIn.cookie,/HttpOnly/);
+  assert.equal((await one('select count(*)::int as n from student_login_attempts where succeeded')).n,1);
+  for(let attempt=0;attempt<5;attempt++)assert.equal((await call(login,{method:'POST',auth:'',body:{studentNumber:'7654321',password:'Wrong!Password123'}})).http,401);
+  assert.equal((await call(login,{method:'POST',auth:'',body:{studentNumber:'7654321',password:'Wrong!Password123'}})).http,429);
  } finally {await db.close();}
 });

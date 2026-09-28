@@ -4,44 +4,65 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="color-scheme" content="light only" />
     <title>Student directory | TIP SecurePass Admin</title>
     <link
       rel="icon"
       href="../assets/images/brand-mark.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260920b" />
+    <link rel="stylesheet" href="../assets/css/ui.css?v=20260928" />
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260928" />
     <link
       rel="stylesheet"
-      href="../assets/css/birthday-picker.css?v=20260920"
+      href="../assets/css/birthday-picker.css?v=20260928"
     />
     <script
       type="module"
       src="../assets/js/birthday-picker.mjs?v=20260920"
     ></script>
-    <script src="../assets/js/admin.js?v=20260920c" defer></script>
+    <script src="../assets/js/admin.js?v=20260928b" type="module"></script>
   </head>
   <body data-admin-page="students">
-    <a class="admin-skip" href="#admin-main">Skip to content</a>
-    <div class="admin-strip"></div>
+    <a class="skip-link" href="#admin-main">Skip to content</a>
     <header class="admin-header">
       <a class="admin-brand" href="dashboard.html"
-        ><img src="../assets/images/brand-mark.svg" alt="" /><span
-          ><strong>TIP SecurePass</strong>Administration</span
-        ></a
+        ><img
+          src="../assets/images/brand-mark.svg"
+          width="36"
+          height="42"
+          alt=""
+        /><span><strong>TIP SecurePass</strong>Administration</span></a
       >
       <nav class="admin-nav" aria-label="Administration">
-        <a href="dashboard.html">Security</a
+        <a href="dashboard.html">Overview</a
         ><a href="students.html" aria-current="page">Students</a
-        ><a href="audit.html">Audit log</a
-        ><a href="recovery.html">Recovery requests</a
-        ><button type="button" id="admin-sign-out">Sign out</button>
+        ><a href="recovery.html"
+          ><span class="nav-label-long">Recovery requests</span
+          ><span class="nav-label-short">Requests</span
+          ><span class="nav-badge" data-request-badge hidden></span></a
+        ><a href="audit.html">Audit log</a>
       </nav>
+      <div class="admin-account">
+        <span class="admin-identity" id="admin-identity" hidden
+          ><span class="admin-identity-text"
+            ><strong id="admin-identity-name"></strong
+            ><small id="admin-identity-role"></small></span
+          ><span
+            class="admin-avatar"
+            id="admin-avatar"
+            aria-hidden="true"
+          ></span
+        ></span>
+        <button type="button" class="admin-signout" id="admin-sign-out">
+          Sign out
+        </button>
+      </div>
     </header>
     <main class="admin-main" id="admin-main">
       <div class="admin-page-heading">
         <div>
-          <p class="admin-kicker">Student access & account safety</p>
+          <p class="admin-kicker">Student access &amp; account safety</p>
           <h1>Student directory</h1>
           <p>
             Invite students, review setup progress, and keep account records
@@ -49,7 +70,18 @@
           </p>
         </div>
         <button class="admin-button secondary" id="refresh-page" type="button">
-          Refresh
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+            <path d="M20 4v7h-7" /></svg
+          >Refresh
         </button>
       </div>
       <p
@@ -63,49 +95,111 @@
       <div class="admin-toolbar">
         <label class="admin-search"
           ><span class="sr-only">Search students</span
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" /></svg
           ><input
             class="admin-input"
             id="student-search"
             type="search"
-            placeholder="Name, student number, or email"
+            placeholder="Search name, student number, or email"
             data-filter
             maxlength="100" /></label
-        ><label class="admin-filter"
-          >Account readiness<select
-            class="admin-input"
-            id="student-filter"
-            data-filter
-          >
-            <option value="">All students</option>
-            <option value="invited">Waiting for first login</option>
-            <option value="setup">Setup incomplete</option>
-            <option value="ready">Recovery ready</option>
-            <option value="attention">Backup codes needed</option>
-            <option value="inactive">Inactive</option>
-          </select></label
         ><button class="admin-button" type="button" id="add-student">
-          Invite student
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" /></svg
+          >Invite student
         </button>
       </div>
-      <p class="admin-notice">
-        You provide the student’s academic details and email. Students choose
-        their password and recovery methods, and enter their own phone number.
-      </p>
+      <div class="filter-row">
+        <span class="filter-label" id="student-filter-label"
+          >Account readiness</span
+        >
+        <div
+          class="filter-chips"
+          role="group"
+          aria-labelledby="student-filter-label"
+          id="student-filter"
+          data-chip-group
+        >
+          <button
+            type="button"
+            class="filter-chip"
+            data-value=""
+            aria-pressed="true"
+          >
+            All students</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="invited"
+            aria-pressed="false"
+          >
+            Waiting for first login</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="setup"
+            aria-pressed="false"
+          >
+            Setup incomplete</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="ready"
+            aria-pressed="false"
+          >
+            Recovery ready</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="attention"
+            aria-pressed="false"
+          >
+            Backup codes needed</button
+          ><button
+            type="button"
+            class="filter-chip"
+            data-value="inactive"
+            aria-pressed="false"
+          >
+            Inactive
+          </button>
+        </div>
+      </div>
       <section class="admin-card admin-section">
         <div class="admin-table-wrap">
-          <table class="admin-table">
+          <table class="admin-table students-table">
             <thead>
               <tr>
                 <th scope="col">Student</th>
                 <th scope="col">Email</th>
                 <th scope="col">Program</th>
                 <th scope="col">Security readiness</th>
-                <th scope="col">Action</th>
+                <th scope="col"><span class="sr-only">Action</span></th>
               </tr>
             </thead>
             <tbody id="student-rows">
-              <tr>
-                <td colspan="5" class="admin-loading-row">Loading…</td>
+              <tr class="admin-skeleton-row">
+                <td colspan="5">
+                  <span class="skeleton skeleton-line"></span
+                  ><span class="skeleton skeleton-line"></span
+                  ><span class="skeleton skeleton-line"></span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -116,21 +210,29 @@
             id="previous-page"
             type="button"
           >
-            Previous</button
+            ← Previous</button
           ><span id="page-summary" role="status">Loading…</span
           ><button
             class="admin-button secondary small"
             id="next-page"
             type="button"
           >
-            Next
+            Next →
           </button>
         </div>
       </section>
+      <p class="admin-subtext">
+        You provide the student’s academic details and email. Students choose
+        their password and recovery methods, and enter their own phone number.
+      </p>
     </main>
-    <dialog class="admin-dialog" id="student-dialog">
+    <dialog
+      class="admin-dialog"
+      id="student-dialog"
+      aria-labelledby="student-dialog-title"
+    >
       <div class="admin-dialog-head">
-        <h2 id="student-dialog-title">Add student</h2>
+        <h2 id="student-dialog-title">Invite a student</h2>
         <button
           class="admin-close"
           type="button"
@@ -141,9 +243,9 @@
         </button>
       </div>
       <form class="admin-dialog-body" id="student-form">
-        <p class="admin-notice">
+        <p class="admin-notice" id="student-form-notice">
           We email a temporary password valid for 24 hours. The student reviews
-          terms & privacy, chooses a password, connects an authenticator and
+          terms &amp; privacy, chooses a password, connects an authenticator and
           saves backup codes. Students add their own optional recovery phone.
         </p>
         <input type="hidden" id="student-record-id" />
@@ -157,8 +259,11 @@
               inputmode="numeric"
               maxlength="7"
               pattern="[0-9]{7}"
+              placeholder="e.g. 2026008"
+              aria-describedby="student-number-help"
               required
             />
+            <small id="student-number-help">Exactly 7 digits.</small>
           </div>
           <div class="admin-field">
             <label for="student-email">Email</label
@@ -166,8 +271,13 @@
               class="admin-input"
               id="student-email"
               type="email"
+              placeholder="name@tip.edu.ph"
+              aria-describedby="student-email-help"
+              spellcheck="false"
+              autocapitalize="none"
               required
             />
+            <small id="student-email-help">The invitation is sent here.</small>
           </div>
           <div class="admin-field">
             <label for="student-first-name">First name</label
@@ -176,6 +286,7 @@
               id="student-first-name"
               type="text"
               maxlength="80"
+              autocomplete="off"
               required
             />
           </div>
@@ -186,6 +297,7 @@
               id="student-last-name"
               type="text"
               maxlength="80"
+              autocomplete="off"
               required
             />
           </div>
@@ -200,8 +312,7 @@
               required
             />
             <small id="birthday-help"
-              >For student records, not an identity-verification answer. Leave
-              blank only for an existing record with no known birthday.</small
+              >For student records only—not used to verify identity.</small
             >
           </div>
           <div class="admin-field wide">
@@ -271,7 +382,7 @@
               </optgroup>
             </select>
           </div>
-          <div class="admin-field">
+          <div class="admin-field" id="year-field">
             <label for="student-year">Year level</label
             ><select class="admin-input" id="student-year" required>
               <option value="" disabled selected>Select year level</option>
@@ -296,7 +407,7 @@
           >
             Cancel</button
           ><button class="admin-button" type="submit" id="student-save">
-            Save and email temporary password
+            Create account &amp; email invitation
           </button>
         </div>
       </form>
@@ -322,6 +433,9 @@
       </div>
       <div class="admin-dialog-body">
         <dl class="admin-details" id="student-details"></dl>
+        <a class="detail-link" id="student-activity-link" href="audit.html"
+          >View this student’s activity in the audit log →</a
+        >
         <p class="admin-notice">
           Security status only. Passwords, OTPs, authenticator secrets, backup
           codes and the student's phone number are never displayed here.
@@ -341,7 +455,7 @@
       </div>
     </dialog>
     <div class="admin-toast hidden" id="admin-toast" role="status"></div>
-    <footer class="admin-footer">
+    <footer class="site-footer">
       Academic demonstration · Not the official T.I.P. portal. Security proofs
       stay private.
     </footer>
