@@ -217,6 +217,10 @@
       ? "Verified"
       : "Not verified";
     $("#phone-status").classList.toggle("is-ready", !!status.phoneVerified);
+    $("#phone-badge").textContent = status.phoneVerified
+      ? "Verified"
+      : "Optional";
+    $("#phone-badge").classList.toggle("success", !!status.phoneVerified);
     $("#codes-badge").textContent = `${status.remaining} unused`;
     $("#codes-badge").classList.toggle("warning", status.remaining === 0);
     $("#codes-description").textContent = status.remaining
