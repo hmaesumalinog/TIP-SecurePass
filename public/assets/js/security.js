@@ -8,6 +8,7 @@
     password = "",
     codes = "",
     pendingSetup = false;
+  let initialSetupPending = false;
   let busy = false,
     mode = "setup",
     codeSource = "setup",
@@ -300,6 +301,7 @@
     $("#loading-title").textContent = "Checking your account…";
     try {
       await refreshStatus();
+      initialSetupPending = !status.enabled && !status.setupCompleted;
       $("#loading").hidden = true;
       $("#security-content").hidden = false;
       $("#policies-panel").hidden = !!status.policiesAccepted;
@@ -406,7 +408,7 @@
     status.enabled = true;
     status.remaining = result.codes?.length || 0;
     renderStatus();
-    showCodes(result, "setup");
+    showCodes(result, mode === "replace" ? "replacement" : "setup");
     await afterChange(
       result,
       "Authenticator connected. Save your backup codes to finish.",
@@ -472,7 +474,10 @@
     codes = "";
     $("#backup-codes").textContent = "";
     notice("");
-    panel(codeSource === "setup" ? "complete-panel" : "overview");
+    const firstSetup = codeSource === "setup" && initialSetupPending;
+    initialSetupPending = false;
+    $("#continue-portal").hidden = !firstSetup;
+    panel(firstSetup ? "complete-panel" : "overview");
   });
   function overview() {
     clearPrivate();

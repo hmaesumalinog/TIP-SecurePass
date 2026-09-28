@@ -12,8 +12,15 @@ export default async function handler(request) {
     const {student,session} = await currentStudent(request);
     if (request.method === 'GET') {
       const status = await rpc('recovery_status',{p_sid:student.id,p_version:session.pv});
+      // The consumed authenticator step survives removal and password changes.
+      // Only unenrolled accounts need this small historical check.
+      let setupCompleted = status.enabled === true;
+      if (status.status === 'ok' && !setupCompleted) {
+        const previous = await supabase(`student_recovery?${query({select:'last_step',student_id:`eq.${student.id}`,limit:1})}`);
+        setupCompleted = Number(previous[0]?.last_step ?? -1) >= 0;
+      }
       return json({...status, ...(status.status === 'ok' ? {maskedPhone:student.phone ? maskPhone(student.phone) : null,
-        policiesAccepted:policiesAccepted(student),policyVersion:POLICY_VERSION} : {})});
+        setupCompleted,policiesAccepted:policiesAccepted(student),policyVersion:POLICY_VERSION} : {})});
     }
     assertPost(request); sameOrigin(request);
     const input = await readJson(request);

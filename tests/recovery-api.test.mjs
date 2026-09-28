@@ -65,6 +65,7 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     assert.equal(blocked.code,'AUTHENTICATOR_SETUP_REQUIRED');
     assert.equal(blocked.student,undefined,'Unenrolled student profile must not be disclosed');
     const maskedStatus=await call(settings,null);
+    assert.equal(maskedStatus.setupCompleted,false,'First-time setup has not been confirmed');
     assert.equal(maskedStatus.maskedPhone,'+63 ••• ••• 0000');
     assert.equal(maskedStatus.phone,undefined,'Status never returns the full phone');
     assert.equal((await call(settings,{action:'begin',password:'Original!Password123'},cookie,{Origin:'https://attacker.invalid'})).status,403);
@@ -74,6 +75,7 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     const step=Math.floor(Date.now()/30000);
     const enrolled=await call(settings,{action:'confirm',password:'Original!Password123',code:totp(begin.secret,step)});
     assert.equal(enrolled.codes.length,10);assert.equal(emailCount,1);
+    assert.equal((await call(settings,null)).setupCompleted,true);
     const allowed=await call(profile,null);
     assert.equal(allowed.status,200);
     assert.equal(allowed.student.studentNumber,'7654333');
@@ -119,6 +121,7 @@ test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',
     assert.equal((await call(settings,{action:'disable',password:'NewStrong!Password123',code:totp(begin.secret,freshStep+1)},newCookie)).status,'ok');
     const removedStatus=await call(settings,null,newCookie);
     assert.equal(removedStatus.enabled,false);
+    assert.equal(removedStatus.setupCompleted,true,'Removing an authenticator does not repeat first-time onboarding');
     assert.equal(removedStatus.remaining,0);
     assert.equal((await call(profile,null,newCookie)).status,403,'Removal restores required enrollment');
     assert.equal((await call(recovery,{action:'help',studentNumber:'7654333',contact:'synthetic@example.invalid',message:'Synthetic test request only.'},'')).status,200);
