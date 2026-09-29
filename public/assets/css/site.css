@@ -196,13 +196,10 @@ body {
   display: grid;
   gap: 8px;
 }
-.label-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.label-row a {
+/* Sits under the password box, aligned right. */
+.forgot-link {
+  justify-self: end;
+  padding: 2px 0;
   font-size: 0.84rem;
   font-weight: 700;
 }
