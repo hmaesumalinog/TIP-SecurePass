@@ -898,6 +898,10 @@ dialog.admin-dialog {
   background: var(--surface);
   box-shadow: var(--shadow-lg);
 }
+/* Administrator dialogs keep their soft blur; student pages use a plain dim. */
+.ui-dialog::backdrop {
+  backdrop-filter: blur(3px);
+}
 dialog.admin-dialog::backdrop {
   background: var(--backdrop);
   backdrop-filter: blur(2px);

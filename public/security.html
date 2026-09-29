@@ -10,11 +10,11 @@
     <meta name="color-scheme" content="light only" />
     <title>Security & recovery | TIP SecurePass</title>
     <link rel="icon" href="assets/images/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/css/ui.css?v=20260928" />
-    <link rel="stylesheet" href="assets/css/student-shell.css?v=20260928" />
-    <link rel="stylesheet" href="assets/css/security.css?v=20260928" />
-    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260928" />
-    <script src="assets/js/enrollment.js?v=20260928" defer></script>
+    <link rel="stylesheet" href="assets/css/ui.css?v=20260928m" />
+    <link rel="stylesheet" href="assets/css/student-shell.css?v=20260928m" />
+    <link rel="stylesheet" href="assets/css/security.css?v=20260928m" />
+    <link rel="stylesheet" href="assets/css/enrollment.css?v=20260928m" />
+    <script src="assets/js/enrollment.js?v=20260928m" defer></script>
     <script src="assets/js/security.js?v=20260924a" defer></script>
   </head>
   <body class="portal-body" data-page="security">
@@ -541,7 +541,22 @@
                 </form>
               </section>
               <section id="complete-panel" class="panel complete-panel" hidden>
-                <span class="complete-mark" aria-hidden="true">✓</span>
+                <div class="complete-mark" aria-hidden="true">
+                  <svg viewBox="0 0 64 64">
+                    <circle
+                      class="complete-circle"
+                      cx="32"
+                      cy="32"
+                      r="26"
+                      transform="rotate(-90 32 32)"
+                    />
+                    <path class="complete-check" d="m21 33 7.5 7.5L43 25" />
+                  </svg>
+                  <span class="confetti"
+                    ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+                    ><i></i><i></i><i></i><i></i
+                  ></span>
+                </div>
                 <p class="eyebrow">Setup complete</p>
                 <h2 tabindex="-1">You’re ready to go</h2>
                 <p>

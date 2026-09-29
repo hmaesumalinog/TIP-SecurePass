@@ -247,8 +247,12 @@ h2:focus {
   background: var(--surface);
   text-align: left;
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    transform var(--motion-fast) var(--ease-out);
+}
+.method-card:active {
+  transform: scale(0.985);
 }
 .method-card:hover {
   border-color: var(--brand-border);
@@ -457,6 +461,52 @@ textarea {
   color: var(--ink);
   background: var(--hover);
 }
+.secondary-button {
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast);
+}
+.secondary-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Motion: each step eases in as it appears, finished steps pop to a tick and
+   their connector fills, and success screens land with a small pop. */
+.sr-main [data-view]:not([hidden]),
+#help-success:not([hidden]) {
+  animation: ui-rise-in var(--motion) var(--ease-out) backwards;
+}
+#sr-message:not([hidden]),
+#flow-error:not([hidden]) {
+  animation: ui-rise-in var(--motion) var(--ease-out);
+}
+.state-icon.success {
+  animation: ui-pop-in 0.45s var(--ease-spring) 0.12s backwards;
+}
+.success-summary p {
+  animation: ui-rise-in var(--motion) var(--ease-out) 0.24s backwards;
+}
+.success-summary p:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.progress-list .step-number {
+  transition:
+    background-color var(--motion),
+    border-color var(--motion),
+    color var(--motion);
+}
+.progress-list .is-complete .step-number {
+  animation: ui-pop-in var(--motion-slow) var(--ease-spring);
+}
+.progress-list .is-complete::after {
+  transform-origin: top center;
+  animation: progress-fill 0.45s var(--ease-out);
+}
+@keyframes progress-fill {
+  from {
+    transform: scaleY(0);
+  }
+}
 .full {
   width: 100%;
 }
@@ -625,7 +675,6 @@ textarea {
 }
 .restart-dialog::backdrop {
   background: var(--backdrop);
-  backdrop-filter: blur(3px);
 }
 .restart-dialog h2 {
   font-size: 1.4rem;

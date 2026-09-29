@@ -72,6 +72,18 @@ body.portal-body {
   width: 18px;
   height: 18px;
   flex: 0 0 18px;
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+.portal-nav a,
+.portal-nav button {
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
+}
+/* Tabs press in under the finger, like a native app. */
+.portal-nav a:active svg,
+.portal-nav button:active:not(:disabled) svg {
+  transform: scale(0.86);
 }
 .portal-nav a:hover,
 .portal-nav button:hover {
@@ -171,6 +183,10 @@ body.portal-body {
   }
   .portal-nav a[aria-current="page"] {
     box-shadow: none;
+  }
+  /* The tab you just opened pops once so the switch is easy to follow. */
+  .portal-nav a[aria-current="page"] svg {
+    animation: ui-pop-in var(--motion-slow) var(--ease-spring);
   }
   .portal-main {
     width: calc(100% - 24px);

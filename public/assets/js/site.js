@@ -19,6 +19,26 @@
     }
   }
 
+  // Replays a short shake so a failed attempt is noticed without reading.
+  function shake(node) {
+    if (!node) return;
+    node.classList.remove("is-shaking");
+    void node.offsetWidth;
+    node.classList.add("is-shaking");
+  }
+  // iOS Safari only shows :active press feedback when a touch listener exists.
+  document.addEventListener("touchstart", () => {}, { passive: true });
+
+  // The security page greets brand-new students once. Only the first name is
+  // kept, for this tab only, and it is removed as soon as the welcome shows.
+  function rememberWelcome(firstName) {
+    try {
+      sessionStorage.setItem("securepass-welcome", firstName || "");
+    } catch {
+      // Storage can be unavailable (private modes); the plain setup prompt shows.
+    }
+  }
+
   const NETWORK_ERROR =
     "We could not reach the server. Check your internet connection and try again.";
 
@@ -100,6 +120,7 @@
     const firstLoginConfirm = $("#first-login-confirm");
     const firstLoginError = $("#first-login-error");
     const firstLoginMatch = $("#first-login-match");
+    let firstName = "";
 
     showReturnNotice();
 
@@ -121,12 +142,14 @@
       if (!/^\d{7}$/.test(studentNumber.value)) {
         studentNumber.setAttribute("aria-invalid", "true");
         error.textContent = "Enter your 7-digit student number.";
+        shake(form);
         studentNumber.focus();
         return;
       }
       if (!password.value) {
         password.setAttribute("aria-invalid", "true");
         error.textContent = "Enter your password.";
+        shake(form);
         password.focus();
         return;
       }
@@ -138,6 +161,7 @@
           password: password.value,
         });
         if (data.requiresPasswordChange) {
+          firstName = data.student?.firstName || "";
           password.value = "";
           firstLoginDialog.showModal();
           firstLoginPassword.focus();
@@ -146,6 +170,7 @@
         }
       } catch (loginError) {
         error.textContent = loginError.message;
+        shake(form);
         password.select();
       } finally {
         setButtonBusy(submit, false, "Sign in to student portal");
@@ -204,6 +229,7 @@
       if (!Object.values(rules).every(Boolean)) {
         firstLoginError.textContent =
           "Meet every password requirement before continuing.";
+        shake(firstLoginError);
         firstLoginPassword.focus();
         return;
       }
@@ -211,12 +237,14 @@
         firstLoginConfirm.setAttribute("aria-invalid", "true");
         firstLoginError.textContent =
           "The confirmation does not match your new password.";
+        shake(firstLoginError);
         firstLoginConfirm.focus();
         return;
       }
       if (!$("#first-terms").checked || !$("#first-privacy").checked) {
         firstLoginError.textContent =
           "Please read and accept the terms, and acknowledge the privacy notice.";
+        shake(firstLoginError);
         $("#first-terms").focus();
         return;
       }
@@ -228,9 +256,11 @@
           privacyAccepted: $("#first-privacy").checked,
           policyVersion: "2026-09-20",
         });
+        rememberWelcome(firstName);
         window.location.assign("security.html?onboarding=1");
       } catch (setupError) {
         firstLoginError.textContent = setupError.message;
+        shake(firstLoginError);
       } finally {
         setButtonBusy(button, false, "Save password and secure account");
       }

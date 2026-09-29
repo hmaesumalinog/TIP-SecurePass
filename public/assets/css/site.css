@@ -140,6 +140,13 @@ body {
 .trust-item {
   padding-top: 15px;
   border-top: 1px solid var(--navy-line);
+  animation: ui-rise-in var(--motion-slow) var(--ease-out) 160ms backwards;
+}
+.trust-item:nth-child(2) {
+  animation-delay: 220ms;
+}
+.trust-item:nth-child(3) {
+  animation-delay: 280ms;
 }
 .trust-icon {
   display: grid;
@@ -169,6 +176,7 @@ body {
 .form-panel-inner {
   width: min(100%, 440px);
   margin: auto;
+  animation: ui-rise-in var(--motion-slow) var(--ease-out) 80ms backwards;
 }
 .form-panel h2 {
   margin: 0;
@@ -250,14 +258,18 @@ input[type="checkbox"] {
   text-decoration: none;
   cursor: pointer;
   transition:
-    transform 0.15s,
-    background 0.15s,
-    box-shadow 0.15s;
+    transform var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast);
 }
 .button:hover {
   color: var(--brand-ink);
   background: var(--brand-hover);
-  transform: translateY(-1px);
+}
+/* Lift only with a real mouse; on touch screens it would stick after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
 }
 .button:disabled {
   opacity: 0.62;
@@ -305,6 +317,9 @@ input[type="checkbox"] {
   color: var(--ink-2);
   background: var(--surface-2);
   font-size: 0.88rem;
+}
+.notice:not(.hidden) {
+  animation: ui-rise-in var(--motion) var(--ease-out) 120ms backwards;
 }
 .notice strong {
   display: block;
@@ -388,7 +403,6 @@ input[type="checkbox"] {
 }
 .first-login-dialog::backdrop {
   background: var(--backdrop);
-  backdrop-filter: blur(4px);
 }
 .first-login-card {
   padding: clamp(24px, 6vw, 40px);
@@ -447,6 +461,9 @@ input[type="checkbox"] {
   gap: 12px;
 }
 .help-option {
+  animation: ui-rise-in var(--motion-slow) var(--ease-out) backwards;
+}
+.help-option {
   display: flex;
   align-items: flex-start;
   gap: 14px;
@@ -457,13 +474,23 @@ input[type="checkbox"] {
   background: var(--surface);
   text-decoration: none;
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color var(--motion-fast),
+    background-color var(--motion-fast),
+    transform var(--motion-fast) var(--ease-out);
 }
 .help-option:hover {
   border-color: var(--brand-border);
   color: var(--ink);
   background: var(--brand-tint-2);
+}
+.help-option:active {
+  transform: scale(0.985);
+}
+.help-option:nth-child(2) {
+  animation-delay: 60ms;
+}
+.help-option:nth-child(3) {
+  animation-delay: 120ms;
 }
 .help-option-icon {
   display: grid;
@@ -493,6 +520,13 @@ input[type="checkbox"] {
   margin-left: auto;
   padding-top: 8px;
   color: var(--muted);
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .help-option:hover .help-option-arrow {
+    color: var(--brand-text);
+    transform: translateX(3px);
+  }
 }
 
 @media (max-width: 900px) {

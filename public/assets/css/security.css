@@ -523,16 +523,311 @@
 .complete-panel > button {
   margin: 8px 8px 8px 0;
 }
-.complete-mark {
-  display: grid;
-  width: 56px;
-  height: 56px;
-  margin-bottom: 20px;
-  place-items: center;
-  border-radius: 50%;
+
+/* Motion. Panels and steps ease in as they appear; nothing loops. */
+#security-content {
+  animation: ui-fade-in var(--motion) ease-out;
+}
+.account-summary,
+.workspace > section,
+#policies-panel {
+  animation: ui-rise-in var(--motion) var(--ease-out) backwards;
+}
+#identity-step {
+  animation: ui-fade-in var(--motion) ease-out;
+}
+.help-column {
+  animation: ui-rise-in var(--motion-slow) var(--ease-out) 80ms backwards;
+}
+/* Moving forward to the app step slides in from the right. */
+#connect-step {
+  animation: ui-slide-in var(--motion) var(--ease-out) backwards;
+}
+.qr-frame {
+  animation: ui-fade-in var(--motion-slow) ease-out 100ms backwards;
+}
+#page-message:not([hidden]),
+.security-main .form-error:not([hidden]) {
+  animation: ui-rise-in var(--motion) var(--ease-out);
+}
+.account-summary strong.is-ready::before,
+.account-summary strong.is-warning::before {
+  animation: ui-pop-in var(--motion-slow) var(--ease-spring);
+}
+.method {
+  animation: ui-rise-in var(--motion) var(--ease-out) 60ms backwards;
+}
+.method:nth-child(2) {
+  animation-delay: 110ms;
+}
+.method:nth-child(3) {
+  animation-delay: 160ms;
+}
+
+/* Stepper: a brand bar fills as steps finish, and done steps pop to a tick. */
+.steps {
+  position: relative;
+}
+.steps::after {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--brand);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.5s var(--ease-out);
+}
+.steps[data-current="1"]::after {
+  transform: scaleX(0.3333);
+}
+.steps[data-current="2"]::after {
+  transform: scaleX(0.6667);
+}
+.steps[data-current="3"]::after {
+  transform: scaleX(1);
+}
+.steps span {
+  transition:
+    background-color var(--motion),
+    border-color var(--motion),
+    color var(--motion);
+}
+.steps .done span {
+  animation: ui-pop-in var(--motion-slow) var(--ease-spring);
+}
+
+/* Backup codes arrive row by row (about a third of a second in total). */
+.code-grid li {
+  animation: ui-rise-in var(--motion) var(--ease-out) backwards;
+}
+.code-grid li:nth-child(2) {
+  animation-delay: 30ms;
+}
+.code-grid li:nth-child(3) {
+  animation-delay: 60ms;
+}
+.code-grid li:nth-child(4) {
+  animation-delay: 90ms;
+}
+.code-grid li:nth-child(5) {
+  animation-delay: 120ms;
+}
+.code-grid li:nth-child(6) {
+  animation-delay: 150ms;
+}
+.code-grid li:nth-child(7) {
+  animation-delay: 180ms;
+}
+.code-grid li:nth-child(8) {
+  animation-delay: 210ms;
+}
+.code-grid li:nth-child(9) {
+  animation-delay: 240ms;
+}
+.code-grid li:nth-child(n + 10) {
+  animation-delay: 270ms;
+}
+.security-main .is-copied {
+  border-color: var(--success-line);
   color: var(--success);
   background: var(--success-tint);
-  font-size: 1.8rem;
+}
+/* Finish unlocks with one ring pulse so students notice the next step. */
+#finish-codes {
+  position: relative;
+}
+#finish-codes.is-ready::after {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  bottom: -5px;
+  left: -5px;
+  border: 2px solid var(--brand);
+  border-radius: 14px;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  animation: ui-ring 0.9s ease-out;
+}
+
+/* Setup complete: the circle and tick draw in, then a small burst. */
+.workspace > .complete-panel {
+  animation: none;
+}
+.complete-panel > * {
+  animation: ui-rise-in var(--motion-slow) var(--ease-out) 0.3s backwards;
+}
+.complete-panel > h2 {
+  animation-delay: 0.36s;
+}
+.complete-panel > p:not(.eyebrow) {
+  animation-delay: 0.42s;
+}
+.complete-panel > .button,
+.complete-panel > button,
+.complete-panel > .field-help {
+  animation-delay: 0.5s;
+}
+.complete-panel > .complete-mark {
+  animation: none;
+}
+.complete-mark {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 20px;
+}
+.complete-mark::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--success-tint);
+  content: "";
+  animation: ui-pop-in var(--motion-slow) var(--ease-spring) backwards;
+}
+.complete-mark svg {
+  position: relative;
+  display: block;
+  width: 64px;
+  height: 64px;
+  fill: none;
+  stroke: var(--success);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.complete-circle {
+  stroke-width: 2.5;
+  stroke-dasharray: 164;
+  animation: complete-circle 0.55s ease-out 0.1s backwards;
+}
+.complete-check {
+  stroke-width: 3.5;
+  stroke-dasharray: 34;
+  animation: complete-check 0.35s ease-out 0.5s backwards;
+}
+@keyframes complete-circle {
+  from {
+    stroke-dashoffset: 164;
+  }
+}
+@keyframes complete-check {
+  from {
+    stroke-dashoffset: 34;
+  }
+}
+/* Twelve pieces fan out from the tick once. Each one is turned to its own
+   angle, so a single shared keyframe moves every piece straight outward. */
+.confetti {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+}
+.confetti i {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.confetti i::before {
+  position: absolute;
+  top: -4px;
+  left: -3px;
+  width: 6px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--brand);
+  content: "";
+  opacity: 0;
+  animation: confetti-far 0.95s cubic-bezier(0.15, 0.75, 0.35, 1) 0.55s;
+}
+.confetti i:nth-child(even)::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  animation-name: confetti-near;
+}
+.confetti i:nth-child(3n + 2)::before {
+  background: var(--success);
+}
+.confetti i:nth-child(3n)::before {
+  background: var(--navy);
+}
+.confetti i:nth-child(4n)::before {
+  background: var(--info);
+}
+.confetti i:nth-child(1) {
+  transform: rotate(0deg);
+}
+.confetti i:nth-child(2) {
+  transform: rotate(30deg);
+}
+.confetti i:nth-child(3) {
+  transform: rotate(60deg);
+}
+.confetti i:nth-child(4) {
+  transform: rotate(90deg);
+}
+.confetti i:nth-child(5) {
+  transform: rotate(120deg);
+}
+.confetti i:nth-child(6) {
+  transform: rotate(150deg);
+}
+.confetti i:nth-child(7) {
+  transform: rotate(180deg);
+}
+.confetti i:nth-child(8) {
+  transform: rotate(210deg);
+}
+.confetti i:nth-child(9) {
+  transform: rotate(240deg);
+}
+.confetti i:nth-child(10) {
+  transform: rotate(270deg);
+}
+.confetti i:nth-child(11) {
+  transform: rotate(300deg);
+}
+.confetti i:nth-child(12) {
+  transform: rotate(330deg);
+}
+@keyframes confetti-far {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, -32px, 0) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -74px, 0) rotate(200deg) scale(1);
+  }
+}
+@keyframes confetti-near {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, -32px, 0) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -56px, 0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
 }
 
 @media (max-width: 1000px) {

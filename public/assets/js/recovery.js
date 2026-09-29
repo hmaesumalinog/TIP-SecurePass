@@ -9,6 +9,8 @@ import {
 
 const $ = (selector) => document.querySelector(selector);
 const endpoint = "/.netlify/functions/alternate-recovery";
+// iOS Safari only shows :active press feedback when a touch listener exists.
+document.addEventListener("touchstart", () => {}, { passive: true });
 const isRecovery = document.body.dataset.recoveryPage === "recover";
 let token = "",
   method = "",

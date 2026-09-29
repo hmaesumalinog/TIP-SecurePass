@@ -21,6 +21,13 @@
   border: 62px solid rgba(245, 196, 0, 0.16);
   border-radius: 50%;
   content: "";
+  animation: hero-ring 0.9s var(--ease-out) 0.15s backwards;
+}
+@keyframes hero-ring {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
 }
 .portal-hero-content {
   position: relative;
@@ -157,6 +164,50 @@
   border-color: var(--brand-border);
   color: var(--brand-ink);
   background: var(--brand);
+}
+/* "Fix now" pulses once when the dashboard opens, then stays still. */
+.security-card.needs-attention .security-card-link {
+  position: relative;
+}
+.security-card.needs-attention .security-card-link::after {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  bottom: -5px;
+  left: -5px;
+  border: 2px solid var(--brand);
+  border-radius: 14px;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  animation: ui-ring 1s ease-out 0.7s;
+}
+
+/* Dashboard and profile content rises in, one block after another, as soon
+   as it loads. The whole sequence finishes in about half a second. */
+[data-protected-content]:not(.hidden) > * {
+  animation: ui-rise-in var(--motion-slow) var(--ease-out) backwards;
+}
+[data-protected-content]:not(.hidden) > :nth-child(2) {
+  animation-delay: 60ms;
+}
+[data-protected-content]:not(.hidden) > :nth-child(3) {
+  animation-delay: 120ms;
+}
+[data-protected-content]:not(.hidden) > :nth-child(n + 4) {
+  animation-delay: 180ms;
+}
+.metric-card {
+  animation: ui-rise-in var(--motion-slow) var(--ease-out) 150ms backwards;
+}
+.metric-card:nth-child(2) {
+  animation-delay: 190ms;
+}
+.metric-card:nth-child(3) {
+  animation-delay: 230ms;
+}
+.metric-card:nth-child(4) {
+  animation-delay: 270ms;
 }
 
 .portal-section {

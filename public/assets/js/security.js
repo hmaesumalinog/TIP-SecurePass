@@ -267,6 +267,7 @@
       else node.removeAttribute("aria-current");
       node.querySelector("span").textContent = n < number ? "✓" : String(n);
     });
+    $(".steps").dataset.current = number;
     $("#identity-step").hidden = number !== 1;
     $("#connect-step").hidden = number !== 2;
   }
@@ -430,21 +431,39 @@
       return false;
     }
   }
+  // Briefly confirms a copy on the button itself, then restores its label.
+  function showCopied(button) {
+    if (!button.dataset.copyLabel)
+      button.dataset.copyLabel = button.textContent.trim();
+    button.textContent = "Copied ✓";
+    button.classList.add("is-copied");
+    clearTimeout(button.copiedTimer);
+    button.copiedTimer = setTimeout(() => {
+      button.textContent = button.dataset.copyLabel;
+      button.classList.remove("is-copied");
+    }, 1800);
+  }
   // Finishing is only offered after the codes were downloaded, copied or printed.
   function markCodesSaved(saved) {
     $("#saved-check").disabled = !saved;
     if (!saved) $("#saved-check").checked = false;
     $("#finish-codes").disabled = !$("#saved-check").checked;
+    $("#finish-codes").classList.toggle("is-ready", $("#saved-check").checked);
     $("#save-hint").hidden = saved;
   }
   $("#saved-check").addEventListener("change", () => {
     $("#finish-codes").disabled = !$("#saved-check").checked;
+    $("#finish-codes").classList.toggle("is-ready", $("#saved-check").checked);
   });
-  $("#copy-key").addEventListener("click", () =>
-    copy($("#setup-key").textContent, "#key-feedback"),
-  );
+  $("#copy-key").addEventListener("click", async () => {
+    if (await copy($("#setup-key").textContent, "#key-feedback"))
+      showCopied($("#copy-key"));
+  });
   $("#copy-codes").addEventListener("click", async () => {
-    if (await copy(codes, "#backup-feedback")) markCodesSaved(true);
+    if (await copy(codes, "#backup-feedback")) {
+      showCopied($("#copy-codes"));
+      markCodesSaved(true);
+    }
   });
   $("#download-codes").addEventListener("click", () => {
     if (!codes) return;
@@ -621,12 +640,18 @@
     run($("#resend-sms"), "#phone-error", sendSms);
   });
   $("#check-sms-delivery").addEventListener("click", checkDelivery);
+  function setText(node, value) {
+    if (node.textContent !== value) node.textContent = value;
+  }
   function updateTimers() {
     const remaining = Math.max(0, Math.ceil((setupUntil - Date.now()) / 1000));
     if (pendingSetup) {
-      $("#setup-time").textContent = remaining
-        ? `Confirm within ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}.`
-        : "Setup expired. Start again for a fresh QR code.";
+      setText(
+        $("#setup-time"),
+        remaining
+          ? `Confirm within ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}.`
+          : "Setup expired. Start again for a fresh QR code.",
+      );
       $("#confirm-app").disabled = busy || !remaining;
     }
     // Re-derive after run() restores button states, so a new code set can
@@ -639,14 +664,18 @@
       !deliveryReceipt || ["sent", "failed"].includes(deliveryStatus);
     $("#check-sms-delivery").disabled =
       busy || deliveryBusy || deliveryChecks >= 10;
-    $("#check-sms-delivery").textContent = deliveryBusy
-      ? "Checking SMS status…"
-      : "Check SMS status";
-    $("#sms-wait").textContent = deliveryIssue
-      ? "Sending the same message again will not resolve this rejection. You can cancel and keep using your current recovery methods while the administrator contacts the SMS service."
-      : smsWait
-        ? `You can request another SMS in ${smsWait} seconds.`
-        : "No SMS yet? You can request another code. Delivery depends on your mobile network.";
+    setText(
+      $("#check-sms-delivery"),
+      deliveryBusy ? "Checking SMS status…" : "Check SMS status",
+    );
+    setText(
+      $("#sms-wait"),
+      deliveryIssue
+        ? "Sending the same message again will not resolve this rejection. You can cancel and keep using your current recovery methods while the administrator contacts the SMS service."
+        : smsWait
+          ? `You can request another SMS in ${smsWait} seconds.`
+          : "No SMS yet? You can request another code. Delivery depends on your mobile network.",
+    );
   }
   setInterval(updateTimers, 1000);
   window.addEventListener("beforeunload", (event) => {
