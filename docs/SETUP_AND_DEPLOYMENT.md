@@ -4,7 +4,7 @@ This guide describes a clean installation. For a client receiving the existing p
 
 ## Prerequisites
 
-- Node.js 20 or newer
+- Node.js 24 LTS recommended; minimum 22.13.0 for the pinned Netlify CLI
 - A Netlify site
 - A Supabase project
 - A verified Resend sending domain and API key

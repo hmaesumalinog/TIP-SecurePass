@@ -12,7 +12,7 @@ Keep `package-lock.json`, all SQL migrations, and the test suite. They make inst
 
 ## 2. Open and check the project
 
-Install Node.js 20 or newer, then open the folder in your editor and run:
+Install Node.js 24 LTS (minimum 22.13.0), then open the folder in your editor and run:
 
 ```bash
 npm ci
@@ -22,12 +22,15 @@ npm run format:check
 
 These tests use synthetic data and mocked provider delivery. They do not sign in to real student accounts or spend SMS credits.
 
-The handoff audit found development-tool dependency advisories, while the
-production-only dependency audit was clean. Review the recorded
-[development dependency audit](SECURITY.md#development-dependency-audit) before
-using or upgrading the local tooling. The application and lockfile have been
-preserved; the source package is not a claim that every development dependency
-is free of advisories.
+The handoff includes Netlify CLI 27.12.0 and a refreshed, tested dependency
+lockfile. The October 9, 2026 check found no known production dependency
+vulnerabilities. The full audit improved from 25 affected development dependency
+entries to 16 high-severity entries, with no critical or moderate entries
+remaining. Review the [development dependency audit](SECURITY.md#development-dependency-audit)
+for the upstream limitations and safe local-development precautions. Do not run
+`npm audit fix --force`; its proposed CLI downgrade is incompatible with this
+project's current tooling. The source package is not a claim that every
+development dependency is free of advisories.
 
 To use the complete application locally, copy `.env.example` to `.env`, supply development credentials privately, and run `npx netlify dev`. See [Setup and deployment](SETUP_AND_DEPLOYMENT.md) for the exact configuration. Never commit the completed `.env` file.
 

@@ -35,7 +35,7 @@ All browser requests go through the site's `/api/*` routes. Database credentials
 
 ## Getting started
 
-Use Node.js 20 or newer with npm. From the project root:
+Use Node.js 24 LTS with npm (minimum supported version: 22.13.0). From the project root:
 
 ```bash
 npm ci

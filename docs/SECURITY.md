@@ -124,23 +124,43 @@ The following must not be shared publicly:
 
 ## Development dependency audit
 
-At the October 9, 2026 handoff review, `npm audit --omit=dev` reported no known
-production dependency vulnerabilities. The full `npm audit` reported 25 affected
-development dependency entries: 1 critical, 23 high, and 1 moderate. Every affected
-installed package was marked as a development dependency in the lockfile. These
-are npm's package-level totals; an upstream advisory can also flag packages that
-depend on it.
+The October 9, 2026 tooling update pins Netlify CLI 27.12.0 and refreshes its
+compatible transitive dependencies. Use Node.js 24 LTS; the minimum supported
+version is 22.13.0. The application source and production dependency versions are
+unchanged.
 
-The critical entry was `proxy-addr@2.0.7`, reached through
-`netlify-cli@27.4.2 → express@5.2.1`. The development tools are not dependencies of
-the deployed request handlers, but they still matter on a maintainer's computer.
-Keep local preview servers private and review a Netlify CLI/toolchain update in
-an isolated checkout. Rerun the full audit, tests, local preview, and Netlify build
-before accepting the new lockfile. Do not apply a forced dependency update to the
-working project without reviewing its compatibility.
+| Audit scope                                      | Before the update                   | After the update |
+| ------------------------------------------------ | ----------------------------------- | ---------------- |
+| Production dependencies (`npm audit --omit=dev`) | 0                                   | 0                |
+| All dependencies (`npm audit`)                   | 25: 1 critical, 23 high, 1 moderate | 16: all high     |
 
-This handoff review preserves the tested dependency versions. Recheck both audit
-commands when receiving the project, since advisory data changes over time.
+The critical `proxy-addr` dependency is updated from 2.0.7 to 2.0.8. Compatible
+fixes also update `brace-expansion`, `fast-uri`, `fastify`, `multiparty`,
+`smol-toml`, `source-map-js`, and `toml`; the new CLI no longer includes
+`extract-zip` in this dependency tree. No forced updates, dependency overrides,
+or audit exclusions were used.
+
+All remaining affected packages are development dependencies. The 16 entries
+include dependent packages; they are not 16 separate vulnerabilities in the
+portal. They trace to these upstream libraries:
+
+- `braces@3.0.3`: no published patched version for [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
+- `node-forge@1.4.0`: no published patched version for [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv).
+- `sharp@0.34.5`: the [current image-library fix](https://github.com/advisories/GHSA-wq5f-xc86-pv6w) requires 0.35.5, outside `ipx@3.1.1`'s declared `^0.34.3` range in the Netlify development image tooling.
+
+These tools are not dependencies of the deployed request handlers, but they
+still matter on a maintainer's computer. Keep development servers private,
+avoid public preview tunnels, and do not process untrusted projects, glob
+patterns, certificates, or images with the local tooling. These precautions
+reduce exposure; they do not resolve the upstream advisories.
+
+The upgrade was checked in an isolated source copy with automated tests, local
+browser fixtures, an offline Netlify build, and the actual Netlify development
+server. Recheck both audit commands when receiving the project, since advisory
+data changes. A full audit still returns a nonzero status until the remaining
+findings are resolved. Do not run `npm audit fix --force`: at this review it
+proposes Netlify CLI 2.13.1, a breaking downgrade. Review later upstream releases
+and repeat the compatibility checks before updating the lockfile again.
 
 ## Limitations before institutional use
 
