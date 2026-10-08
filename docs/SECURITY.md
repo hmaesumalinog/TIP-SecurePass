@@ -65,13 +65,13 @@ Because the two cookies have different names and validation paths, the student a
 
 ## Server secrets
 
-Each secret has one job, so rotating one does not disturb the others:
+The current format separates session signing, code hashing, and authenticator encryption. Legacy `v1` authenticator enrollments still depend on `APP_PEPPER`, so plan any key rotation around the data that uses it:
 
-| Variable                  | Protects                                               | Effect of rotating it                                                   |
-| ------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `SESSION_SECRET`          | Student and administrator cookies, SMS status receipts | Everyone signs in again                                                 |
-| `APP_PEPPER`              | Digests of one-time codes and backup codes             | Saved backup codes and codes in flight stop working                     |
-| `RECOVERY_ENCRYPTION_KEY` | Encryption of authenticator secrets (`v2`)             | Connected authenticators stop working; students must connect them again |
+| Variable                  | Protects                                               | Effect of rotating it                                                           |
+| ------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `SESSION_SECRET`          | Student and administrator cookies, SMS status receipts | Everyone signs in again                                                         |
+| `APP_PEPPER`              | Code digests and legacy `v1` authenticator encryption  | Saved codes, codes in flight, and legacy authenticator enrollments stop working |
+| `RECOVERY_ENCRYPTION_KEY` | Encryption of authenticator secrets (`v2`)             | Connected authenticators stop working; students must connect them again         |
 
 Authenticator secrets created before the keys were separated are marked `v1`. They remain readable through `APP_PEPPER` and are re-encrypted with `RECOVERY_ENCRYPTION_KEY` the next time the student connects or replaces an authenticator.
 
@@ -121,6 +121,26 @@ The following must not be shared publicly:
 - Production database exports
 
 `.env.example` is safe to share only while it contains placeholders.
+
+## Development dependency audit
+
+At the October 9, 2026 handoff review, `npm audit --omit=dev` reported no known
+production dependency vulnerabilities. The full `npm audit` reported 25 affected
+development dependency entries: 1 critical, 23 high, and 1 moderate. Every affected
+installed package was marked as a development dependency in the lockfile. These
+are npm's package-level totals; an upstream advisory can also flag packages that
+depend on it.
+
+The critical entry was `proxy-addr@2.0.7`, reached through
+`netlify-cli@27.4.2 → express@5.2.1`. The development tools are not dependencies of
+the deployed request handlers, but they still matter on a maintainer's computer.
+Keep local preview servers private and review a Netlify CLI/toolchain update in
+an isolated checkout. Rerun the full audit, tests, local preview, and Netlify build
+before accepting the new lockfile. Do not apply a forced dependency update to the
+working project without reviewing its compatibility.
+
+This handoff review preserves the tested dependency versions. Recheck both audit
+commands when receiving the project, since advisory data changes over time.
 
 ## Limitations before institutional use
 

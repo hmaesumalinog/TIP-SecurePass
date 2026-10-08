@@ -51,10 +51,13 @@ unknown birthday can remain blank. New invitations require a valid birthday.
   identity-verification/support process. A birthday or student number alone is
   not sufficient evidence, and identity documents should not be stored in notes.
 
-Data refreshes every 30 seconds while visible, pauses during editing/review
-dialogs, and refreshes after successful changes. The Refresh button is available
-for immediate updates. This is authenticated polling, not a public Realtime
-subscription to confidential database tables.
+Active pages check a small change token approximately every 15 seconds and slow
+to about 60 seconds when idle. Full views reload when the token changes or the
+five-minute fallback is due; reloads are deferred during editing/review dialogs.
+Open tabs share checks, and successful changes prompt a refresh. Hidden or offline
+tabs pause checks. The Refresh button is available for immediate updates. This
+is authenticated polling, not a public Realtime subscription to confidential
+database tables.
 
 ## Recovery and access safeguards
 
@@ -86,10 +89,13 @@ subscription to confidential database tables.
 
 ## Deployment
 
-Apply `supabase/migrations/20260920090000_student_owned_onboarding.sql` once after
-the alternate-recovery migration, then deploy the functions and frontend together.
-It is an atomic, additive migration: no student credentials or existing factors
-are reset, and no fabricated birthdays or acknowledgments are inserted.
+The onboarding schema was introduced in
+`supabase/migrations/20260920090000_student_owned_onboarding.sql`. The current
+application also requires the subsequent performance and session migrations.
+Follow the complete [SQL installation order](../supabase/README.md) for a new
+database; apply only missing migrations to an existing one. The onboarding
+migration is atomic and additive: no student credentials or existing factors are
+reset, and no fabricated birthdays or acknowledgments are inserted.
 
 Run `npm test`, `npm run build`, and `npm run format:check`. New database and HTTP
 integration tests exercise the actual SQL and handlers with embedded PostgreSQL;

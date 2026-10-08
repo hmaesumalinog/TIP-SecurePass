@@ -7,7 +7,8 @@ This guide gives the student team a clear presentation order. Use only authorize
 - Confirm the deployed site opens over HTTPS.
 - Confirm Netlify, Supabase, Resend, and UniSMS show healthy service status.
 - Use a funded or trial-authorized UniSMS recipient.
-- Prepare one existing student and one unused seven-digit student number.
+- Prepare one enrolled student with a verified recovery phone and one unused seven-digit student number.
+- Keep the enrolled student's authenticator and one saved backup code available if demonstrating recovery without email.
 - Open the student portal and administrator portal in separate tabs.
 - Keep provider dashboards available only if the panel asks for technical evidence; do not expose API keys.
 - Request fresh reset links during the rehearsal. Old links are intentionally single-use and expire after 15 minutes.
@@ -27,15 +28,17 @@ Open `/admin/login` and explain that the administrator uses a password plus a on
 In the student management page:
 
 1. Enter a unique seven-digit student number.
-2. Enter the student's authorized test email and E.164 phone number.
-3. Complete the name, age, program, and year-level fields.
+2. Enter the student's first and last name, birthday, and authorized test email.
+3. Choose the program and year level. The administrator does not enter a phone number; the student adds it during security setup.
 4. Save the record.
 
 Explain that the server generates the temporary password. The database stores only its bcrypt hash, while the plaintext value exists briefly on the server to create the welcome email.
 
 ### 4. Complete first-time setup
 
-Open the welcome email and sign in with the temporary password. Show that the account cannot enter the portal immediately and must create a permanent password first. After completion, explain that the temporary password is invalidated.
+Open the welcome email and sign in with the temporary password. Show the permanent-password form and the separate terms and privacy acknowledgments. Then connect an authenticator, confirm its code, and save the backup codes. Confirmed authenticator enrollment is required before the portal can be opened. Explain that the temporary password is invalidated after password setup.
+
+If demonstrating email-and-SMS recovery, let the student add their own recovery phone and confirm it with a fresh SMS code. The phone is optional, but it must be verified before that recovery method can be used. Keep any backup-code file private and out of presentation screenshots.
 
 ### 5. Show normal sign-in and profile data
 
@@ -57,7 +60,13 @@ Sign out, try an incorrect password, and point out the clear but non-revealing e
 8. Create a policy-compliant new password.
 9. Return to sign-in and prove that the new password works and the former password does not.
 
-### 8. Close with auditability
+### 8. Show recovery without email
+
+Choose **Recover without email** and explain that it requires a saved backup code plus either the enrolled authenticator or verified phone. Use an authorized demonstration account. A backup code is consumed after successful verification; it cannot be reused. Ordinary student sign-in remains password-based—the authenticator is a recovery factor and proof for sensitive settings changes.
+
+If all recovery methods are lost, show the assistance-request page. Submitting or resolving a request does not automatically reset a password or bypass identity review.
+
+### 9. Close with auditability
 
 Return to the administrator audit page and show the corresponding security activity. Explain that audit records support troubleshooting and review without storing plaintext passwords, OTPs, or reset links.
 
@@ -68,7 +77,7 @@ Return to the administrator audit page and show the corresponding security activ
 - The SMS code expires after five minutes and permits at most five attempts.
 - Raw reset tokens, OTPs, grants, and passwords are not stored in the database.
 - Student and administrator sessions use different signed, HTTP-only cookies.
-- Password changes invalidate older student sessions.
+- Password changes and sign-out invalidate older student sessions.
 - Privileged database access and provider keys remain in Netlify Functions.
 - Database password changes and reset-credential invalidation happen together.
 
@@ -97,7 +106,7 @@ No. An unlinked URL is only less discoverable. Actual protection comes from serv
 
 ### Is the dashboard truly real-time?
 
-Student records and audit data are read from Supabase through protected server APIs. Visible administrator pages automatically refresh every eight seconds, which provides near-real-time updates without exposing the database secret to the browser.
+Student records and audit data are read from Supabase through protected server APIs. Active administrator pages check a small change token approximately every 15 seconds, slowing to about 60 seconds when idle. Views reload when changes are detected, and a five-minute fallback updates time-based states. Hidden or offline tabs pause checks. This is near-real-time polling; it is not an instant database subscription.
 
 ### Can email delivery always be forced into the inbox?
 

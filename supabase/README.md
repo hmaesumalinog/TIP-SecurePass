@@ -18,6 +18,8 @@ The core script creates the student, sign-in-attempt, reset, OTP, grant, and aud
 
 The administrator script creates administrator accounts, two-step login challenges, administrator audit events, student-management functions, temporary-password onboarding, and Supabase Realtime publications. It does not create a default administrator account; see `docs/SETUP_AND_DEPLOYMENT.md` for the one-time administrator statement.
 
+The two September 2 migration files are retained as the upgrade history for older installations. Their original hardening is incorporated into the current setup scripts, and later migrations replace the original OTP reservation function. A fresh installation uses the seven-file sequence above; do not run every SQL file in this folder indiscriminately.
+
 ## Existing installation upgrades
 
 Use these only when their feature is missing from an existing database:

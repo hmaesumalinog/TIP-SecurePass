@@ -94,9 +94,11 @@ numbers. Read [Administrator and onboarding guide](ADMIN_AND_ONBOARDING.md) for
 policy acknowledgments, reporting, and reviewed assistance.
 
 - Recovery codes contain 128 random bits each and are stored only as keyed hashes.
-- TOTP secrets are AES-256-GCM encrypted, bound to the student ID, with a separate
-  HKDF-derived key from the existing server-only APP_PEPPER. Preserve APP_PEPPER
-  securely; changing it without re-encryption prevents existing factor use.
+- TOTP secrets are AES-256-GCM encrypted and bound to the student ID. New `v2`
+  enrollments use an HKDF-derived key from `RECOVERY_ENCRYPTION_KEY`; legacy `v1`
+  enrollments remain readable using `APP_PEPPER`. Preserve both deployed values.
+  Replacing an encryption source without a migration prevents the corresponding
+  enrolled authenticator from being read. See [Security notes](SECURITY.md#server-secrets).
 - TOTP uses SHA-1, six digits, 30-second periods, and a one-step clock allowance.
   The last accepted step is stored to prevent replay. Students may need to wait
   for the next code immediately after enrollment or a security change.
@@ -124,9 +126,12 @@ alone as proof. Do not store identity documents or passwords in review notes.
 
 ## Deployment and verification
 
-Apply `supabase/migrations/20260917090000_alternate_recovery.sql` once, then publish
-the functions and frontend together. Existing recovery data and accounts are
-preserved. Back up the database before schema changes. The migration is atomic.
+The base feature was introduced in
+`supabase/migrations/20260917090000_alternate_recovery.sql`. The current application
+also depends on the later onboarding, performance, and session migrations. Follow
+the complete [SQL installation order](../supabase/README.md) for a new database;
+apply only missing migrations to an existing one, then publish the matching
+functions and frontend together. Back up the database before schema changes.
 
 Run `npm test`, `npm run build`, and `npm run format:check`. Database tests use
 embedded PostgreSQL with pgcrypto, not production student records. API integration

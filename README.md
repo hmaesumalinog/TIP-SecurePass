@@ -1,117 +1,116 @@
+<p align="center">
+  <img src="public/assets/images/brand-mark.svg" width="64" height="64" alt="TIP SecurePass shield">
+</p>
+
 # TIP SecurePass
 
-TIP SecurePass is an academic student-portal project focused on password-reset security and usability. It combines a responsive student interface, a small administrator portal, server-side APIs, a Supabase database, Resend email delivery, and UniSMS phone verification.
+A student portal focused on secure, understandable password recovery. Students can manage their recovery methods, while administrators handle invitations, student records, security activity, and recovery assistance.
 
-The project uses plain HTML, CSS, and JavaScript on the frontend. There is no React application, frontend build framework, or PHP runtime requirement.
+[Student portal](https://www.resetworkflow.site/) · [Administrator sign-in](https://www.resetworkflow.site/admin/login) · [Setup guide](docs/SETUP_AND_DEPLOYMENT.md) · [Client handoff](docs/CLIENT_HANDOFF.md)
 
-> **Project scope:** This is an independent academic project. It is not affiliated with, endorsed by, or connected to the official Technological Institute of the Philippines student portal.
+## What the project includes
 
-## Main features
+| Students                                                          | Administrators                                          |
+| ----------------------------------------------------------------- | ------------------------------------------------------- |
+| Seven-digit student-number sign-in                                | Separate sign-in with an email verification code        |
+| Guided first-login password and privacy setup                     | Student invitations with temporary-password emails      |
+| Authenticator enrollment and saved backup codes                   | Student search, details, editing, and readiness filters |
+| Student-owned recovery phone verification                         | Security dashboard and searchable audit history         |
+| Email-link and SMS-code password recovery                         | Recovery-assistance review queue                        |
+| Recovery without email using a backup code and an enrolled factor | Automatic change checks across open administrator tabs  |
 
-- Seven-digit student-number sign-in with clear invalid-credential feedback
-- Separate student and administrator sessions, allowing both portals to remain signed in in the same browser
-- Signing out ends the session on the server, including any copied cookie
-- Supabase-backed student profile information
-- Email-link and SMS-code password recovery
-- Generic recovery responses and equal-cost password checks that reduce account-discovery signals
-- Single-use reset links, expiring OTP challenges, attempt limits, and password-policy checks
-- Administrator two-step sign-in, student management, account onboarding, and audit history
-- Live administrator updates: other administrators' changes appear within about 15 seconds
-- Automatic welcome email with a one-time temporary password for a newly created student
-- Forced permanent-password setup on the student's first sign-in
-- Responsive layouts for desktop, tablet, and mobile screens
-- Automated tests for email, SMS, temporary-password, and session-isolation behavior
+Student and administrator sessions can coexist in the same browser. Signing out invalidates the corresponding session on the server. Reset links and codes expire, attempts are limited, and password changes invalidate outstanding recovery credentials.
 
 ## Technology
 
-| Area     | Technology                                 | Responsibility                                                        |
-| -------- | ------------------------------------------ | --------------------------------------------------------------------- |
-| Frontend | HTML, CSS, vanilla JavaScript              | Student and administrator interfaces                                  |
-| Server   | Netlify Functions using JavaScript modules | Authentication, validation, sessions, and provider calls              |
-| Database | Supabase PostgreSQL                        | Student records, reset state, administrator records, and audit events |
-| Email    | Resend                                     | Reset links, account setup, and security notices                      |
-| SMS      | UniSMS                                     | Six-digit password-reset verification codes                           |
-| Hosting  | Netlify                                    | Static pages, serverless functions, routing, and security headers     |
+| Layer     | Technology                            | Purpose                                                            |
+| --------- | ------------------------------------- | ------------------------------------------------------------------ |
+| Interface | HTML, CSS, vanilla JavaScript         | Responsive student and administrator pages                         |
+| Server    | Netlify Functions, JavaScript modules | Authentication, validation, sessions, and provider requests        |
+| Database  | Supabase PostgreSQL                   | Profiles, recovery state, access controls, and audit records       |
+| Email     | Resend                                | Invitations, reset links, verification codes, and security notices |
+| SMS       | UniSMS                                | Phone verification and password-recovery codes                     |
 
-## Folder guide
-
-```text
-TIP SecurePass/
-├── README.md                     Start here
-├── .env.example                  Safe environment-variable template
-├── netlify.toml                  Hosting, routes, and security headers
-├── docs/                         Architecture, setup, security, and demo guide
-├── public/                       Files published as the website
-│   ├── admin/                    Administrator pages
-│   └── assets/
-│       ├── css/                  Student, portal, and admin styles
-│       ├── js/                   Browser-side behavior
-│       └── images/               Project artwork
-├── netlify/functions/
-│   ├── api.mjs                   The single API function; routes /api/* requests
-│   ├── _routes/                  One module per API endpoint
-│   ├── _shared/                  Reusable server helpers
-│   ├── database-health.mjs       Scheduled activity check
-│   └── security-maintenance.mjs  Scheduled cleanup of expired records
-├── scripts/                      Asset versioning for long browser caching
-├── supabase/
-│   ├── setup/                    New-database scripts in execution order
-│   ├── migrations/               Upgrades, applied in filename order
-│   ├── upgrades/                 Scripts for an existing installation
-│   └── maintenance/              Optional maintenance queries
-└── tests/                         Automated Node.js tests
-```
-
-Every `/api/*` request runs in `netlify/functions/api.mjs`, which passes it to the matching module in `_routes/` (for example `/api/login` → `_routes/login.mjs`). One function means the first request of a visit starts the server for every request that follows. Shared implementation code is kept in `_shared/` so provider credentials and security logic are not duplicated.
+All browser requests go through the site's `/api/*` routes. Database credentials, provider keys, and trusted verification logic stay on the server. Administrator updates use small change checks, approximately every 15 seconds while active, with slower checks when idle.
 
 ## Getting started
 
-1. Read [Setup and deployment](docs/SETUP_AND_DEPLOYMENT.md).
-2. Review [Architecture](docs/ARCHITECTURE.md) to understand how the parts communicate.
-3. Read [Security notes](docs/SECURITY.md) before changing authentication or reset logic.
-4. Use the [Demonstration guide](docs/DEMONSTRATION_GUIDE.md) when presenting the project.
-5. Follow [Administrator and onboarding workflows](docs/ADMIN_AND_ONBOARDING.md) for invitations, student-owned phone setup, privacy acknowledgments, and recovery reviews.
-
-For local development:
+Use Node.js 20 or newer with npm. From the project root:
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
-# Add your own development credentials to .env.
+```
+
+Fill in `.env` using the [environment-variable guide](docs/SETUP_AND_DEPLOYMENT.md#2-configure-environment-variables), then start the local server:
+
+```bash
 npx netlify dev
 ```
 
-Open `http://localhost:8888`. Never place real credentials in frontend files, screenshots, documentation, or Git history.
+Open `http://localhost:8888` for students or `http://localhost:8888/admin/login` for administrators. On Windows, copy `.env.example` to `.env` with File Explorer or PowerShell's `Copy-Item`.
 
-## Verification
+For a new database, follow the exact [SQL installation order](supabase/README.md#new-installation). For the existing deployed project, do not rerun setup scripts or replace its security keys merely to transfer the source folder. Read the [handoff guide](docs/CLIENT_HANDOFF.md) first.
 
-After editing anything in `public/assets/`, refresh the asset versions so browsers pick up the change:
+Opening an HTML file directly previews only its static layout. Sign-in, recovery, email, SMS, and database access require the configured server.
 
-```bash
-npm run version-assets
+## Project structure
+
+```text
+TIP-SecurePass/
+├── README.md                 Project overview and starting point
+├── .env.example              Environment template; contains no live credentials
+├── netlify.toml              Hosting, routes, and response headers
+├── package.json              Commands and dependencies
+├── package-lock.json         Exact dependency versions for npm ci
+├── public/                   Published pages and browser assets
+│   ├── admin/                Administrator pages
+│   └── assets/               CSS, JavaScript, and images
+├── netlify/functions/
+│   ├── api.mjs               Entry point for /api/*
+│   ├── _routes/              Request handlers
+│   ├── _shared/              Security, database, and provider helpers
+│   ├── database-health.mjs   Scheduled database check
+│   └── security-maintenance.mjs
+├── supabase/                 Setup, migrations, maintenance, and SQL tests
+├── scripts/                  Asset versioning
+├── tests/                    Automated checks and local browser fixtures
+└── docs/                     Setup, architecture, operation, and demo guides
 ```
 
-Run all automated tests from the project root:
+The [architecture guide](docs/ARCHITECTURE.md) explains the responsibilities of each layer and the main authentication and recovery flows.
 
-```bash
-npm test
-```
+## Development and verification
 
-Run a local Netlify build check:
+| Command                  | Purpose                                                            |
+| ------------------------ | ------------------------------------------------------------------ |
+| `npm ci`                 | Install the versions recorded in the lockfile                      |
+| `npm test`               | Run the automated tests using synthetic data and mocked delivery   |
+| `npm run format:check`   | Check formatting                                                   |
+| `npm run version-assets` | Refresh content hashes after editing browser assets                |
+| `npm run build`          | Validate the Netlify configuration and bundle the server functions |
 
-```bash
-npm run build
-```
+The automated test suite does not send real email or SMS and does not require production credentials. Browser fixtures are kept outside `public/` and are not deployed. Before demonstrating provider delivery, use a specifically authorized test email address and phone number.
 
-These checks confirm the project files and tested provider contracts. A final release should also be tested with fresh email and SMS messages using authorized test accounts.
+The current site uses manual Netlify deployment; pushing to GitHub updates the source repository but does not publish the website. See [deployment instructions](docs/SETUP_AND_DEPLOYMENT.md#5-deploy-on-netlify).
 
-## Important operating notes
+## Documentation
 
-See [Email recovery and transactional messages](docs/EMAIL_RECOVERY.md) for the
-student flow, shared email templates, and local-only visual test scenarios.
+| Guide                                                              | Read it when you need to…                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| [Client handoff](docs/CLIENT_HANDOFF.md)                           | Receive the source and arrange access to the existing services           |
+| [Setup and deployment](docs/SETUP_AND_DEPLOYMENT.md)               | Configure a local environment or publish a release                       |
+| [System architecture](docs/ARCHITECTURE.md)                        | Explain how the interface, server, database, and providers work together |
+| [Security notes](docs/SECURITY.md)                                 | Understand sessions, secrets, recovery controls, and their limits        |
+| [Administrator and onboarding guide](docs/ADMIN_AND_ONBOARDING.md) | Invite students and manage security or assistance requests               |
+| [Alternate recovery](docs/ALTERNATE_RECOVERY.md)                   | Understand authenticators, backup codes, and recovery without email      |
+| [Email recovery](docs/EMAIL_RECOVERY.md)                           | Review the email/SMS flow and transactional templates                    |
+| [Performance and operations](docs/PERFORMANCE_AND_OPERATIONS.md)   | Maintain polling, caching, delivery checks, and scheduled jobs           |
+| [Acceptance checks](docs/RECOVERY_TESTING.md)                      | Rehearse recovery success and failure cases                              |
+| [Demonstration guide](docs/DEMONSTRATION_GUIDE.md)                 | Present the project and answer common questions                          |
 
-- Use synthetic or specifically authorized student information during demonstrations.
-- Keep `DEMO_MODE=false` when demonstrating real SMS delivery. A visible demonstration code must never be exposed after a real SMS attempt.
-- Add demonstration students through the administrator portal using synthetic or specifically authorized information.
-- Keep `.env`, Netlify local state, provider keys, Supabase secret keys, and live account credentials out of the client handoff archive.
-- The administrator pages are intentionally excluded from search-engine indexing, but the URL alone is not a security control. Access is enforced by server-side authentication and role checks.
+## Project scope
+
+This is an independent academic project. It is not affiliated with, endorsed by, or connected to the official Technological Institute of the Philippines student portal.
+
+Use synthetic or specifically authorized student information. Keep credentials, database exports, and screenshots containing private information out of the repository and source package. The administrator URL is protected by server-side authentication and role checks; an unlinked URL alone is not a security control.

@@ -1,6 +1,6 @@
 # Setup and Deployment
 
-This guide describes a clean installation. Existing deployed installations should use the upgrade scripts only when their matching change has not already been applied.
+This guide describes a clean installation. For a client receiving the existing project, start with [Client handoff](CLIENT_HANDOFF.md). Existing deployed installations should use upgrade scripts only when their matching change has not already been applied.
 
 ## Prerequisites
 
@@ -98,12 +98,15 @@ for the new invitation, policy, phone-verification and review workflows.
 From the project root:
 
 ```bash
+npm ci
 cp .env.example .env
 # Replace every placeholder needed for the selected environment.
 npx netlify dev
 ```
 
 Open `http://localhost:8888` for the student site and `http://localhost:8888/admin/login` for the administrator site.
+
+On Windows, copy `.env.example` to `.env` using File Explorer or `Copy-Item .env.example .env` in PowerShell. The npm commands are the same.
 
 Local HTTPS-only cookies may behave differently from deployed HTTPS in some browsers. Use the deployed test site for final session and provider verification.
 
