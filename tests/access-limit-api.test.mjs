@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import login from '../netlify/functions/login.mjs';
-import adminLogin from '../netlify/functions/admin-login-start.mjs';
-import requestReset from '../netlify/functions/request-reset.mjs';
+import login from '../netlify/functions/_routes/login.mjs';
+import adminLogin from '../netlify/functions/_routes/admin-login-start.mjs';
+import requestReset from '../netlify/functions/_routes/request-reset.mjs';
 
 for(const [kind,handler,body] of [['student',login,{studentNumber:'7654321',password:'Synthetic!Password123'}],
   ['admin',adminLogin,{email:'test@example.invalid',password:'Synthetic!Password123'}],

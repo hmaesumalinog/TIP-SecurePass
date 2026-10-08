@@ -17,8 +17,13 @@ Open the Supabase SQL Editor and run the new-installation scripts in this exact 
 
 1. `supabase/setup/01-core-schema.sql`
 2. `supabase/setup/02-administrator-schema.sql`
+3. `supabase/migrations/20260905071805_resumable_otp_delivery.sql`
+4. `supabase/migrations/20260917090000_alternate_recovery.sql`
+5. `supabase/migrations/20260920090000_student_owned_onboarding.sql`
+6. `supabase/migrations/20260928090000_performance_and_delivery.sql`
+7. `supabase/migrations/20261009090000_sessions_and_round_trips.sql`
 
-Before running the first script, replace its sample student email, phone number, and password with synthetic or specifically authorized test values.
+The scripts do not create a default student credential. After creating the first administrator, use the administrator portal to add students.
 
 The second script creates the administrator tables and functions but deliberately does not create a default administrator credential. Create the first administrator separately with values chosen for the project:
 
@@ -46,32 +51,36 @@ Do not rerun the complete setup merely to apply one later feature. The scripts u
 - `student-portal-auth.sql` adds or verifies the student profile and authentication fields.
 - `temporary-password-onboarding.sql` adds the first-login temporary-password workflow.
 
+Then apply only the missing timestamped migrations in filename order. The required sequence is also listed in [Supabase scripts](../supabase/README.md). Do not rerun a migration that has already been verified on the live project.
+
 Review an upgrade in the SQL Editor before executing it and take a database backup for any environment containing important records.
 
 ## 2. Configure environment variables
 
 Copy `.env.example` to `.env` for local development. Add equivalent values in **Netlify > Site configuration > Environment variables** for deployment.
 
-| Variable               |   Required | Purpose                                                                           |
-| ---------------------- | ---------: | --------------------------------------------------------------------------------- |
-| `SITE_URL`             |        Yes | Public origin used when creating email links                                      |
-| `EMAIL_APP_NAME`       |        Yes | Name displayed in transactional email copy                                        |
-| `APP_PEPPER`           |        Yes | At least 32 random characters used for signed sessions and one-time-value digests |
-| `DEMO_MODE`            |        Yes | Keep `false` for real SMS; `true` is only for isolated interface rehearsal        |
-| `SUPABASE_URL`         |        Yes | Supabase project URL                                                              |
-| `SUPABASE_SECRET_KEY`  |        Yes | Current server-only Supabase secret key                                           |
-| `RESEND_API_KEY`       |        Yes | Server-only Resend API key                                                        |
-| `RESEND_FROM`          |        Yes | Display name and address on a verified sending domain                             |
-| `SMS_PROVIDER`         |        Yes | Set to `unisms` for the primary SMS integration                                   |
-| `UNISMS_BASE_URL`      |        Yes | Normally `https://unismsapi.com/api`                                              |
-| `UNISMS_API_KEY`       |        Yes | Server-only UniSMS API key                                                        |
-| `UNISMS_SENDER_ID`     |        Yes | Sender ID approved by UniSMS                                                      |
-| `UNISMS_TRIAL_MODE`    |        Yes | `true` restricts real messages to the configured test list                        |
-| `UNISMS_ALLOWED_PHONE` | Trial only | Comma-separated E.164 test numbers allowed in trial mode                          |
+| Variable                  |   Required | Purpose                                                                     |
+| ------------------------- | ---------: | --------------------------------------------------------------------------- |
+| `SITE_URL`                |        Yes | Public origin used when creating email links                                |
+| `EMAIL_APP_NAME`          |        Yes | Name displayed in transactional email copy                                  |
+| `SESSION_SECRET`          |        Yes | At least 32 random characters; signs student and administrator sessions     |
+| `APP_PEPPER`              |        Yes | A different 32+ character value; keys one-time code and backup-code digests |
+| `RECOVERY_ENCRYPTION_KEY` |        Yes | A third 32+ character value; encrypts authenticator secrets                 |
+| `DEMO_MODE`               |         No | `true` shows simulated SMS codes only on `localhost` with no SMS provider   |
+| `SUPABASE_URL`            |        Yes | Supabase project URL                                                        |
+| `SUPABASE_SECRET_KEY`     |        Yes | Current server-only Supabase secret key                                     |
+| `RESEND_API_KEY`          |        Yes | Server-only Resend API key                                                  |
+| `RESEND_FROM`             |        Yes | Display name and address on a verified sending domain                       |
+| `SMS_PROVIDER`            |        Yes | Set to `unisms` for the primary SMS integration                             |
+| `UNISMS_BASE_URL`         |        Yes | Normally `https://unismsapi.com/api`                                        |
+| `UNISMS_API_KEY`          |        Yes | Server-only UniSMS API key                                                  |
+| `UNISMS_SENDER_ID`        |        Yes | Sender ID approved by UniSMS                                                |
+| `UNISMS_TRIAL_MODE`       |        Yes | `true` restricts real messages to the configured test list                  |
+| `UNISMS_ALLOWED_PHONE`    | Trial only | Comma-separated E.164 test numbers allowed in trial mode                    |
 
 `SUPABASE_SERVICE_ROLE_KEY` is supported only as a legacy fallback. Prefer `SUPABASE_SECRET_KEY` for a new configuration.
 
-Infobip remains available as an optional alternative provider through the `INFOBIP_*` variables in `.env.example`. Use one SMS provider at a time.
+Use three different values for the server secrets. See [Security notes](SECURITY.md) for what rotating each one affects.
 
 ### Secret-handling rules
 
@@ -83,9 +92,7 @@ Infobip remains available as an optional alternative provider through the `INFOB
 
 ## 3. Run locally
 
-For the revised admin workspace and student-owned onboarding, also apply
-`supabase/migrations/20260920090000_student_owned_onboarding.sql` after the
-alternate-recovery migration. See [Administrator and onboarding guide](ADMIN_AND_ONBOARDING.md)
+See [Administrator and onboarding guide](ADMIN_AND_ONBOARDING.md)
 for the new invitation, policy, phone-verification and review workflows.
 
 From the project root:
@@ -105,9 +112,12 @@ Local HTTPS-only cookies may behave differently from deployed HTTPS in some brow
 Run:
 
 ```bash
-node --test tests/*.test.mjs
+npm run version-assets
+npm test
 npx netlify build
 ```
+
+`npm run version-assets` gives every CSS, JavaScript, and image reference a content-based version, which lets browsers cache assets for a year. The test suite fails if a reference is out of date.
 
 Also perform a fresh end-to-end test using authorized test data:
 
@@ -125,16 +135,28 @@ Automated tests do not prove current email reputation, SMS account funding, DNS 
 
 The project requires no frontend build command. Netlify reads `netlify.toml`, publishes `public/`, and bundles `netlify/functions/`.
 
+The current site uses manual deployments. After validation, run:
+
+```bash
+npm run build
+npx netlify deploy --prod --no-build
+```
+
+Pushing to GitHub updates the source repository; it does not publish this site unless a Git build integration is separately enabled. Confirm the deployed site ID before publishing.
+
 For a Git-connected site:
 
-1. Push the clean source folder to the selected repository.
-2. Import or connect the repository in Netlify.
-3. Confirm the publish directory is `public` and functions directory is `netlify/functions`.
-4. Add all required environment variables.
-5. Deploy the site.
-6. Verify `/`, `/forgot.html`, `/admin/login`, and a complete authorized reset workflow.
+1. Apply any new file in `supabase/migrations/` to the database before deploying the code that uses it.
+2. Push the clean source folder to the selected repository.
+3. Import or connect the repository in Netlify.
+4. Confirm the publish directory is `public` and functions directory is `netlify/functions`.
+5. Add all required environment variables.
+6. Deploy the site.
+7. Verify `/`, `/forgot.html`, `/admin/login`, and a complete authorized reset workflow.
 
-For a custom domain, point the domain's DNS to Netlify using the records Netlify provides. Keep the single canonical HTTPS domain in `SITE_URL` and in Resend links.
+For a custom domain, point the domain's DNS to Netlify using the records Netlify provides. When DNS is managed outside Netlify, make the `www` address the primary domain so visitors are served from the nearest Netlify location; Netlify then redirects the bare domain to it. Keep that canonical HTTPS address in `SITE_URL` and in Resend links.
+
+Keep Netlify's optional built-with badge disabled. Its injected script uses inline content that conflicts with this application's strict Content Security Policy.
 
 ## 6. Email-delivery preparation
 

@@ -4,24 +4,51 @@ The application keeps public HTML/CSS/JavaScript on Netlify and uses server-only
 functions for database access. Private API responses must remain `no-store`.
 Reducing redundant reads must never bypass session revocation or role checks.
 
-## Request budget
+## Where the time goes
 
-| Active view                          | Browser requests per automatic refresh | Supabase requests | Interval              |
-| ------------------------------------ | -------------------------------------: | ----------------: | --------------------- |
-| Admin dashboard                      |                                      1 |                 3 | 60 seconds            |
-| Admin students, audit, recovery list |                                      1 |                 2 | 60 seconds            |
-| Student portal                       |                        1 on navigation |                 2 | No background polling |
+Netlify Functions run in Ohio (`us-east-2`, fixed on the Free plan) and the
+database is in Mumbai (`ap-south-1`). Each database call therefore costs a
+cross-region round trip, so the design keeps the number of calls per request
+small rather than relying on caching.
 
-Admin background refresh pauses for hidden pages, offline devices, and open edit
-dialogs. Failures back off to 120, 240, then 300 seconds. Manual refresh and
-successful changes refresh immediately. Each visible tab has its own scheduler;
-this is near-real-time polling, not a Supabase Realtime subscription.
+| Request                    | Database calls before October 9 | Now |
+| -------------------------- | ------------------------------: | --: |
+| Student sign-in            |                               4 |   2 |
+| Portal or profile load     |                               2 |   1 |
+| Security & recovery change |                             4–6 | 2–3 |
+| Phone-code verification    |                               4 |   1 |
+| Any administrator view     |                               2 |   1 |
+| Administrator sign-in      |                               5 |   2 |
 
-Compared with the previous 30-second refresh and separate request badge,
-steady-state list-view database requests fall from 8 to 2 per minute (75%).
-Dashboard database requests fall from 6 to 3 per minute (50%). Student portal
-reads fall from 4 to 2 (50%). These are code-derived request reductions, not a
-promise of the same percentage reduction in billed bytes or response time.
+All endpoints run in one function (`netlify/functions/api.mjs`). The first
+request of a visit starts it for every later request, and the sign-in and
+recovery pages start it with `/api/health` while the person is still typing.
+
+## Live administrator updates
+
+| What runs                         | Response body | Database calls      | How often                                           |
+| --------------------------------- | ------------: | ------------------- | --------------------------------------------------- |
+| Change check (`/api/admin/pulse`) |     ~40 bytes | 1 (indexed lookups) | Every 15 s while in use, 60 s when idle             |
+| Full view reload                  |     view size | 1                   | Only when the change token differs, and every 5 min |
+
+Open tabs share checks over a browser channel, so two visible tabs cost about
+the same as one; a change made in one tab refreshes the others at once. Checks
+stop while a page is hidden or offline and back off after failures. In a
+real-time browser test, two visible tabs made 2 checks in 34 seconds (4 if each
+tab checked separately), and a change appeared in both within about 12 seconds.
+
+Compared with the previous 60-second full reload, an administrator now sees
+other people's changes about four times sooner, while a quiet minute costs four
+~40-byte checks instead of one full list or dashboard. This response size excludes HTTP headers and the database-to-function response; it is not a measurement of total database egress. This is near-real-time
+polling through the server, not a Supabase Realtime subscription.
+
+## Browser caching
+
+Every CSS, JavaScript, and image reference carries a content hash
+(`?v=...`). Netlify serves `/assets/*` with a one-year immutable cache, so
+returning visitors load pages without revalidating assets, and an edited file
+gets a new URL immediately. Run `npm run version-assets` after editing assets;
+`npm test` fails if any reference is out of date.
 
 ## What to measure
 
@@ -38,7 +65,7 @@ promise of the same percentage reduction in billed bytes or response time.
 The eight-event dashboard query and list pagination do not calculate an exact
 total of the whole audit history. The directory and audit page show the current
 page and enable Next only when another row exists. Dashboard summary counts
-remain exact and are recalculated once per visible minute.
+remain exact and are recalculated when the dashboard reloads after a detected change or the five-minute fallback interval.
 
 ## Delivery and recovery
 
@@ -65,7 +92,7 @@ history. The existing bounded database health check remains independent.
 ## Release order
 
 1. Run `npm test`; build the Netlify functions.
-2. Apply the targeted September 28 migration to the correct Supabase project.
+2. Apply only missing timestamped migrations through October 9, in filename order, to the correct Supabase project. Keep the database in its existing region.
 3. Verify its new RPCs and browser-role restrictions using read-only queries.
 4. Deploy the matching frontend/functions together, then verify public routes,
    private endpoint authorization, pagination, and pending SMS presentation.
@@ -75,6 +102,34 @@ The migration adds columns and new function versions without replacing the old
 reporting or OTP functions. New controllers request `format=compact`; old tabs
 still receive their expected list totals. A previous application deploy can
 therefore coexist with the additive database upgrade during release or rollback.
+
+The October 9 deployment changes browser API URLs and requires the new session
+secrets. Refresh already-open pages and sign in again after deployment. Older
+per-function URLs are no longer exposed by the new application bundle. A rollback
+of the application code does not undo database changes or replace server secrets.
+
+## October 9 validation
+
+- All 85 automated tests passed, including sign-out revocation, student/admin
+  session isolation, constant-work authentication, legacy authenticator-secret
+  decryption, combined database requests, OTP replay and delivery handling, asset
+  versions, and shared administrator change checks.
+- Local browser checks passed 39 page/viewport combinations. Production checks
+  passed 36 public-page/viewport combinations at 320, 375, 768, and 1280 pixels,
+  with no horizontal overflow or unexpected script, network, or CSP errors.
+  The production dependency audit reported no known vulnerabilities at testing.
+- The live database upgrade was verified: both session-version columns and all
+  18 expected functions were present; browser roles could execute none of those
+  functions, while the server role could execute all of them.
+- Synthetic checks passed on both the draft and production deployments for first
+  login, policy acceptance, authenticator enrollment, portal access, sign-out,
+  email reset requests, backup-code/authenticator recovery, administrator views,
+  and change tokens. All synthetic student and administrator records were removed.
+- Live email tests used Resend's test inbox only. No live SMS was sent for this
+  release. These checks do not establish inbox placement or handset delivery.
+- Production samples measured profile requests at about 1.2–1.3 seconds and
+  administrator views at about 0.6–1.2 seconds. These are small-sample observations,
+  not load-tested guarantees. The database remains in Mumbai.
 
 ## September 28 validation
 

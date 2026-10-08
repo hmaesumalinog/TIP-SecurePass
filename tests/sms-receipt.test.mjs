@@ -3,8 +3,8 @@ import test from 'node:test';
 import {createSmsReceipt,readSmsReceipt} from '../netlify/functions/_shared/sms-receipt.mjs';
 
 test('SMS delivery receipt is bound to the authenticated student, password version and latest challenge',()=>{
-  const original=process.env.APP_PEPPER;
-  process.env.APP_PEPPER='synthetic-receipt-test-pepper-1234567890';
+  const original=process.env.SESSION_SECRET;
+  process.env.SESSION_SECRET='synthetic-receipt-test-secret-1234567890';
   try {
     const context={sid:'synthetic-student',version:123,hash:'synthetic-code-digest'};
     const token=createSmsReceipt({...context,referenceId:'msg_synthetic'},1000);
@@ -19,5 +19,7 @@ test('SMS delivery receipt is bound to the authenticated student, password versi
     assert.equal(readSmsReceipt(badReference,context,1001),null);
     const payload=JSON.parse(Buffer.from(token.split('.')[0],'base64url').toString());
     assert.equal(payload.hash,undefined);assert.equal(payload.phone,undefined);assert.equal(payload.otp,undefined);
-  }finally{if(original===undefined)delete process.env.APP_PEPPER;else process.env.APP_PEPPER=original;}
+    process.env.SESSION_SECRET='a-different-receipt-secret-0987654321';
+    assert.equal(readSmsReceipt(token,context,1001),null,'Rotating the session secret invalidates receipts');
+  }finally{if(original===undefined)delete process.env.SESSION_SECRET;else process.env.SESSION_SECRET=original;}
 });

@@ -7,7 +7,7 @@ import QRCode from 'qrcode';
 
 const root=resolve('public');
 let enabled=false,broken=false,logoutFails=false,phoneVerified=false,smsFailure=false,smsContentRejected=false,remaining=0,policiesAccepted=false;
-let phoneStats={sends:0,checks:0};
+let phoneStats={sends:0,checks:0},changes=0,pulses=0;
 let alternateMode='normal', alternateState=null, alternateStats={starts:0,verifications:0,saves:0,sms:0,help:0};
 const now=()=>new Date().toISOString();
 const directory=Array.from({length:5},(_,i)=>({id:`00000000-0000-4000-8000-00000000000${i}`,student_number:`765432${i}`,email:`demo${i}@example.invalid`,first_name:['Alex','Casey','Jordan','Morgan','Riley'][i],last_name:'Test Student',birth_date:i?'2004-03-15':null,program:'Bachelor of Science in Information Technology',year_level:'3rd Year',active:i!==4,record_version:1,must_change_password:i===0,temporary_password_expires_at:now(),created_at:now(),authenticator_enabled:i===2||i===3,phone_verified:i===2,backup_codes_remaining:i===2?10:0,policies_accepted:i>1,policies_accepted_at:now(),invitation_expired:i===0,security_status:['invited','setup','ready','attention','inactive'][i]}));
@@ -28,7 +28,7 @@ const server=createServer(async(req,res)=>{
     res.writeHead(302,{Location:alternateMode==='help-error'?'/recovery-help.html':'/recover.html'});res.end();return;
   }
   if(url.pathname==='/__alternate-stats')return json(alternateStats);
-  if(url.pathname==='/.netlify/functions/alternate-recovery') {
+  if(url.pathname==='/api/alternate-recovery') {
     let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body);
     if(alternateMode==='slow')await new Promise(resolve=>setTimeout(resolve,1200));
     if(input.action==='start') {
@@ -63,7 +63,12 @@ const server=createServer(async(req,res)=>{
     res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'no-store'});
     res.end('<h1>Reviewed local SQL</h1><p>Source: '+source+' · no student records or credentials</p><textarea aria-label="Migration SQL" rows="30" cols="100">'+sql.replaceAll('&','&amp;').replaceAll('<','&lt;')+'</textarea>');return;
   }
-  if(url.pathname==='/api/admin/session')return json({admin:{display_name:'Local Test Administrator',role:'super_admin'},csrfToken:'local-only-non-secret'});
+  const adminMeta=()=>({admin:{displayName:'Local Test Administrator',email:'admin@example.invalid',role:'super_admin'},csrfToken:'local-only-non-secret',changeToken:'local-'+changes,refreshedAt:now()});
+  if(url.pathname==='/api/admin/session')return json(adminMeta());
+  if(url.pathname==='/api/admin/pulse'){pulses++;return json({changeToken:'local-'+changes});}
+  if(url.pathname==='/__admin-stats')return json({pulses,changes});
+  if(url.pathname==='/__admin-change'){changes++;return json({changes});}
+  if(url.pathname==='/api/health'){res.writeHead(204,{'Cache-Control':'no-store'});res.end();return;}
   if(url.pathname==='/api/login')return json({requiresPasswordChange:true});
   if(url.pathname==='/api/complete-first-login'){
     let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body);
@@ -71,29 +76,29 @@ const server=createServer(async(req,res)=>{
     policiesAccepted=true;enabled=false;remaining=0;return json({message:'Local-only setup completed.'});
   }
   if(url.pathname==='/api/admin/logout')return json({message:'Local preview signed out'});
-  if(url.pathname==='/api/admin/dashboard')return json({metrics:{students:5,active:4,ready:1,setup:1,invited:1,pendingRequests:1,authenticators:2,phones:1,expired:1,attention:1,failures24h:1,resets7d:2},recent:activity,refreshedAt:now()});
+  if(url.pathname==='/api/admin/dashboard')return json({...adminMeta(),metrics:{students:5,active:4,ready:1,setup:1,invited:1,pendingRequests:1,authenticators:2,phones:1,expired:1,attention:1,failures24h:1,resets7d:2},recent:activity,refreshedAt:now()});
   if(url.pathname==='/api/admin/audit'){
     const search=url.searchParams.get('search')?.toLowerCase()||'',category=url.searchParams.get('category');
     const events=activity.filter(e=>(!category||category===e.source)&&(!search||JSON.stringify(e).toLowerCase().includes(search)));
-    return json({events,...(url.searchParams.get('format')==='compact'?{hasMore:false,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length}:{total:events.length}),page:1,pageSize:25,refreshedAt:now()});
+    return json({...adminMeta(),events,...(url.searchParams.get('format')==='compact'?{hasMore:false,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length}:{total:events.length}),page:1,pageSize:25,refreshedAt:now()});
   }
   if(url.pathname==='/api/admin/students'){
     if(req.method==='GET'){
-      if(url.searchParams.has('id'))return json({student:directory.find(s=>s.id===url.searchParams.get('id'))});
+      if(url.searchParams.has('id'))return json({...adminMeta(),student:directory.find(s=>s.id===url.searchParams.get('id'))});
       const search=url.searchParams.get('search')?.toLowerCase()||'',filter=url.searchParams.get('filter');
       const students=directory.filter(s=>(!filter||filter===s.security_status)&&(!search||JSON.stringify(s).toLowerCase().includes(search)));
-      return json({students,...(url.searchParams.get('format')==='compact'?{hasMore:false,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length}:{total:students.length}),page:1,pageSize:20,refreshedAt:now()});
+      return json({...adminMeta(),students,...(url.searchParams.get('format')==='compact'?{hasMore:false,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length}:{total:students.length}),page:1,pageSize:20,refreshedAt:now()});
     }
     let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body);
     if(req.method==='PATCH'){const s=directory.find(s=>s.id===input.id);Object.assign(s,{first_name:input.firstName,last_name:input.lastName,birth_date:input.birthday,record_version:s.record_version+1});}
     else directory.push({...directory[0],id:'00000000-0000-4000-8000-000000000088',student_number:input.studentNumber,first_name:input.firstName,last_name:input.lastName,email:input.email,birth_date:input.birthday});
-    return json({message:'Saved in local preview only. No email was sent.',emailSent:true},req.method==='POST'?201:200);
+    changes++;return json({message:'Saved in local preview only. No email was sent.',emailSent:true},req.method==='POST'?201:200);
   }
-  if(url.pathname==='/.netlify/functions/admin-recovery'){
+  if(url.pathname==='/api/admin/recovery'){
     if(req.method==='GET'){
-      if(url.searchParams.has('id')){const r=requests.find(r=>r.id===url.searchParams.get('id'));return json({request:r,history:r.history});}
+      if(url.searchParams.has('id')){const r=requests.find(r=>r.id===url.searchParams.get('id'));return json({...adminMeta(),request:r,history:r.history});}
       const status=url.searchParams.get('status')||'open',number=url.searchParams.get('number');
-      return json({requests:requests.filter(r=>(!number||number===r.student_number)&&(status==='all'||status==='open'&&['pending','reviewing'].includes(r.status)||status===r.status)),hasMore:false,page:1,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length,refreshedAt:now()});
+      return json({...adminMeta(),requests:requests.filter(r=>(!number||number===r.student_number)&&(status==='all'||status==='open'&&['pending','reviewing'].includes(r.status)||status===r.status)),hasMore:false,page:1,pendingRequests:requests.filter(r=>['pending','reviewing'].includes(r.status)).length,refreshedAt:now()});
     }
     let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body),r=requests.find(r=>r.id===input.id);
     r.history.push({status:input.status,note:input.note,created_at:now()});r.status=input.status;r.updated_at=now();return json({message:'Local review saved. No account access changed.'});
@@ -114,7 +119,7 @@ const server=createServer(async(req,res)=>{
   }
   if(url.pathname==='/__phone-stats')return json(phoneStats);
   if(url.pathname==='/api/logout') return json({message:logoutFails?'Try again':'Signed out'},logoutFails?500:200);
-  if(url.pathname==='/.netlify/functions/security-settings'){
+  if(url.pathname==='/api/security-settings'){
     if(req.method==='GET')return broken?json({message:'Local test: settings unavailable. Use another fixture to restore.'},503):json({status:'ok',enabled,remaining,phoneVerified,maskedPhone:phoneVerified?'+63 ••• ••• 0000':null,policiesAccepted,policyVersion:'2026-09-20'});
     let body='';for await(const chunk of req)body+=chunk;
     const input=JSON.parse(body);

@@ -3,8 +3,9 @@ import test from 'node:test';
 import {readFile,readdir} from 'node:fs/promises';
 import * as email from '../netlify/functions/_shared/resend.mjs';
 import {securityNotice} from '../netlify/functions/_shared/recovery.mjs';
-import complete from '../netlify/functions/complete-reset.mjs';
-import requestReset from '../netlify/functions/request-reset.mjs';
+import complete from '../netlify/functions/_routes/complete-reset.mjs';
+import requestReset from '../netlify/functions/_routes/request-reset.mjs';
+import { TEST_SECRETS } from './helpers/database.mjs';
 
 const base='https://portal.example.invalid';
 function setEnv(t,key,value) {
@@ -56,11 +57,13 @@ test('email action links reject executable, unencrypted, and embedded-credential
  }
 });
 test('all application email delivery stays behind the shared sender; no inline paragraph notices',async()=>{
- const folder=new URL('../netlify/functions/',import.meta.url);
- for(const name of await readdir(folder)) {
-  if(!name.endsWith('.mjs'))continue;
-  const source=await readFile(new URL(name,folder),'utf8');
-  assert.doesNotMatch(source,/api\.resend\.com|html\s*:/,name);
+ for(const path of ['../netlify/functions/','../netlify/functions/_routes/']) {
+  const folder=new URL(path,import.meta.url);
+  for(const name of await readdir(folder)) {
+   if(!name.endsWith('.mjs'))continue;
+   const source=await readFile(new URL(name,folder),'utf8');
+   assert.doesNotMatch(source,/api\.resend\.com|html\s*:/,name);
+  }
  }
  const source=await readFile(new URL('../netlify/functions/_shared/recovery.mjs',import.meta.url),'utf8');
  assert.match(source,/securityNoticeEmail\(\{event\}\)/);
@@ -68,7 +71,7 @@ test('all application email delivery stays behind the shared sender; no inline p
 });
 const request=body=>new Request(base+'/api/complete-reset',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
 function environment(t) {
- for(const [key,value]of Object.entries({RESEND_API_KEY:'synthetic',SITE_URL:base,SUPABASE_URL:base,SUPABASE_SECRET_KEY:'sb_secret_test'}))setEnv(t,key,value);
+ for(const [key,value]of Object.entries({RESEND_API_KEY:'synthetic',SITE_URL:base,SUPABASE_URL:base,SUPABASE_SECRET_KEY:'sb_secret_test',...TEST_SECRETS}))setEnv(t,key,value);
 }
 test('Resend receives both template formats, recipient, and idempotency key',async t=>{
  environment(t);let captured;
@@ -92,18 +95,36 @@ test('successful password change is not reported as failure when email and audit
 test('forgot-password response does not reveal unknown, invited, or phone-enabled account state',async t=>{
  environment(t);const results=[];
  for(const state of ['missing','invited','no-phone','ready']) {
-  let sent;
+  let sent,audited;
   t.mock.method(globalThis,'fetch',async(url,options={})=>{
    if(url.includes('api.resend.com')){sent=JSON.parse(options.body);return Response.json({id:'synthetic'});}
    if(url.includes('rpc/reserve_access_attempt'))return Response.json('synthetic-reservation');
-   if(url.includes('demo_students?'))return Response.json(state==='missing'?[]:[{id:'student',email:'test@example.invalid',first_name:'Test'}]);
-   if(url.includes('admin_student_security?'))return Response.json([{phone_verified:state==='ready',must_change_password:state==='invited'}]);
+   if(url.includes('rpc/prepare_password_reset')) {
+    const student={id:'student',email:'test@example.invalid',first_name:'Test'};
+    return Response.json(state==='missing'?{kind:'none'}:state==='ready'?{kind:'reset',token_id:'token',student}:{kind:'options',invited:state==='invited',student});
+   }
+   if(url.includes('audit_events'))audited=JSON.parse(options.body);
    return Response.json([{id:'synthetic'}]);
   });
   const response=await requestReset(request({email:'test@example.invalid'}));
   assert.equal(response.status,200);results.push(await response.json());
-  if(state!=='missing')assert.match(sent.html,/data-email-template=/);
-  else assert.equal(sent,undefined);
+  if(state!=='missing'){assert.match(sent.html,/data-email-template=/);assert.equal(audited.details.delivery,'sent');}
+  else {assert.equal(sent,undefined);assert.equal(audited,undefined);}
+  if(state==='ready')assert.match(sent.text,/reset\.html\?token=/);
  }
  for(const result of results)assert.deepEqual(result,results[0]);
+});
+test('forgot-password answers before any account lookup or email, so timing reveals nothing',async t=>{
+ environment(t);const order=[];let background,release;const gate=new Promise(resolve=>{release=resolve;});
+ t.mock.method(globalThis,'fetch',async(url)=>{
+  if(url.includes('rpc/reserve_access_attempt')){order.push('reserve');return Response.json('synthetic-reservation');}
+  if(url.includes('rpc/prepare_password_reset')){order.push('lookup');await gate;return Response.json({kind:'reset',token_id:'t',student:{id:'s',email:'test@example.invalid',first_name:'Test'}});}
+  if(url.includes('api.resend.com')){order.push('email');return Response.json({id:'synthetic'});}
+  order.push('audit');return Response.json([{id:'synthetic'}]);
+ });
+ const response=await requestReset(request({email:'test@example.invalid'}),{ip:'192.0.2.1',waitUntil:promise=>{background=promise;}});
+ assert.equal(response.status,200);
+ assert.equal(order.includes('email'),false,'The response does not wait for the account lookup or email');
+ release();await background;
+ assert.deepEqual(order,['reserve','lookup','email','audit']);
 });

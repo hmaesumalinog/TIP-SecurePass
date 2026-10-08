@@ -1,4 +1,4 @@
-import { createRefreshScheduler } from "./refresh-scheduler.mjs";
+import { createLiveUpdates } from "./live-updates.mjs?v=7542edbc0f";
 
 (function () {
   "use strict";
@@ -6,7 +6,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
   const page = document.body.dataset.adminPage;
   let csrfToken = "";
   let students = [];
-  let refreshScheduler;
+  let live;
   const $ = (selector, parent = document) => parent.querySelector(selector);
   const $$ = (selector, parent = document) => [
     ...parent.querySelectorAll(selector),
@@ -226,24 +226,6 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
     input.addEventListener("keyup", update);
     input.addEventListener("blur", () => (hint.hidden = true));
   });
-
-  async function requireSession() {
-    try {
-      const data = await request("/api/admin/session");
-      csrfToken = data.csrfToken;
-      return data.admin;
-    } catch (error) {
-      if (error.status === 401 || error.status === 403)
-        window.location.replace("login.html?session=expired");
-      else showToast(error.message, true);
-      return null;
-    }
-  }
-
-  function scheduleRefresh(callback) {
-    refreshScheduler?.stop();
-    refreshScheduler = createRefreshScheduler(callback);
-  }
 
   function initLogin() {
     const params = new URLSearchParams(location.search);
@@ -610,6 +592,20 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
       setRequestBadge(Number(data.pendingRequests) || 0);
   }
 
+  // Every administrator view response carries the signed-in identity, the
+  // CSRF token for changes and the current change token, so a page needs only
+  // one request to load.
+  function acceptView(data) {
+    if (data.csrfToken) csrfToken = data.csrfToken;
+    if (data.admin && !adminAccount) {
+      adminAccount = data.admin;
+      renderIdentity(adminAccount);
+      const addStudent = $("#add-student");
+      if (addStudent) addStudent.hidden = adminAccount.role !== "super_admin";
+    }
+    live?.seen(data.changeToken);
+  }
+
   function renderEvents(body, events, full = false) {
     body.replaceChildren();
     if (!events.length)
@@ -696,6 +692,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
       if (page === "dashboard") {
         const data = await request("/api/admin/dashboard"),
           m = data.metrics;
+        acceptView(data);
         $$("[data-metric]").forEach((el) => {
           el.textContent = m[el.dataset.metric] ?? "—";
         });
@@ -721,9 +718,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
         $("#readiness-percent").textContent = percent + "%";
         renderEvents($("#dashboard-events"), data.recent);
         pageState(
-          "Updated " +
-            formatTime(data.refreshedAt) +
-            " · checks for updates every minute",
+          "Updated " + formatTime(data.refreshedAt) + " · live updates on",
         );
       } else if (page === "students") {
         const params = new URLSearchParams({
@@ -733,6 +728,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
           page: pageNumber,
         });
         const data = await request("/api/admin/students?" + params);
+        acceptView(data);
         updateRequestBadge(data);
         students = data.students;
         renderStudents();
@@ -754,6 +750,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
           page: pageNumber,
         });
         const data = await request("/api/admin/audit?" + params);
+        acceptView(data);
         updateRequestBadge(data);
         lastEvents = data.events;
         $("#export-audit").disabled = !lastEvents.length;
@@ -772,9 +769,8 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
           pageState("Enter all 7 digits to search, or clear the search.");
           return;
         }
-        const data = await request(
-          "/.netlify/functions/admin-recovery?" + params,
-        );
+        const data = await request("/api/admin/recovery?" + params);
+        acceptView(data);
         updateRequestBadge(data);
         const body = $("#request-rows");
         body.replaceChildren();
@@ -833,11 +829,20 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
             " · contact claims remain unverified",
         );
       }
-      refreshScheduler?.fresh();
       return true;
     } catch (error) {
       if (error.status === 401)
         return location.replace("login.html?session=expired");
+      if (error.status === 403) {
+        live?.stop();
+        pageState(error.message, true);
+        // Still show who is signed in, even on a page this role cannot use.
+        if (!adminAccount)
+          request("/api/admin/session")
+            .then(acceptView)
+            .catch(() => {});
+        return false;
+      }
       pageState(
         error.message +
           " Existing data, if shown, may be out of date. Use Refresh to retry.",
@@ -1052,7 +1057,8 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
     (student ? $("#student-email") : $("#student-number")).focus();
   }
   function initStudents() {
-    $("#add-student").hidden = adminAccount.role !== "super_admin";
+    // Shown once the account is confirmed to be a super administrator.
+    $("#add-student").hidden = adminAccount?.role !== "super_admin";
     $("#add-student").addEventListener("click", () => editStudent());
     $("#student-view-edit").addEventListener("click", () =>
       editStudent(selectedStudent),
@@ -1082,6 +1088,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
         $("#student-view").close();
         pageState(result.message);
         showToast(result.message);
+        live?.changed();
         await loadCurrent();
       } catch (error) {
         showToast(error.message, true);
@@ -1137,6 +1144,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
         });
         $("#student-dialog").close();
         showToast(data.message, data.emailSent === false);
+        live?.changed();
         await loadCurrent();
         pageState(data.message, data.emailSent === false);
       } catch (failure) {
@@ -1153,7 +1161,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
   async function openRequest(id) {
     try {
       const data = await request(
-        "/.netlify/functions/admin-recovery?id=" + encodeURIComponent(id),
+        "/api/admin/recovery?id=" + encodeURIComponent(id),
       );
       const r = data.request;
       selectedRequest = r;
@@ -1222,7 +1230,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
       setBusy(button, true, "Saving review…");
       $("#review-error").textContent = "";
       try {
-        const data = await request("/.netlify/functions/admin-recovery", {
+        const data = await request("/api/admin/recovery", {
           method: "POST",
           body: JSON.stringify({
             id: selectedRequest.id,
@@ -1234,6 +1242,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
         });
         $("#request-dialog").close();
         showToast(data.message);
+        live?.changed();
         await loadCurrent();
         pageState(data.message);
       } catch (error) {
@@ -1329,6 +1338,7 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
     const button = $("#admin-sign-out");
     setBusy(button, true, "Signing out…");
     try {
+      live?.stop();
       await request("/api/admin/logout", { method: "POST", body: "{}" });
       location.replace("login.html?signedOut=1");
     } catch (error) {
@@ -1344,50 +1354,51 @@ import { createRefreshScheduler } from "./refresh-scheduler.mjs";
   $$("[data-close-dialog]").forEach((button) =>
     button.addEventListener("click", () => $("#student-dialog").close()),
   );
-  requireSession().then((admin) => {
-    if (!admin) return;
-    adminAccount = admin;
-    renderIdentity(admin);
-    if (page === "recovery" && admin.role !== "super_admin") {
-      pageState(
-        "Recovery reviews are available to super administrators only.",
-        true,
-      );
-      return;
-    }
-    if (page === "students") {
-      setChip(
-        "student-filter",
-        new URLSearchParams(location.search).get("filter") || "",
-      );
-      initStudents();
-    }
-    if (page === "audit") initAudit();
-    if (page === "recovery") initRecovery();
-    $("#refresh-page").addEventListener("click", () => loadCurrent());
-    $("#previous-page")?.addEventListener("click", () => {
-      pageNumber = Math.max(1, pageNumber - 1);
-      loadCurrent();
-    });
-    $("#next-page")?.addEventListener("click", () => {
-      pageNumber++;
-      loadCurrent();
-    });
-    bindChips(() => {
-      pageNumber = 1;
-      loadCurrent();
-    });
-    let searchTimer = 0;
-    $$("[data-filter]").forEach((input) =>
-      input.addEventListener("input", () => {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => {
-          pageNumber = 1;
-          loadCurrent();
-        }, 350);
-      }),
+  // The first view request also confirms the session, so controls are bound
+  // immediately and the page loads with a single request.
+  if (page === "students") {
+    setChip(
+      "student-filter",
+      new URLSearchParams(location.search).get("filter") || "",
     );
+    initStudents();
+  }
+  if (page === "audit") initAudit();
+  if (page === "recovery") initRecovery();
+  $("#refresh-page").addEventListener("click", () => loadCurrent());
+  $("#previous-page")?.addEventListener("click", () => {
+    pageNumber = Math.max(1, pageNumber - 1);
     loadCurrent();
-    scheduleRefresh(loadCurrent);
   });
+  $("#next-page")?.addEventListener("click", () => {
+    pageNumber++;
+    loadCurrent();
+  });
+  bindChips(() => {
+    pageNumber = 1;
+    loadCurrent();
+  });
+  let searchTimer = 0;
+  $$("[data-filter]").forEach((input) =>
+    input.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        pageNumber = 1;
+        loadCurrent();
+      }, 350);
+    }),
+  );
+  live = createLiveUpdates({
+    check: async () => {
+      try {
+        return (await request("/api/admin/pulse")).changeToken;
+      } catch (error) {
+        if (error.status === 401)
+          location.replace("login.html?session=expired");
+        throw error;
+      }
+    },
+    refresh: () => loadCurrent(true),
+  });
+  loadCurrent();
 })();

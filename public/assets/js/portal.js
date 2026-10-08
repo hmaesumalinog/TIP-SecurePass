@@ -189,35 +189,52 @@
       day: "numeric",
     }).format(new Date());
 
+  function render(data) {
+    if (!data) return;
+    const { student, recovery } = data;
+    const initials =
+      `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() ||
+      "ST";
+    text("student-first-name", student.firstName, "Student");
+    text("profile-name", student.fullName);
+    text("profile-name-copy", student.fullName);
+    text("profile-initials", initials);
+    text("profile-student-number", student.studentNumber);
+    text("profile-student-number-copy", student.studentNumber);
+    text("profile-email", student.email);
+    text("profile-age", student.age);
+    text("profile-birthday", readableDate(student.birthday));
+    text("profile-phone", student.phone);
+    text("profile-program", student.program);
+    text("profile-program-copy", student.program);
+    text("profile-year-level", student.yearLevel);
+    text("profile-year-level-copy", student.yearLevel);
+    document
+      .querySelectorAll("[data-protected-content]")
+      .forEach((element) => element.classList.remove("hidden"));
+    document
+      .querySelectorAll("[data-loading]")
+      .forEach((element) => element.classList.add("hidden"));
+    if (document.body.dataset.page === "portal") loadSecuritySummary(recovery);
+  }
+
   loadProfile()
-    .then((data) => {
-      if (!data) return;
-      const { student, recovery } = data;
-      const initials =
-        `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() ||
-        "ST";
-      text("student-first-name", student.firstName, "Student");
-      text("profile-name", student.fullName);
-      text("profile-name-copy", student.fullName);
-      text("profile-initials", initials);
-      text("profile-student-number", student.studentNumber);
-      text("profile-student-number-copy", student.studentNumber);
-      text("profile-email", student.email);
-      text("profile-age", student.age);
-      text("profile-birthday", readableDate(student.birthday));
-      text("profile-phone", student.phone);
-      text("profile-program", student.program);
-      text("profile-program-copy", student.program);
-      text("profile-year-level", student.yearLevel);
-      text("profile-year-level-copy", student.yearLevel);
-      document
-        .querySelectorAll("[data-protected-content]")
-        .forEach((element) => element.classList.remove("hidden"));
-      document
-        .querySelectorAll("[data-loading]")
-        .forEach((element) => element.classList.add("hidden"));
-      if (document.body.dataset.page === "portal")
-        loadSecuritySummary(recovery);
-    })
+    .then(render)
     .catch((error) => showState(error.message));
+
+  // When the student returns to a tab that was hidden for two minutes or more,
+  // reload quietly: this shows administrator edits and ends a session that was
+  // signed out elsewhere. Errors keep the details already on screen.
+  let hiddenAt = 0;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      hiddenAt = Date.now();
+      return;
+    }
+    if (hiddenAt && Date.now() - hiddenAt >= 120000)
+      loadProfile()
+        .then(render)
+        .catch(() => {});
+    hiddenAt = 0;
+  });
 })();

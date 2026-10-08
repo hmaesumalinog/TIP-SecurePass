@@ -36,6 +36,10 @@ export function query(params) {
   return search.toString();
 }
 
+export function rpc(name, args) {
+  return supabase(`rpc/${name}`, { method: 'POST', body: JSON.stringify(args) });
+}
+
 export async function insert(table, row, select = '*') {
   return supabase(`${table}?select=${encodeURIComponent(select)}`, {
     method: 'POST',

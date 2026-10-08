@@ -1,9 +1,9 @@
 import {createHmac} from 'node:crypto';
 import {safeEqual,sha256} from './http.mjs';
+import {sessionSecret} from './keys.mjs';
 
 function sign(payload) {
-  if (!process.env.APP_PEPPER || process.env.APP_PEPPER.length < 32) throw new Error('SMS status signing is not configured.');
-  return createHmac('sha256',process.env.APP_PEPPER).update(`phone-delivery-v1:${payload}`).digest('base64url');
+  return createHmac('sha256',sessionSecret()).update(`phone-delivery-v1:${payload}`).digest('base64url');
 }
 // Read-only delivery receipt, not a credential or phone-verification grant.
 // Binding to the pending code invalidates it on resend, confirmation or change.

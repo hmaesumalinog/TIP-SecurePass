@@ -1,16 +1,16 @@
-import { assertPost, handleError, HttpError, json, otpDigest, randomOtp, randomToken, readJson, sha256, validatePassword } from './_shared/http.mjs';
-import { insert, query, supabase } from './_shared/supabase.mjs';
-import { codeHash, matchingStep, rate, rpc, securityNotice } from './_shared/recovery.mjs';
-import { canUseUniSmsForPhone, sendUniSmsOtp } from './_shared/unisms.mjs';
+import { afterResponse, assertPost, handleError, HttpError, json, otpDigest, randomOtp, randomToken, readJson, sha256, validatePassword } from '../_shared/http.mjs';
+import { insert } from '../_shared/supabase.mjs';
+import { codeHash, LIMITED, matchingStep, rate, rateKeys, rpc, securityNotice } from '../_shared/recovery.mjs';
+import { canUseUniSmsForPhone, sendUniSmsOtp } from '../_shared/unisms.mjs';
 
-export default async function handler(request) {
+export default async function alternateRecovery(request, context) {
   try {
     assertPost(request);
     const input = await readJson(request);
     const number = String(input.studentNumber || '');
     if (['start','help'].includes(input.action)) {
       if (!/^\d{7}$/.test(number)) throw new HttpError(400,'Enter your seven-digit student number.');
-      await rate(request,`recovery:${number}`,8);
+      await rate(request,context,`recovery:${number}`,8);
       if (input.action === 'help') {
         const contact = String(input.contact || '').trim(), message = String(input.message || '').trim();
         if (contact.length < 5 || contact.length > 254 || message.length < 10 || message.length > 1000) throw new HttpError(400,'Provide a reachable contact (5–254 characters) and explanation (10–1000 characters). Do not include passwords or recovery codes.');
@@ -20,28 +20,29 @@ export default async function handler(request) {
       if (!['authenticator','sms'].includes(input.method)) throw new HttpError(400,'Choose an authenticator or SMS.');
       const token=randomToken(), otp=randomOtp();
       const result=await rpc('alternate_start',{p_number:number,p_code:codeHash(input.backupCode),p_method:input.method,p_token:sha256(token),p_otp:otpDigest(`alternate:${otp}`)});
-      if (result.status === 'ok' && input.method === 'sms') {
-        if (canUseUniSmsForPhone(result.phone)) {
-          try { await sendUniSmsOtp(result.phone,otp); } catch { console.error('Alternate recovery SMS delivery unconfirmed.'); }
-        }
+      if (result.status === 'ok' && input.method === 'sms' && canUseUniSmsForPhone(result.phone)) {
+        // Sent after the response, so SMS latency cannot reveal a matching account.
+        await afterResponse(context,()=>sendUniSmsOtp(result.phone,otp),'Alternate recovery SMS delivery unconfirmed.');
       }
       // Same response for unknown accounts, unavailable factors and incorrect codes.
       return json({token,message:input.method==='sms' ? 'If these details match an eligible account, a code will be sent to its previously verified phone. It expires in five minutes.' : 'Enter a code from the authenticator previously enrolled on this account. This request expires in five minutes.'});
     }
     const token=String(input.token || '');
     if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new HttpError(400,'Start a new recovery request.');
-    await rate(request,`grant:${sha256(token)}`,10);
+    const tokenHash=sha256(token);
     if (input.action==='verify') {
-      const rows=await supabase(`alternate_recovery?${query({select:'student_id,secret,method',token_hash:`eq.${sha256(token)}`,limit:1})}`);
-      const challenge=rows[0];
-      const step=challenge?.method==='authenticator' ? matchingStep(challenge.secret,challenge.student_id,input.code) : -1;
-      const result=await rpc('alternate_verify',{p_token:sha256(token),p_otp:otpDigest(`alternate:${input.code || ''}`),p_step:step,p_secret:challenge?.secret || null});
+      // Rate limit and challenge lookup share one round trip.
+      const challenge=await rpc('alternate_lookup',{p_token:tokenHash,p_rate:rateKeys(request,context,`grant:${tokenHash}`,10)});
+      if (challenge.status==='limited') throw new HttpError(429,LIMITED);
+      const step=challenge.method==='authenticator' ? matchingStep(challenge.secret,challenge.student_id,input.code) : -1;
+      const result=await rpc('alternate_verify',{p_token:tokenHash,p_otp:otpDigest(`alternate:${input.code || ''}`),p_step:step,p_secret:challenge.secret || null});
       if (result.status!=='ok') throw new HttpError(400,'Recovery details could not be verified, have expired, or reached the attempt limit. Check your details or start again.');
       return json({message:'Verified. Set your new password within 10 minutes. Your backup code has now been used.'});
     }
     if (input.action==='complete') {
+      await rate(request,context,`grant:${tokenHash}`,10);
       if (!validatePassword(input.password)) throw new HttpError(400,'Use 12–128 characters including uppercase, lowercase, a number and symbol. Do not include a student number.');
-      const result=await rpc('alternate_finish',{p_token:sha256(token),p_password:input.password});
+      const result=await rpc('alternate_finish',{p_token:tokenHash,p_password:input.password});
       if (result.status!=='ok') throw new HttpError(400,'The reset could not be completed. Check the password requirements or start a new recovery request.');
       const noticeSent=await securityNotice(result.email,'password reset',result.event);
       return json({message:'Password updated. Previous sessions and recovery requests are invalid. Your enrolled recovery methods remain unchanged.',noticeSent});

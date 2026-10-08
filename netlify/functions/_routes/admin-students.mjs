@@ -1,9 +1,9 @@
-import { handleError, HttpError, json, normalizeEmail, readJson } from './_shared/http.mjs';
-import { requireAdmin, requireCsrf } from './_shared/admin-session.mjs';
-import { insert, query, supabase, update } from './_shared/supabase.mjs';
-import { studentWelcomeEmail, sendEmail } from './_shared/resend.mjs';
-import { generateTemporaryPassword } from './_shared/temporary-password.mjs';
-import { ageFromBirthday, validBirthday } from './_shared/onboarding.mjs';
+import { handleError, HttpError, json, normalizeEmail, readJson, siteOrigin } from '../_shared/http.mjs';
+import { adminRead, requireAdmin, requireCsrf } from '../_shared/admin-session.mjs';
+import { rpc, update } from '../_shared/supabase.mjs';
+import { studentWelcomeEmail, sendEmail } from '../_shared/resend.mjs';
+import { generateTemporaryPassword } from '../_shared/temporary-password.mjs';
+import { ageFromBirthday, validBirthday } from '../_shared/onboarding.mjs';
 
 const fields = 'id,student_number,email,first_name,last_name,birth_date,program,year_level,active,record_version,must_change_password,temporary_password_expires_at,created_at';
 
@@ -27,22 +27,29 @@ function cleanProfile(body) {
   };
 }
 
-export default async function handler(request) {
+// Audit failures are logged; they never undo or misreport a completed change.
+function recordEvents(admin, studentId, adminEvent, adminDetails, studentEvent = null, studentDetails = null) {
+  return rpc('record_admin_student_event', {
+    p_admin: admin.id, p_student: studentId, p_admin_event: adminEvent, p_admin_details: adminDetails,
+    p_student_event: studentEvent, p_student_details: studentDetails
+  }).catch(() => console.error('Administrator audit event could not be recorded.'));
+}
+
+export default async function adminStudents(request) {
   try {
     if (request.method === 'GET') {
-      await requireAdmin(request);
       const params = new URL(request.url).searchParams;
       if (params.has('id')) {
         if (!/^[0-9a-f-]{36}$/i.test(params.get('id'))) throw new HttpError(400,'Student record is invalid.');
-        const rows=await supabase(`admin_student_security?${query({select:'*',id:`eq.${params.get('id')}`,limit:1})}`);
-        if (!rows.length) throw new HttpError(404,'Student record not found.');
-        return json({student:rows[0]});
+        const { data, ...meta } = await adminRead(request, 'student', { id: params.get('id') }, 'Student record not found.');
+        return json({ ...meta, ...data });
       }
-      const directory = params.get('format') === 'compact' ? 'admin_student_directory_v2' : 'admin_student_directory';
-      const result=await supabase(`rpc/${directory}`,{method:'POST',body:JSON.stringify({
-        p_search:(params.get('search') || '').trim().slice(0,100),p_filter:params.get('filter') || '',
-        p_page:Math.max(1,Math.min(Number.parseInt(params.get('page'),10)||1,100000))})});
-      return json({ ...result, refreshedAt: new Date().toISOString() });
+      const { data, ...meta } = await adminRead(request, 'students', {
+        search: (params.get('search') || '').trim().slice(0,100),
+        filter: params.get('filter') || '',
+        page: Math.max(1,Math.min(Number.parseInt(params.get('page'),10)||1,100000))
+      });
+      return json({ ...meta, ...data });
     }
 
     if (request.method === 'POST') {
@@ -55,30 +62,26 @@ export default async function handler(request) {
       const temporaryPassword = generateTemporaryPassword();
       let result;
       try {
-        result = await supabase('rpc/admin_create_student_v2', {
-          method: 'POST',
-          body: JSON.stringify({
-            p_student_number: studentNumber,
-            p_email: profile.email,
-            p_first_name: profile.firstName,
-            p_last_name: profile.lastName,
-            p_birth_date: profile.birthday,
-            p_program: profile.program,
-            p_year_level: profile.yearLevel,
-            p_temporary_password: temporaryPassword
-          })
+        result = await rpc('admin_create_student_v2', {
+          p_student_number: studentNumber,
+          p_email: profile.email,
+          p_first_name: profile.firstName,
+          p_last_name: profile.lastName,
+          p_birth_date: profile.birthday,
+          p_program: profile.program,
+          p_year_level: profile.yearLevel,
+          p_temporary_password: temporaryPassword
         });
       } catch (error) {
         if (/duplicate|unique/i.test(error.message)) throw new HttpError(409, 'That student number or email already exists.');
         throw error;
       }
       const student = Array.isArray(result) ? result[0] : result;
-      const origin = (process.env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
       const mail = studentWelcomeEmail({
         firstName: profile.firstName,
         studentNumber,
         temporaryPassword,
-        signInLink: `${origin}/`
+        signInLink: `${siteOrigin(request)}/`
       });
       let emailSent = false;
       try {
@@ -88,43 +91,12 @@ export default async function handler(request) {
           idempotencyKey: `student-welcome-${student.id}`
         });
         emailSent = true;
-      } catch (emailError) {
-        await insert(
-          'admin_audit_events',
-          {
-            admin_id: admin.id,
-            event_type: 'student_welcome_email_failed',
-            target_student_id: student.id,
-            details: { reason: 'delivery_error' }
-          },
-          'id'
-        );
+      } catch {
+        await recordEvents(admin, student.id, 'student_welcome_email_failed', { reason: 'delivery_error' });
       }
-      await insert(
-        'admin_audit_events',
-        {
-          admin_id: admin.id,
-          event_type: 'student_created',
-          target_student_id: student.id,
-          details: {
-            student_number: studentNumber,
-            welcome_email: emailSent ? 'sent' : 'failed'
-          }
-        },
-        'id'
-      );
-      await insert(
-        'audit_events',
-        {
-          student_id: student.id,
-          event_type: 'student_account_created',
-          details: {
-            welcome_email: emailSent ? 'sent' : 'failed',
-            temporary_password_expires_hours: 24
-          }
-        },
-        'id'
-      );
+      await recordEvents(admin, student.id,
+        'student_created', { student_number: studentNumber, welcome_email: emailSent ? 'sent' : 'failed' },
+        'student_account_created', { welcome_email: emailSent ? 'sent' : 'failed', temporary_password_expires_hours: 24 });
       return json(
         {
           message: emailSent ? 'Student created and temporary sign-in password emailed.' : 'Student created, but the welcome email could not be delivered. Use “Reissue temporary password” to try again.',
@@ -166,18 +138,8 @@ export default async function handler(request) {
         throw error;
       }
       if (!rows.length) throw new HttpError(409, 'This record changed while you were editing. Close and reopen it to review the latest details.');
-      await insert(
-        'admin_audit_events',
-        {
-          admin_id: admin.id,
-          event_type: active ? 'student_profile_updated' : 'student_deactivated',
-          target_student_id: body.id,
-          details: {
-            fields: ['email', 'name', 'birth_date', 'program', 'year_level', 'active']
-          }
-        },
-        'id'
-      );
+      await recordEvents(admin, body.id, active ? 'student_profile_updated' : 'student_deactivated',
+        { fields: ['email', 'name', 'birth_date', 'program', 'year_level', 'active'] });
       return json({ message: 'Student profile updated.', student: rows[0] });
     }
 

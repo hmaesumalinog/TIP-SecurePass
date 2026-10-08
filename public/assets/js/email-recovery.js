@@ -3,11 +3,14 @@ import {
   passwordRules,
   remainingSeconds,
   formatCountdown,
-} from "./recovery-utils.mjs";
+} from "./recovery-utils.mjs?v=b1fec01f80";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const page = document.body.dataset.emailPage;
+// On the request page, start the server while the student types their email.
+if (page === "forgot")
+  fetch("/api/health", { cache: "no-store" }).catch(() => {});
 // iOS Safari only shows :active press feedback when a touch listener exists.
 document.addEventListener("touchstart", () => {}, { passive: true });
 // A very fast response can place the next screen's link under a double-click.

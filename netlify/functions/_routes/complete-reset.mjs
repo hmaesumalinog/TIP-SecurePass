@@ -1,8 +1,8 @@
-import { assertPost, handleError, HttpError, json, readJson, sha256, validatePassword } from './_shared/http.mjs';
-import { insert, supabase } from './_shared/supabase.mjs';
-import { resetConfirmationEmail, sendEmail } from './_shared/resend.mjs';
+import { assertPost, handleError, HttpError, json, readJson, sha256, validatePassword } from '../_shared/http.mjs';
+import { insert, supabase } from '../_shared/supabase.mjs';
+import { resetConfirmationEmail, sendEmail } from '../_shared/resend.mjs';
 
-export default async function handler(request) {
+export default async function completeReset(request) {
   try {
     assertPost(request);
     const { grantToken, password } = await readJson(request);

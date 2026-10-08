@@ -109,6 +109,9 @@
   });
 
   if (page === "login") {
+    // Start the server while the student types, so signing in does not wait
+    // for it. The response carries no data.
+    fetch("/api/health", { cache: "no-store" }).catch(() => {});
     const form = $("#login-form");
     const studentNumber = $("#student-id");
     const password = $("#password");

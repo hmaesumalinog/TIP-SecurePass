@@ -5,10 +5,13 @@ import {
   passwordRules,
   remainingSeconds,
   formatCountdown,
-} from "./recovery-utils.mjs";
+} from "./recovery-utils.mjs?v=b1fec01f80";
 
 const $ = (selector) => document.querySelector(selector);
-const endpoint = "/.netlify/functions/alternate-recovery";
+const endpoint = "/api/alternate-recovery";
+// Start the server while the student reads and types, so the first real
+// request does not wait for it. The response carries no data.
+fetch("/api/health", { cache: "no-store" }).catch(() => {});
 // iOS Safari only shows :active press feedback when a touch listener exists.
 document.addEventListener("touchstart", () => {}, { passive: true });
 const isRecovery = document.body.dataset.recoveryPage === "recover";

@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { codePepper } from './keys.mjs';
 
 export function json(data, status = 200, extraHeaders = {}) {
   return Response.json(data, {
@@ -29,14 +30,15 @@ export async function readJson(request) {
 }
 
 export class HttpError extends Error {
-  constructor(status, message) {
+  constructor(status, message, headers = {}) {
     super(message);
     this.status = status;
+    this.headers = headers;
   }
 }
 
 export function handleError(error) {
-  if (error instanceof HttpError) return json({ message: error.message }, error.status);
+  if (error instanceof HttpError) return json({ message: error.message }, error.status, error.headers);
   console.error('SecurePass function error:', error instanceof Error ? error.message : 'Unknown error');
   return json(
     {
@@ -51,9 +53,7 @@ export function sha256(value) {
 }
 
 export function otpDigest(value) {
-  const pepper = process.env.APP_PEPPER;
-  if (!pepper || pepper.length < 32) throw new Error('APP_PEPPER must contain at least 32 characters.');
-  return createHmac('sha256', pepper).update(value).digest('hex');
+  return createHmac('sha256', codePepper()).update(value).digest('hex');
 }
 
 export function randomToken(bytes = 32) {
@@ -90,11 +90,43 @@ export function maskPhone(phone) {
 export function validatePassword(password, studentNumber = '') {
   const value = String(password || '');
   const identifier = String(studentNumber || '').trim();
-  if (value.length < 12 || value.length > 128) return false;
+  if (!passwordShapeValid(value)) return false;
   const excludesStudentNumber = /^\d{7}$/.test(identifier) ? !value.includes(identifier) : !/\d{7}/.test(value);
-  return /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value) && excludesStudentNumber;
+  return excludesStudentNumber;
+}
+
+// Length and character classes only. The database adds the student-number rule
+// when the server does not hold the number itself.
+export function passwordShapeValid(password) {
+  const value = String(password || '');
+  return value.length >= 12 && value.length <= 128 && /[A-Z]/.test(value) && /[a-z]/.test(value)
+    && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
 }
 
 export function expiresIn(seconds) {
   return new Date(Date.now() + seconds * 1000).toISOString();
+}
+
+export function clientIp(request, context) {
+  return context?.ip || request.headers.get('x-nf-client-connection-ip') || 'unknown';
+}
+
+export function siteOrigin(request) {
+  return (process.env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
+}
+
+// Simulated delivery is for a developer's own machine only, never a deployment.
+export function isLocalRequest(request) {
+  return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(request.url).hostname);
+}
+
+// Lets slow follow-up work (email, SMS) finish after the response is sent, so
+// its duration cannot reveal anything. Without a platform context (tests and
+// local scripts) the work completes before returning.
+export async function afterResponse(context, task, failureMessage) {
+  const work = Promise.resolve()
+    .then(task)
+    .catch(() => console.error(failureMessage));
+  if (typeof context?.waitUntil === 'function') context.waitUntil(work);
+  else await work;
 }

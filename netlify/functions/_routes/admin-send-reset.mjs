@@ -1,9 +1,9 @@
-import { assertPost, expiresIn, handleError, HttpError, json, randomToken, readJson, sha256 } from './_shared/http.mjs';
-import { requireAdmin, requireCsrf } from './_shared/admin-session.mjs';
-import { insert, query, supabase } from './_shared/supabase.mjs';
-import { resetEmail, sendEmail } from './_shared/resend.mjs';
+import { assertPost, expiresIn, handleError, HttpError, json, randomToken, readJson, sha256, siteOrigin } from '../_shared/http.mjs';
+import { requireAdmin, requireCsrf } from '../_shared/admin-session.mjs';
+import { insert, query, rpc, supabase } from '../_shared/supabase.mjs';
+import { resetEmail, sendEmail } from '../_shared/resend.mjs';
 
-export default async function handler(request) {
+export default async function adminSendReset(request) {
   try {
     assertPost(request);
     const { admin, session } = await requireAdmin(request, ['super_admin']);
@@ -26,33 +26,17 @@ export default async function handler(request) {
       },
       'id'
     );
-    const origin = (process.env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
-    const resetLink = `${origin}/reset.html?token=${encodeURIComponent(token)}`;
+    const resetLink = `${siteOrigin(request)}/reset.html?token=${encodeURIComponent(token)}`;
     const mail = resetEmail({ firstName: student.first_name, resetLink });
     await sendEmail({
       to: student.email,
       ...mail,
       idempotencyKey: `admin-reset-${tokenRows[0].id}`
     });
-    await insert(
-      'audit_events',
-      {
-        student_id: student.id,
-        event_type: 'reset_requested',
-        details: { delivery: 'sent', requested_by: 'admin' }
-      },
-      'id'
-    );
-    await insert(
-      'admin_audit_events',
-      {
-        admin_id: admin.id,
-        event_type: 'student_reset_email_sent',
-        target_student_id: student.id,
-        details: {}
-      },
-      'id'
-    );
+    await rpc('record_admin_student_event', {
+      p_admin: admin.id, p_student: student.id, p_admin_event: 'student_reset_email_sent', p_admin_details: {},
+      p_student_event: 'reset_requested', p_student_details: { delivery: 'sent', requested_by: 'admin' }
+    }).catch(() => console.error('Administrator audit event could not be recorded.'));
     return json({ message: 'Secure password-reset link sent through Resend.' });
   } catch (error) {
     return handleError(error);

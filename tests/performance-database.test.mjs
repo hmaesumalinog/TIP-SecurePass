@@ -11,7 +11,7 @@ test('performance migration preserves security, bounds reports, reserves attempt
     await db.exec('create role anon;create role authenticated;create role service_role;create schema extensions;create publication supabase_realtime;');
     for(const path of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql',
       'migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql',
-      'migrations/20260920090000_student_owned_onboarding.sql','migrations/20260928090000_performance_and_delivery.sql'])
+      'migrations/20260920090000_student_owned_onboarding.sql','migrations/20260928090000_performance_and_delivery.sql','migrations/20261009090000_sessions_and_round_trips.sql'])
       await db.exec(await readFile(new URL('../supabase/'+path,import.meta.url),'utf8'));
     const one=async(sql,args=[])=>(await db.query(sql,args)).rows[0];
     const rpc=async(sql,args=[])=>(await one('select '+sql+' as result',args)).result;

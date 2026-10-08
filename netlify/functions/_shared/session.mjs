@@ -1,24 +1,22 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { sessionSecret } from './keys.mjs';
 
 const COOKIE_NAME = 'tip_securepass_session';
 const SESSION_SECONDS = 60 * 60 * 4;
 
-function pepper() {
-  const value = process.env.APP_PEPPER;
-  if (!value || value.length < 32) throw new Error('APP_PEPPER must contain at least 32 characters.');
-  return value;
-}
-
 function signature(payload) {
-  return createHmac('sha256', pepper()).update(payload).digest('base64url');
+  return createHmac('sha256', sessionSecret()).update(`student:${payload}`).digest('base64url');
 }
 
+// pv (password version) ends sessions after a password change; sv (session
+// version) ends them after sign-out. The database checks both on every request.
 export function createSession(student, { setupOnly = false } = {}) {
   const now = Math.floor(Date.now() / 1000);
   const lifetime = setupOnly ? 10 * 60 : SESSION_SECONDS;
   const payload = Buffer.from(JSON.stringify({
     sid: student.id,
     pv: student.password_changed_at || '',
+    sv: Number(student.session_version ?? 0),
     mode: setupOnly ? 'setup' : 'portal',
     iat: now,
     exp: now + lifetime
@@ -40,7 +38,7 @@ export function readSession(request) {
 
   try {
     const session = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-    if (!session.sid || !session.exp || session.exp <= Math.floor(Date.now() / 1000)) return null;
+    if (!session.sid || !Number.isInteger(session.sv) || !session.exp || session.exp <= Math.floor(Date.now() / 1000)) return null;
     return session;
   } catch { return null; }
 }

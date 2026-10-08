@@ -29,7 +29,7 @@ try {
     await page.goto('http://127.0.0.1:4175/__fixture/enrolled');await page.waitForLoadState('networkidle');await widthCheck();
     paths=[];await page.goto('http://127.0.0.1:4175/portal.html');await page.waitForLoadState('networkidle');await widthCheck();
     assert.equal(paths.filter(p=>p==='/api/profile').length,1);
-    assert.equal(paths.filter(p=>p==='/.netlify/functions/security-settings').length,0,'Portal does not fetch recovery status twice');
+    assert.equal(paths.filter(p=>p==='/api/security-settings').length,0,'Portal does not fetch recovery status twice');
     assert.match(await page.locator('#security-pills').textContent(),/Authenticator connected/);
     if(width===375)await page.screenshot({path:resolve(output,'student-portal-mobile.png'),fullPage:true});
   }

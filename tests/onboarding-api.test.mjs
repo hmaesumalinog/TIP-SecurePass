@@ -4,25 +4,29 @@ import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { citext } from '@electric-sql/pglite/contrib/citext';
-import students from '../netlify/functions/admin-students.mjs';
-import dashboard from '../netlify/functions/admin-dashboard.mjs';
-import audit from '../netlify/functions/admin-audit.mjs';
-import setup from '../netlify/functions/complete-first-login.mjs';
-import settings from '../netlify/functions/security-settings.mjs';
-import profile from '../netlify/functions/profile.mjs';
-import issue from '../netlify/functions/admin-issue-temporary-password.mjs';
-import reset from '../netlify/functions/admin-send-reset.mjs';
-import login from '../netlify/functions/login.mjs';
+import students from '../netlify/functions/_routes/admin-students.mjs';
+import dashboard from '../netlify/functions/_routes/admin-dashboard.mjs';
+import audit from '../netlify/functions/_routes/admin-audit.mjs';
+import setup from '../netlify/functions/_routes/complete-first-login.mjs';
+import settings from '../netlify/functions/_routes/security-settings.mjs';
+import profile from '../netlify/functions/_routes/profile.mjs';
+import issue from '../netlify/functions/_routes/admin-issue-temporary-password.mjs';
+import reset from '../netlify/functions/_routes/admin-send-reset.mjs';
+import login from '../netlify/functions/_routes/login.mjs';
+import logout from '../netlify/functions/_routes/logout.mjs';
+import pulse from '../netlify/functions/_routes/admin-pulse.mjs';
+import adminSession from '../netlify/functions/_routes/admin-session.mjs';
+import adminLogout from '../netlify/functions/_routes/admin-logout.mjs';
 import { createAdminSession, adminCookie } from '../netlify/functions/_shared/admin-session.mjs';
 import { createSession, sessionCookie } from '../netlify/functions/_shared/session.mjs';
 import { totp } from '../netlify/functions/_shared/recovery.mjs';
 
 test('administrator invitation to student-owned onboarding works through actual HTTP handlers and PostgreSQL',async(t)=>{
- Object.assign(process.env,{APP_PEPPER:'test-onboarding-pepper-only-1234567890',SUPABASE_URL:'https://database.example.invalid',SUPABASE_SECRET_KEY:'sb_secret_test',SITE_URL:'https://portal.example.invalid',RESEND_API_KEY:'test',SMS_PROVIDER:'unisms',UNISMS_API_KEY:'test',UNISMS_SENDER_ID:'test',UNISMS_TRIAL_MODE:'false'});
+ Object.assign(process.env,{APP_PEPPER:'test-onboarding-pepper-only-1234567890',SESSION_SECRET:'test-only-session-secret-0123456789abcd',RECOVERY_ENCRYPTION_KEY:'test-only-encryption-key-0123456789abc',SUPABASE_URL:'https://database.example.invalid',SUPABASE_SECRET_KEY:'sb_secret_test',SITE_URL:'https://portal.example.invalid',RESEND_API_KEY:'test',SMS_PROVIDER:'unisms',UNISMS_API_KEY:'test',UNISMS_SENDER_ID:'test',UNISMS_TRIAL_MODE:'false'});
  const db=new PGlite({extensions:{pgcrypto,citext}});const emails=[];let sentCode='',smsCount=0,failEmail=false,deliveryStatus='pending',statusReads=0,failReason='PRIVATE';
  try {
   await db.exec('create role anon; create role authenticated; create role service_role; create schema extensions; create publication supabase_realtime;');
-  for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql','migrations/20260928090000_performance_and_delivery.sql'])await db.exec(await readFile(new URL('../supabase/'+file,import.meta.url),'utf8'));
+  for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql','migrations/20260928090000_performance_and_delivery.sql','migrations/20261009090000_sessions_and_round_trips.sql'])await db.exec(await readFile(new URL('../supabase/'+file,import.meta.url),'utf8'));
   t.mock.method(globalThis,'fetch',async(url,options={})=>{
    const parsed=new URL(url),body=options.body?JSON.parse(options.body):{};
    if(parsed.hostname==='api.resend.com'){if(failEmail)return Response.json({message:'test delivery failure'},{status:503});emails.push(body);return Response.json({id:'synthetic-email'});}
@@ -140,7 +144,33 @@ test('administrator invitation to student-owned onboarding works through actual 
   const signedIn=await call(login,{method:'POST',auth:'',body:{studentNumber:'7654321',password:'Personal!Password123'}});
   assert.equal(signedIn.http,200);assert.match(signedIn.cookie,/HttpOnly/);
   assert.equal((await one('select count(*)::int as n from student_login_attempts where succeeded')).n,1);
+  // Signing out ends the session on the server: a copied cookie stops working.
+  const signedInCookie=signedIn.cookie.split(';')[0];
+  assert.equal((await call(profile,{auth:signedInCookie})).http,200);
+  const versionBefore=(await one('select record_version from demo_students where id=$1',[sid])).record_version;
+  const signedOut=await call(logout,{method:'POST',auth:signedInCookie,body:{}});
+  assert.equal(signedOut.http,200);assert.match(signedOut.cookie,/Max-Age=0/);
+  assert.equal((await call(profile,{auth:signedInCookie})).http,401,'Revoked sessions are rejected');
+  assert.equal((await call(settings,{auth:signedInCookie})).http,401);
+  assert.equal((await one('select record_version from demo_students where id=$1',[sid])).record_version,versionBefore,
+    'Signing out is not reported to administrators as a profile edit');
+  // Administrator pages learn about changes from a tiny change token.
+  const identity=await call(adminSession);
+  assert.deepEqual(identity.data.admin,{displayName:'Test Admin',email:'admin@example.invalid',role:'super_admin'});
+  assert.equal(identity.data.csrfToken,session.csrf);
+  const before=(await call(pulse)).data.changeToken;assert.match(before,/^\d+:\d+:\d+:\d+$/);
+  assert.equal((await call(pulse)).data.changeToken,before,'No change, same token');
+  const latest=(await call(students,{path:'/function?id='+sid})).data.student;
+  assert.equal((await call(students,{method:'PATCH',body:{...edited,recordVersion:latest.record_version,lastName:'Again'}})).http,200);
+  assert.notEqual((await call(pulse)).data.changeToken,before,'An edit changes the token');
+  assert.equal((await call(dashboard)).data.changeToken,(await call(pulse)).data.changeToken,'Views return the same token');
   for(let attempt=0;attempt<5;attempt++)assert.equal((await call(login,{method:'POST',auth:'',body:{studentNumber:'7654321',password:'Wrong!Password123'}})).http,401);
   assert.equal((await call(login,{method:'POST',auth:'',body:{studentNumber:'7654321',password:'Wrong!Password123'}})).http,429);
+  // Unknown student numbers are rejected exactly like wrong passwords.
+  assert.equal((await call(login,{method:'POST',auth:'',body:{studentNumber:'7000001',password:'Wrong!Password123'}})).http,401);
+  // Administrator sign-out revokes that session too.
+  assert.equal((await call(adminLogout,{method:'POST',body:{}})).http,200);
+  assert.equal((await call(dashboard)).http,401,'A signed-out administrator cookie stops working');
+  assert.ok((await one("select count(*)::int as n from admin_audit_events where event_type='admin_logout'")).n>=1);
  } finally {await db.close();}
 });

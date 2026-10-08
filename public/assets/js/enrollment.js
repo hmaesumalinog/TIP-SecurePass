@@ -44,7 +44,7 @@
       <div class="welcome-inner">
         <div class="welcome-mark" aria-hidden="true">
           <span class="welcome-ring"></span>
-          <img src="assets/images/brand-mark.svg" width="44" height="52" alt="" />
+          <img src="assets/images/brand-mark.svg?v=a84baf26d9" width="44" height="52" alt="" />
         </div>
         <p class="enrollment-eyebrow welcome-eyebrow">You’re in</p>
         <h2 id="enrollment-title" tabindex="-1">Welcome to TIP SecurePass<span data-welcome-name></span>!</h2>

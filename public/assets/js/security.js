@@ -3,7 +3,7 @@
   "use strict";
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
-  const endpoint = "/.netlify/functions/security-settings";
+  const endpoint = "/api/security-settings";
   let status = null,
     password = "",
     codes = "",

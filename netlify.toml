@@ -7,6 +7,9 @@
   functions = "netlify/functions"
   port = 8888
 
+# All /api/* requests are routed by netlify/functions/api.mjs (see its
+# config.path), so no API redirects are needed here.
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -16,10 +19,13 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
     Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
+# Every asset reference carries a content hash (?v=...), written by
+# "npm run version-assets" and enforced by the test suite. A changed file gets
+# a new URL, so browsers can keep each version for a year without revalidating.
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/admin/*"
@@ -31,88 +37,3 @@
   from = "/admin"
   to = "/admin/login"
   status = 302
-
-[[redirects]]
-  from = "/api/request-reset"
-  to = "/.netlify/functions/request-reset"
-  status = 200
-
-[[redirects]]
-  from = "/api/start-reset"
-  to = "/.netlify/functions/start-reset"
-  status = 200
-
-[[redirects]]
-  from = "/api/verify-otp"
-  to = "/.netlify/functions/verify-otp"
-  status = 200
-
-[[redirects]]
-  from = "/api/complete-reset"
-  to = "/.netlify/functions/complete-reset"
-  status = 200
-
-[[redirects]]
-  from = "/api/login"
-  to = "/.netlify/functions/login"
-  status = 200
-
-[[redirects]]
-  from = "/api/complete-first-login"
-  to = "/.netlify/functions/complete-first-login"
-  status = 200
-
-[[redirects]]
-  from = "/api/profile"
-  to = "/.netlify/functions/profile"
-  status = 200
-
-[[redirects]]
-  from = "/api/logout"
-  to = "/.netlify/functions/logout"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/login-start"
-  to = "/.netlify/functions/admin-login-start"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/login-verify"
-  to = "/.netlify/functions/admin-login-verify"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/session"
-  to = "/.netlify/functions/admin-session"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/dashboard"
-  to = "/.netlify/functions/admin-dashboard"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/students"
-  to = "/.netlify/functions/admin-students"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/audit"
-  to = "/.netlify/functions/admin-audit"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/send-reset"
-  to = "/.netlify/functions/admin-send-reset"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/issue-temporary-password"
-  to = "/.netlify/functions/admin-issue-temporary-password"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/logout"
-  to = "/.netlify/functions/admin-logout"
-  status = 200

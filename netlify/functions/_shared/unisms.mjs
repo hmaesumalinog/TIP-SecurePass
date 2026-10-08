@@ -1,4 +1,5 @@
 const DEFAULT_BASE_URL = 'https://unismsapi.com/api';
+const SMS_TIMEOUT_MS = 6000;
 
 function required(name) {
   const value = String(process.env[name] || '').trim();
@@ -57,7 +58,7 @@ async function unisms(path, body) {
       Accept: 'application/json'
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    signal: AbortSignal.timeout(10_000)
+    signal: AbortSignal.timeout(SMS_TIMEOUT_MS)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {

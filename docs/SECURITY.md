@@ -29,7 +29,8 @@ Netlify Functions are the trusted application boundary. They receive browser req
 
 ## Request privacy and abuse resistance
 
-- The reset-request page returns a generic response so it does not directly disclose whether an email exists.
+- The reset-request page returns the same response, at the same point, for every email address. The account lookup and the email itself are handled after the response has been sent, so response time does not reveal whether an address belongs to an account. Backup-code recovery sends its optional SMS the same way.
+- Student and administrator sign-in perform one bcrypt comparison even when the student number or email does not exist, so a wrong password and an unknown account take comparable time.
 - Reset requests are limited using hashed email identifiers and hashed IP data.
 - Student-number and email formats are normalized and validated by server functions.
 - Student password sign-in is temporarily throttled by hashed student number and hashed IP address.
@@ -45,8 +46,9 @@ Rate limits in this project are database-backed and suitable for demonstration-s
 - Normal lifetime: four hours
 - First-login setup lifetime: ten minutes
 - Cookie flags: `HttpOnly`, `Secure`, and `SameSite=Strict`
-- Session signature: HMAC-SHA-256 using `APP_PEPPER`
+- Session signature: HMAC-SHA-256 using `SESSION_SECRET`
 - Password-version comparison invalidates sessions after a password change
+- Session-version comparison invalidates every copy of a session when the student signs out
 
 ### Administrator session
 
@@ -55,10 +57,23 @@ Rate limits in this project are database-backed and suitable for demonstration-s
 - Cookie flags: `HttpOnly`, `Secure`, and `SameSite=Strict`
 - Separate HMAC signature namespace from the student session
 - Role checked against the current administrator database record
+- Signing out increments the administrator's session version, ending that session everywhere
 - State-changing requests require a session-bound CSRF value
 - Password sign-in is followed by a single-use email verification code
 
 Because the two cookies have different names and validation paths, the student and administrator portals can remain signed in without replacing each other's session.
+
+## Server secrets
+
+Each secret has one job, so rotating one does not disturb the others:
+
+| Variable                  | Protects                                               | Effect of rotating it                                                   |
+| ------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `SESSION_SECRET`          | Student and administrator cookies, SMS status receipts | Everyone signs in again                                                 |
+| `APP_PEPPER`              | Digests of one-time codes and backup codes             | Saved backup codes and codes in flight stop working                     |
+| `RECOVERY_ENCRYPTION_KEY` | Encryption of authenticator secrets (`v2`)             | Connected authenticators stop working; students must connect them again |
+
+Authenticator secrets created before the keys were separated are marked `v1`. They remain readable through `APP_PEPPER` and are re-encrypted with `RECOVERY_ENCRYPTION_KEY` the next time the student connects or replaces an authenticator.
 
 ## Database access
 
@@ -73,8 +88,9 @@ Because the two cookies have different names and validation paths, the student a
 - Resend and UniSMS are called only from server functions.
 - Email links use the configured canonical `SITE_URL`.
 - Each email call uses a unique idempotency key where applicable.
+- Email and SMS provider calls stop waiting after six seconds, so a slow provider cannot hold a request open.
 - The SMS recipient is normalized to E.164 form.
-- `DEMO_MODE=false` hides browser-only provider simulations.
+- Simulated SMS codes are shown only to a developer running the site on `localhost` with `DEMO_MODE=true` and no SMS provider. A deployed site never shows a code in the browser, whatever its settings.
 - If a real eligible SMS attempt fails, the production workflow reports the failure instead of exposing the secret OTP in the page.
 
 Email authentication and SMS delivery status must be reviewed in the provider dashboards. Successful API acceptance does not guarantee final inbox placement or handset delivery.

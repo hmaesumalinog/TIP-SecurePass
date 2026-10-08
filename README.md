@@ -10,10 +10,13 @@ The project uses plain HTML, CSS, and JavaScript on the frontend. There is no Re
 
 - Seven-digit student-number sign-in with clear invalid-credential feedback
 - Separate student and administrator sessions, allowing both portals to remain signed in in the same browser
+- Signing out ends the session on the server, including any copied cookie
 - Supabase-backed student profile information
 - Email-link and SMS-code password recovery
+- Generic recovery responses and equal-cost password checks that reduce account-discovery signals
 - Single-use reset links, expiring OTP challenges, attempt limits, and password-policy checks
 - Administrator two-step sign-in, student management, account onboarding, and audit history
+- Live administrator updates: other administrators' changes appear within about 15 seconds
 - Automatic welcome email with a one-time temporary password for a newly created student
 - Forced permanent-password setup on the student's first sign-in
 - Responsive layouts for desktop, tablet, and mobile screens
@@ -44,16 +47,22 @@ TIP SecurePass/
 │       ├── css/                  Student, portal, and admin styles
 │       ├── js/                   Browser-side behavior
 │       └── images/               Project artwork
-├── netlify/functions/            Server-only API endpoints
-│   └── _shared/                  Reusable server helpers
+├── netlify/functions/
+│   ├── api.mjs                   The single API function; routes /api/* requests
+│   ├── _routes/                  One module per API endpoint
+│   ├── _shared/                  Reusable server helpers
+│   ├── database-health.mjs       Scheduled activity check
+│   └── security-maintenance.mjs  Scheduled cleanup of expired records
+├── scripts/                      Asset versioning for long browser caching
 ├── supabase/
 │   ├── setup/                    New-database scripts in execution order
+│   ├── migrations/               Upgrades, applied in filename order
 │   ├── upgrades/                 Scripts for an existing installation
 │   └── maintenance/              Optional maintenance queries
 └── tests/                         Automated Node.js tests
 ```
 
-The Netlify function files remain at the top level of `netlify/functions/` because each filename is a public serverless endpoint. Shared implementation code is kept in `_shared/` so provider credentials and security logic are not duplicated.
+Every `/api/*` request runs in `netlify/functions/api.mjs`, which passes it to the matching module in `_routes/` (for example `/api/login` → `_routes/login.mjs`). One function means the first request of a visit starts the server for every request that follows. Shared implementation code is kept in `_shared/` so provider credentials and security logic are not duplicated.
 
 ## Getting started
 
@@ -76,6 +85,12 @@ Open `http://localhost:8888`. Never place real credentials in frontend files, sc
 
 ## Verification
 
+After editing anything in `public/assets/`, refresh the asset versions so browsers pick up the change:
+
+```bash
+npm run version-assets
+```
+
 Run all automated tests from the project root:
 
 ```bash
@@ -97,6 +112,6 @@ student flow, shared email templates, and local-only visual test scenarios.
 
 - Use synthetic or specifically authorized student information during demonstrations.
 - Keep `DEMO_MODE=false` when demonstrating real SMS delivery. A visible demonstration code must never be exposed after a real SMS attempt.
-- Change the sample database record and password before sharing a deployed environment.
+- Add demonstration students through the administrator portal using synthetic or specifically authorized information.
 - Keep `.env`, Netlify local state, provider keys, Supabase secret keys, and live account credentials out of the client handoff archive.
 - The administrator pages are intentionally excluded from search-engine indexing, but the URL alone is not a security control. Access is enforced by server-side authentication and role checks.

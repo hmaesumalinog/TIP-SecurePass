@@ -32,6 +32,7 @@ const server=createServer(async(req,res)=>{
     const render=templates[path.split('/').pop()];if(!render){res.writeHead(404);res.end();return;}
     res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'no-store'});res.end(render().html);return;
   }
+  if(path==='/api/health'){res.writeHead(204,{'Cache-Control':'no-store'});res.end();return;}
   if(path.startsWith('/api/')) {
     let raw='';for await(const part of req)raw+=part;const body=JSON.parse(raw||'{}');
     if(mode==='slow')await new Promise(resolve=>setTimeout(resolve,1000));

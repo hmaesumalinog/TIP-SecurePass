@@ -4,20 +4,20 @@ import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { citext } from '@electric-sql/pglite/contrib/citext';
-import settings from '../netlify/functions/security-settings.mjs';
-import recovery from '../netlify/functions/alternate-recovery.mjs';
-import adminRecovery from '../netlify/functions/admin-recovery.mjs';
-import profile from '../netlify/functions/profile.mjs';
+import settings from '../netlify/functions/_routes/security-settings.mjs';
+import recovery from '../netlify/functions/_routes/alternate-recovery.mjs';
+import adminRecovery from '../netlify/functions/_routes/admin-recovery.mjs';
+import profile from '../netlify/functions/_routes/profile.mjs';
 import { createSession, sessionCookie } from '../netlify/functions/_shared/session.mjs';
 import { createAdminSession, adminCookie } from '../netlify/functions/_shared/admin-session.mjs';
 import { totp } from '../netlify/functions/_shared/recovery.mjs';
 
 test('HTTP recovery workflow integrates with PostgreSQL, mocked SMS/email only',async(t)=>{
-  Object.assign(process.env,{APP_PEPPER:'test-only-pepper-for-integration-1234567890',SUPABASE_URL:'https://database.example.invalid',SUPABASE_SECRET_KEY:'sb_secret_test',SITE_URL:'https://portal.example.invalid',RESEND_API_KEY:'test',SMS_PROVIDER:'unisms',UNISMS_API_KEY:'test',UNISMS_SENDER_ID:'test',UNISMS_TRIAL_MODE:'false'});
+  Object.assign(process.env,{APP_PEPPER:'test-only-pepper-for-integration-1234567890',SESSION_SECRET:'test-only-session-secret-0123456789abcd',RECOVERY_ENCRYPTION_KEY:'test-only-encryption-key-0123456789abc',SUPABASE_URL:'https://database.example.invalid',SUPABASE_SECRET_KEY:'sb_secret_test',SITE_URL:'https://portal.example.invalid',RESEND_API_KEY:'test',SMS_PROVIDER:'unisms',UNISMS_API_KEY:'test',UNISMS_SENDER_ID:'test',UNISMS_TRIAL_MODE:'false'});
   const db=new PGlite({extensions:{pgcrypto,citext}});let smsCode='',smsCount=0,emailCount=0;
   try {
     await db.exec('create role anon; create role authenticated; create role service_role; create schema extensions; create publication supabase_realtime;');
-    for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql','migrations/20260928090000_performance_and_delivery.sql']) await db.exec(await readFile(new URL(`../supabase/${file}`,import.meta.url),'utf8'));
+    for(const file of ['setup/01-core-schema.sql','setup/02-administrator-schema.sql','migrations/20260905071805_resumable_otp_delivery.sql','migrations/20260917090000_alternate_recovery.sql','migrations/20260920090000_student_owned_onboarding.sql','migrations/20260928090000_performance_and_delivery.sql','migrations/20261009090000_sessions_and_round_trips.sql']) await db.exec(await readFile(new URL(`../supabase/${file}`,import.meta.url),'utf8'));
     t.mock.method(globalThis,'fetch',async(url,options={})=>{
       const parsed=new URL(url),body=options.body?JSON.parse(options.body):{};
       if(parsed.hostname==='api.resend.com'){emailCount++;return Response.json({id:'test-email'});}
